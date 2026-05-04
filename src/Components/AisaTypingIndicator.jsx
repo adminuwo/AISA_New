@@ -1,42 +1,27 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Sparkles } from 'lucide-react';
-import { logo } from '../constants';
-
 
 const AisaTypingIndicator = ({ visible = true, message = "AISA™ is thinking" }) => {
   if (!visible) return null;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 4, scale: 0.95 }}
-      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-      className="flex items-start gap-2 md:gap-3 mb-4 w-full max-w-5xl mx-auto px-4 md:px-0"
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      className="flex items-center gap-2 opacity-80 py-1"
     >
-      <div className="flex items-center gap-2.5 px-0 py-1">
-        {/* Removed container styling for a floating look */}
-        <div className="w-7 h-7 flex items-center justify-center overflow-hidden">
-           <img src={logo} alt="AISA" className="w-5 h-5 object-contain animate-pulse" />
-        </div>
-
-
-        
-        <div className="flex items-center gap-2 opacity-80">
-          <span className="text-[11px] text-primary font-extrabold uppercase tracking-widest">
-            {message}
-          </span>
-          <div className="flex gap-1 ml-1.5">
-            <div className="w-1 h-1 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="w-1 h-1 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="w-1 h-1 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '300ms' }} />
-          </div>
-        </div>
+      <span className="text-[11px] text-primary font-extrabold uppercase tracking-widest">
+        {message}
+      </span>
+      <div className="flex gap-1 ml-1">
+        <div className="w-1 h-1 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+        <div className="w-1 h-1 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '150ms' }} />
+        <div className="w-1 h-1 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '300ms' }} />
       </div>
     </motion.div>
   );
-
 };
 
 export default AisaTypingIndicator;
+

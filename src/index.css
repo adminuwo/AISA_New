@@ -1249,11 +1249,56 @@ html.lenis body {
 
 /* Mobile Specific Padding Optimization */
 @media (max-width: 640px) {
+  .chatgpt-container {
+    gap: 0 !important;
+  }
+
   .chatgpt-message-row {
     padding-left: 12px !important;
     padding-right: 12px !important;
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .ai-row {
+    margin-top: -12px !important;
+  }
+
+  .chatgpt-text {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .chatgpt-text p {
+    margin-bottom: 0.15rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .chatgpt-text h1,
+  .chatgpt-text h2,
+  .chatgpt-text h3 {
+    margin-bottom: 0.15rem !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 1.0 !important;
+    border-bottom: none !important;
+  }
+
+  .chatgpt-text > *:first-child,
+  .chatgpt-text > div:first-child > *:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* Eliminate trailing space in messages */
+  .chatgpt-text *:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  .chatgpt-message-content {
+    gap: 0 !important;
   }
 
   .ai-row .chatgpt-message-content {
@@ -1262,11 +1307,11 @@ html.lenis body {
 
   .ai-row .chatgpt-avatar-container {
     float: left !important;
-    margin-top: 4px !important;
-    margin-right: 12px !important;
-    margin-bottom: 4px !important;
-    width: 24px !important;
-    height: 24px !important;
+    margin-top: 2px !important;
+    margin-right: 10px !important;
+    margin-bottom: 2px !important;
+    width: 20px !important;
+    height: 20px !important;
   }
 
   .ai-row .chatgpt-avatar-container img {
@@ -1323,4 +1368,98 @@ body.modal-open-hide-navbar {
   body.modal-open-hide-navbar :root {
     --mobile-nav-h: 0px !important;
   }
+}
+/* Modern Chat Bubble Styles */
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 2rem;
+  animation: message-fadeIn 0.3s ease-out;
+}
+
+@keyframes message-fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message-wrapper.user-msg {
+  align-items: flex-end;
+}
+
+.message-wrapper.ai-msg {
+  align-items: flex-start;
+}
+
+.message-label {
+  font-size: 10px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  margin-left: 4px;
+  margin-right: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.8;
+}
+
+.chat-bubble {
+  max-width: 85%;
+  padding: 12px 18px;
+  position: relative;
+  transition: all 0.2s ease;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+@media (min-width: 768px) {
+  .chat-bubble {
+    max-width: 70%;
+  }
+}
+
+.user-bubble {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%);
+  color: white;
+  border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+  box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.2);
+}
+
+.ai-bubble {
+  background: hsl(var(--secondary));
+  color: hsl(var(--foreground));
+  border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.dark .ai-bubble {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border) / 0.5);
+}
+
+.ai-message-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  align-items: flex-end;
+}
+
+.ai-avatar-wrapper {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  margin-bottom: 2px;
+}
+
+.dark .ai-avatar-wrapper {
+  background: #111;
+  border-color: rgba(255,255,255,0.1);
 }

@@ -65,11 +65,16 @@ export const generateChatResponse = async (history, currentMessage, systemInstru
             ...(modelId && { modelId }),
         };
 
+        // Deep Search runs a 3-step pipeline (Gemini plan → Tavily → Gemini synthesis)
+        // which can take 35–90s. Use 180s for search modes, 60s for everything else.
+        const isSearchMode = mode === 'DEEP_SEARCH' || mode === 'web_search' || mode === 'SEARCH';
+        const requestTimeout = isSearchMode ? 180000 : 60000;
+
         const result = await axios.post(apis.chatAgent, payload, {
             headers: headers,
             signal: abortSignal,
             withCredentials: true,
-            timeout: 60000 // 60s timeout to match backend
+            timeout: requestTimeout
         });
 
         // Return full response data (includes reply and potentially conversion data)

@@ -183,12 +183,11 @@ const DashboardLayout = () => {
     return () => window.removeEventListener('scroll', handleScroll, { capture: true, passive: true });
   }, [isWhitelistedLegalView]); // Re-bind scroll listener if whitelist changes to ensure correct behavior
 
-  // Force visibility when entering a whitelisted view (e.g. My Case dashboard)
+  // Force visibility when navigating between routes or entering a whitelisted view
   useEffect(() => {
-    if (isWhitelistedLegalView) {
-      setIsVisible(true);
-    }
-  }, [isWhitelistedLegalView]);
+    setIsVisible(true);
+    lastScrollYRef.current = 0;
+  }, [location.pathname, isWhitelistedLegalView]);
 
   // Sync CSS variable so child pages (Chat) can transition their top-padding in lockstep
   useEffect(() => {
@@ -196,10 +195,10 @@ const DashboardLayout = () => {
     if (window.innerWidth < 1024) {
       document.documentElement.style.setProperty(
         '--mobile-nav-h',
-        (isVisible && !shouldHideMobileNavbar) ? '64px' : '0px'
+        (!shouldHideMobileNavbar && isVisible) ? '64px' : '0px'
       );
     }
-  }, [isVisible, shouldHideMobileNavbar]);
+  }, [shouldHideMobileNavbar, isVisible]);
 
   return (
     <div className="fixed inset-0 flex bg-transparent text-maintext overflow-hidden aisa-scalable-text">

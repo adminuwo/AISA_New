@@ -122,26 +122,26 @@ export const PrivacyPolicyContent = () => {
             {dynamicSections ? (
                 <>
                     {dynamicSections.map((section, index) => (
-                        <div key={index} className="bg-surface/30 rounded-2xl p-8 border border-border hover:border-primary/20 transition-all group">
-                            <div className="flex items-start gap-4 mb-8">
-                                <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Shield className="w-6 h-6 text-primary" />
+                        <div key={index} className="bg-surface/30 rounded-[2rem] sm:rounded-2xl p-5 sm:p-8 border border-border hover:border-primary/20 transition-all group">
+                            <div className="flex items-start gap-3 sm:gap-4 mb-5 sm:mb-8">
+                                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-maintext pt-2">{section.title}</h3>
-                                    <div className="h-1 w-12 bg-primary/20 rounded-full mt-2 group-hover:w-20 transition-all" />
+                                    <h3 className="text-lg sm:text-xl font-bold text-maintext pt-1.5 sm:pt-2">{section.title}</h3>
+                                    <div className="h-1 w-10 sm:w-12 bg-primary/20 rounded-full mt-1.5 sm:mt-2 group-hover:w-20 transition-all" />
                                 </div>
                             </div>
-                            <div className="space-y-10">
+                            <div className="space-y-6 sm:space-y-10">
                                 {section.content.map((item, idx) => (
-                                    <div key={idx} className="space-y-4">
+                                    <div key={idx} className="space-y-3 sm:space-y-4">
                                         {item.subtitle && !['General Terms', 'Policy Overview', 'Introduction', 'N/A', ''].includes(item.subtitle) && (
-                                            <h4 className="text-lg font-bold text-maintext flex items-center gap-3">
-                                                <div className="w-1.5 h-6 bg-primary rounded-full" />
+                                            <h4 className="text-base sm:text-lg font-bold text-maintext flex items-center gap-2 sm:gap-3 mb-2">
+                                                <div className="w-1 h-5 sm:w-1.5 sm:h-6 bg-primary rounded-full" />
                                                 {item.subtitle}
                                             </h4>
                                         )}
-                                        <div className="prose dark:prose-invert max-w-none">
+                                        <div className="prose prose-sm dark:prose-invert max-w-none">
                                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                                 {item.text}
                                             </ReactMarkdown>
