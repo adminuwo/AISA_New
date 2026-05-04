@@ -62,6 +62,61 @@ import { useAILegalCRM } from '../Tools/AI_Legal/hooks/useAILegalCRM';
 import LegalWorkspaceHeader from '../Tools/AI_Legal/components/LegalWorkspaceHeader';
 import LegalWorkspaceWelcome from '../Tools/AI_Legal/components/LegalWorkspaceWelcome';
 
+const LEGAL_TOOL_WELCOME_MESSAGES = {
+  legal_draft_maker: {
+    title: "Draft Maker Activated ✍️",
+    desc: "Create professional legal drafts like notices, affidavits, FIRs and agreements."
+  },
+  legal_evidence_checker: {
+    title: "Evidence Analyst Activated 🔍",
+    desc: "Analyze case strength, admissibility and risks from evidence."
+  },
+  legal_argument_builder: {
+    title: "Argument Builder Activated ⚖️",
+    desc: "Generate strong courtroom-ready arguments and cross-examinations."
+  },
+  legal_case_predictor: {
+    title: "Case Predictor Activated 📊",
+    desc: "Estimate case outcome probability and strength."
+  },
+  legal_contract_analyzer: {
+    title: "Contract Analyzer Activated 📄",
+    desc: "Scan contracts for risks and improve clauses."
+  },
+  legal_strategy_engine: {
+    title: "Strategy Engine Activated 🧠",
+    desc: "Plan legal strategy and case journey timeline."
+  },
+  legal_research_assistant: {
+    title: "Research Assistant Activated 📚",
+    desc: "Search and interpret laws, acts and citations."
+  }
+};
+
+const ToolActivationMessage = ({ title, desc }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+    animate={{ opacity: 1, scale: 1, y: 0 }}
+    exit={{ opacity: 0, scale: 0.95, y: -20 }}
+    className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-2xl mx-auto min-h-[50vh]"
+  >
+    <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-6 border border-primary/20 shadow-xl shadow-primary/5">
+      <Scale className="w-10 h-10 text-primary" />
+    </div>
+    <h2 className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white mb-4 tracking-tight">
+      {title}
+    </h2>
+    <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg font-medium leading-relaxed max-w-md">
+      {desc}
+    </p>
+    <div className="mt-10 flex items-center gap-3 px-5 py-2.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
+      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 animate-pulse">
+        Waiting for your input...
+      </span>
+    </div>
+  </motion.div>
+);
+
 
 
 const SendRipple = ({ onComplete }) => {
@@ -712,6 +767,7 @@ const Chat = () => {
   const token = user?.token;
   const [audioSpeed, setAudioSpeed] = useState(v.speed);
   const [isVoiceSettingsOpen, setIsVoiceSettingsOpen] = useState(false);
+  const manualToolSelectionRef = useRef(null);
   const [isPlayingSample, setIsPlayingSample] = useState(false);
   const sampleAudioRef = useRef(null);
   const [imageAspectRatio, setImageAspectRatio] = useState('1:1');
@@ -750,9 +806,21 @@ const Chat = () => {
       return; // Do not clear the URL parameter so it persists on refresh
     }
 
-    if (modeParam || toolParam) {
+    if (modeParam || (toolParam && !toolParam.startsWith('legal_'))) {
       // Simply clear other params and land in chat without any popups or auto-activations
       navigate(location.pathname, { replace: true });
+    }
+
+    // Auto-activate legal tools from URL if they exist
+    if (toolParam?.startsWith('legal_') && selectedLegalTool?.id !== toolParam) {
+      if (manualToolSelectionRef.current === toolParam) {
+        // Just cleared - reset ref and skip to avoid double toast
+        manualToolSelectionRef.current = null;
+        return;
+      }
+      console.log(`[RouteActivation] Activating legal tool from URL: ${toolParam}`);
+      const legalTool = PREMIUM_TOOLS.find(t => t.id === toolParam);
+      activateToolWithTypingEffect(toolParam, legalTool?.name, true);
     }
   }, [location.search, navigate, location.pathname]);
 
@@ -3356,7 +3424,7 @@ const Chat = () => {
   const isSendingRef = useRef(false);
 
 
-  const activateToolWithTypingEffect = (toolKey, toolName) => {
+  const activateToolWithTypingEffect = (toolKey, toolName, shouldToast = true) => {
     // 1. Set Primary Modes
     setCurrentMode('LEGAL_TOOLKIT');
     setActiveLegalToolkit(false); // Close the toolkit modal immediately
@@ -3396,11 +3464,13 @@ const Chat = () => {
     if (inputRef.current) inputRef.current.focus();
 
     // 5. Professional Activation Feedback (Toast)
-    const feedbackMsg = toolKey === 'legal_precedents' || toolKey === 'legal_case_law_research'
-      ? "Fetching relevant case laws..."
-      : "Initializing legal workflow...";
+    if (shouldToast) {
+      toast.dismiss(); // Clear any previous tool activation toasts
+      const feedbackMsg = toolKey === 'legal_precedents' || toolKey === 'legal_case_law_research'
+        ? "Fetching relevant case laws..."
+        : "Initializing legal workflow...";
 
-    toast.success(
+      toast.success(
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
           <Scale size={14} className="text-indigo-600" />
@@ -3420,6 +3490,7 @@ const Chat = () => {
         }
       }
     );
+    }
   };
 
   const handleSuggestionClick = (text) => {
@@ -5937,7 +6008,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
 
         {/* Header - Minimalist with Profile and Theme - Hidden on mobile as it's now in the navbar */}
         <AnimatePresence>
-          {isHeaderVisible && (
+          {isHeaderVisible && !(currentMode === 'LEGAL_TOOLKIT' && (legalView === 'PRECEDENTS' || legalView === 'DASHBOARD' || selectedLegalTool?.id === 'legal_my_case')) && (
             <motion.div
               initial={{ y: -50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -7075,6 +7146,15 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                 {messages.length === 0 && currentCase && selectedLegalTool?.id === 'legal_my_case' && location.pathname !== '/dashboard/cases' && (
                   <LegalWorkspaceWelcome currentCase={currentCase} />
                 )}
+
+                <AnimatePresence>
+                  {messages.length === 0 && !inputValue && !isSessionLoading && currentMode === 'LEGAL_TOOLKIT' && selectedLegalTool && LEGAL_TOOL_WELCOME_MESSAGES[selectedLegalTool.id] && (
+                    <ToolActivationMessage 
+                      title={LEGAL_TOOL_WELCOME_MESSAGES[selectedLegalTool.id].title}
+                      desc={LEGAL_TOOL_WELCOME_MESSAGES[selectedLegalTool.id].desc}
+                    />
+                  )}
+                </AnimatePresence>
 
                 <div ref={messagesEndRef} />
               </motion.div>
@@ -9114,12 +9194,17 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
               setCurrentMode('LEGAL_TOOLKIT');
               setActiveLegalToolkit(false);
               fetchLegalCases();
+              // Sync URL for route-based navbar visibility
+              navigate('/dashboard/cases', { replace: true });
               return;
             }
 
             // If we are currently inside a specific case (My Case context), stay in that context visually
             // rather than switching to a generic tool card.
-            activateToolWithTypingEffect(tool.id, tool.name);
+            manualToolSelectionRef.current = tool.id;
+            activateToolWithTypingEffect(tool.id, tool.name, true);
+            // Sync URL for route-based navbar visibility
+            navigate(`${location.pathname}?tool=${tool.id}`, { replace: true });
 
             // If a case is active, append activation message rather than clearing history
             setMessages(prev => prev.filter(m => !m.isSystemLog).concat({

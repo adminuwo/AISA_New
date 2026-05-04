@@ -167,8 +167,8 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
         toast.success("✅ Citation copied", {
             style: {
                 borderRadius: '12px',
-                background: '#1e293b',
-                color: '#fff',
+                background: 'var(--color-card)',
+                color: 'var(--color-maintext)',
                 fontSize: '11px',
                 fontWeight: '900',
                 textTransform: 'uppercase',
@@ -241,7 +241,7 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
 
         setIsPdfLoading(true);
         const loadingToast = toast.loading(t('generatingPDF'), {
-            style: { borderRadius: '12px', background: '#333', color: '#fff', fontSize: '12px' }
+            style: { borderRadius: '12px', background: 'var(--color-card)', color: 'var(--color-maintext)', fontSize: '12px' }
         });
 
         try {
@@ -319,13 +319,13 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
         return (
             <div className="precedent-selection-container max-w-6xl mx-auto py-8 px-4">
                 <div className="text-center mb-10">
-                    <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-indigo-100">
-                        <Folder size={32} className="text-indigo-600" />
+                    <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-indigo-500/20">
+                        <Folder size={32} className="text-indigo-400" />
                     </div>
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
+                    <h2 className="text-2xl font-black text-maintext tracking-tight mb-2">
                         {t('selectCaseToAnalyze')}
                     </h2>
-                    <p className="text-xs text-slate-500 font-medium max-w-md mx-auto">
+                    <p className="text-xs text-subtext font-medium max-w-md mx-auto">
                         {t('chooseCaseDescription')}
                     </p>
                 </div>
@@ -335,29 +335,29 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
                         <motion.div
                             key={c._id}
                             whileHover={{ y: -3 }}
-                            className="case-card bg-white border border-slate-200 rounded-[20px] p-5 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all cursor-pointer flex flex-col justify-between"
+                            className="case-card bg-card border border-border rounded-[20px] p-5 shadow-sm hover:shadow-lg hover:border-indigo-500/50 transition-all cursor-pointer flex flex-col justify-between"
                             onClick={() => onCaseClick(c)}
                         >
                             <div>
                                 <div className="flex items-center justify-between mb-3">
-                                    <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
-                                        <Scale size={14} className="text-slate-600" />
+                                    <div className="w-8 h-8 bg-background rounded-lg flex items-center justify-center">
+                                        <Scale size={14} className="text-subtext" />
                                     </div>
-                                    <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-50 text-slate-500 rounded-md">
+                                    <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 bg-background text-subtext rounded-md">
                                         {c.caseType || 'General'}
                                     </span>
                                 </div>
-                                <h3 className="text-sm font-black text-slate-900 mb-1.5 line-clamp-1">{c.name}</h3>
-                                <p className="text-[10px] text-slate-500 line-clamp-2 mb-4 font-medium leading-relaxed">
+                                <h3 className="text-sm font-black text-maintext mb-1.5 line-clamp-1">{c.name}</h3>
+                                <p className="text-[10px] text-subtext line-clamp-2 mb-4 font-medium leading-relaxed">
                                     {(c.summary || c.caseSummary) ? truncateText(c.summary || c.caseSummary, 110) : "No description provided for this case."}
                                 </p>
                             </div>
 
-                            <div className="case-card-footer flex items-center justify-between pt-3 border-t border-slate-50">
-                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                            <div className="case-card-footer flex items-center justify-between pt-3 border-t border-border">
+                                <span className="text-[9px] text-subtext/60 font-bold uppercase tracking-wider">
                                     {new Date(c.updatedAt).toLocaleDateString()}
                                 </span>
-                                <button className="analyze-btn flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-all">
+                                <button className="analyze-btn flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-all">
                                     Analyze Precedents <ArrowRight size={12} />
                                 </button>
                             </div>
@@ -367,12 +367,12 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
                     <motion.div
                         whileHover={{ scale: 1.02 }}
                         onClick={onCreateCase}
-                        className="border-2 border-dashed border-slate-200 rounded-[20px] p-5 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-all min-h-[140px]"
+                        className="border-2 border-dashed border-border rounded-[20px] p-5 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all min-h-[140px]"
                     >
-                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                            <Plus size={20} className="text-slate-400" />
+                        <div className="w-10 h-10 rounded-full bg-card flex items-center justify-center">
+                            <Plus size={20} className="text-subtext" />
                         </div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">New Case</span>
+                        <span className="text-[10px] font-black text-subtext uppercase tracking-widest">New Case</span>
                     </motion.div>
                 </div>
             </div>
@@ -381,16 +381,16 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
 
     const renderEmptyCases = () => (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                <Briefcase size={48} className="text-slate-200" />
+            <div className="w-24 h-24 bg-card rounded-full flex items-center justify-center mb-6">
+                <Briefcase size={48} className="text-subtext" />
             </div>
-            <h3 className="text-2xl font-black text-slate-800 mb-2">No Cases Found</h3>
-            <p className="text-slate-500 max-w-sm mb-8 font-medium">
+            <h3 className="text-2xl font-black text-maintext mb-2">No Cases Found</h3>
+            <p className="text-subtext max-w-sm mb-8 font-medium">
                 You haven't created any case workspaces yet. Create your first case to start using AI Legal Precedents.
             </p>
             <button
                 onClick={onCreateCase}
-                className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-600 shadow-xl shadow-slate-200 transition-all"
+                className="flex items-center gap-2 bg-indigo-600 text-white px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 shadow-xl shadow-indigo-500/20 transition-all"
             >
                 <Plus size={18} /> Create New Case
             </button>
@@ -407,8 +407,8 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
                 />
                 <Scale size={28} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600 animate-pulse" />
             </div>
-            <h3 className="text-xl font-black text-slate-900 uppercase tracking-[0.2em] animate-pulse">{t('analyzingCase')}</h3>
-            <p className="text-slate-400 mt-2 font-medium text-sm">{t('crossReferencing')}</p>
+            <h3 className="text-xl font-black text-maintext uppercase tracking-[0.2em] animate-pulse">{t('analyzingCase')}</h3>
+            <p className="text-subtext mt-2 font-medium text-sm">{t('crossReferencing')}</p>
         </div>
     );
 
@@ -423,50 +423,50 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
     };
 
     return (
-        <div className="precedent-module-container flex-1 flex flex-col min-h-0 bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-2xl m-4">
+        <div className="precedent-module-container flex-1 flex flex-col min-h-0 bg-background rounded-3xl overflow-hidden border border-border shadow-2xl m-4">
             {/* Header */}
-            <div className="precedent-header px-4 sm:px-8 py-4 sm:py-6 bg-white border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sticky top-0 z-20 backdrop-blur-md bg-white/90">
+            <div className="precedent-header px-4 sm:px-8 py-4 sm:py-6 bg-background/90 border-b border-border flex flex-col lg:flex-row lg:items-center justify-between gap-4 sticky top-0 z-20 backdrop-blur-md">
                 <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                     <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={handleLocalBack}
-                        className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0 mt-1 sm:mt-0"
+                        className="p-2 hover:bg-card rounded-full transition-colors shrink-0 mt-1 sm:mt-0"
                     >
-                        <ArrowLeft size={20} className="text-slate-600" />
+                        <ArrowLeft size={20} className="text-subtext" />
                     </motion.button>
                     <div className="min-w-0 flex-1">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1 sm:mb-0">
-                            <h2 className="text-lg sm:text-xl font-black text-slate-900 truncate">
+                            <h2 className="text-lg sm:text-xl font-black text-maintext truncate">
                                 {t('legalPrecedentsTitle')}
                             </h2>
                             {activeCase && mode === 'CURRENT' && (
-                                <div className="flex items-center gap-2 px-2.5 py-1 bg-indigo-50 border border-indigo-100 rounded-lg w-fit max-w-full">
-                                    <Briefcase size={10} className="text-indigo-600 shrink-0" />
-                                    <span className="text-[9px] sm:text-[10px] font-black text-indigo-700 uppercase tracking-widest truncate max-w-[120px] sm:max-w-[200px]">
+                                <div className="flex items-center gap-2 px-2.5 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-lg w-fit max-w-full">
+                                    <Briefcase size={10} className="text-indigo-400 shrink-0" />
+                                    <span className="text-[9px] sm:text-[10px] font-black text-indigo-300 uppercase tracking-widest truncate max-w-[120px] sm:max-w-[200px]">
                                         {activeCase.name}
                                     </span>
                                     <button
                                         onClick={() => setIsCaseListOpen(true)}
-                                        className="text-[8px] sm:text-[9px] font-bold text-slate-400 hover:text-indigo-600 ml-1 transition-colors underline underline-offset-2 shrink-0"
+                                        className="text-[8px] sm:text-[9px] font-bold text-subtext hover:text-indigo-400 ml-1 transition-colors underline underline-offset-2 shrink-0"
                                     >
                                         Change
                                     </button>
                                 </div>
                             )}
                         </div>
-                        <p className="text-[10px] sm:text-xs text-slate-500 font-medium uppercase tracking-wider line-clamp-1">
+                        <p className="text-[10px] sm:text-xs text-subtext font-medium uppercase tracking-wider line-clamp-1">
                             {t('judgementDiscoveryEngine')}
                         </p>
                     </div>
                 </div>
 
-                <div className="mode-toggle flex bg-slate-100 p-1 rounded-xl border border-slate-200 w-full sm:w-fit overflow-x-auto no-scrollbar">
+                <div className="mode-toggle flex bg-card p-1 rounded-xl border border-border w-full sm:w-fit overflow-x-auto no-scrollbar">
                     <button
                         onClick={() => { setMode('CURRENT'); if (!selectedProjectId) resetSelection(); }}
                         className={`px-3 sm:px-4 py-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none whitespace-nowrap ${mode === 'CURRENT'
-                            ? 'bg-white text-indigo-600 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700'
+                            ? 'bg-background text-indigo-400 shadow-sm'
+                            : 'text-subtext hover:text-maintext'
                             }`}
                     >
                         {mode === 'CURRENT' && <CheckCircle2 size={12} />} {t('currentCaseMode')}
@@ -474,8 +474,8 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
                     <button
                         onClick={() => setMode('MANUAL')}
                         className={`px-3 sm:px-4 py-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 flex-1 sm:flex-none whitespace-nowrap ${mode === 'MANUAL'
-                            ? 'bg-white text-indigo-600 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700'
+                            ? 'bg-background text-indigo-400 shadow-sm'
+                            : 'text-subtext hover:text-maintext'
                             }`}
                     >
                         {mode === 'MANUAL' && <CheckCircle2 size={12} />} {t('manualSearchMode')}
@@ -499,13 +499,13 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
                                                 onChange={(e) => setQuery(e.target.value)}
                                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                                 placeholder={t('searchPlaceholder')}
-                                                className="w-full relative z-10 bg-white border-2 border-slate-100 focus:border-indigo-500 rounded-2xl px-4 sm:px-6 py-4 sm:py-5 pl-12 sm:pl-14 text-xs sm:text-sm font-medium shadow-sm transition-all outline-none"
+                                                className="w-full relative z-10 bg-card border-2 border-border focus:border-indigo-500 rounded-2xl px-4 sm:px-6 py-4 sm:py-5 pl-12 sm:pl-14 text-xs sm:text-sm font-medium text-maintext shadow-sm transition-all outline-none"
                                             />
-                                            <Search className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors z-20" size={18} />
+                                            <Search className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-subtext group-focus-within:text-indigo-500 transition-colors z-20" size={18} />
                                             <button
                                                 onClick={() => handleSearch()}
                                                 disabled={isLoading || !query}
-                                                className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 bg-slate-900 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 disabled:opacity-50 transition-all z-20"
+                                                className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 bg-indigo-600 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 disabled:opacity-50 transition-all z-20"
                                             >
                                                 {isLoading ? '...' : 'Search'}
                                             </button>
@@ -530,9 +530,9 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
                                 ) : (
                                     !isLoading && (
                                         <div className="flex flex-col items-center justify-center py-20 text-center opacity-50">
-                                            <BookOpen size={48} className="text-slate-300 mb-4" />
-                                            <h3 className="text-lg font-bold text-slate-800">No Precedents Found</h3>
-                                            <p className="text-xs text-slate-500 max-w-xs mt-2 font-medium">
+                                            <BookOpen size={48} className="text-subtext mb-4" />
+                                            <h3 className="text-lg font-bold text-maintext">No Precedents Found</h3>
+                                            <p className="text-xs text-subtext max-w-xs mt-2 font-medium">
                                                 {mode === 'CURRENT'
                                                     ? "We couldn't find relevant precedents based on this case's facts. Try refining the case documents or use manual search."
                                                     : "Enter a search query to discover relevant case laws and legal principles."}
@@ -607,35 +607,35 @@ const PrecedentCard = ({ caseItem, onClick, onCopyCitation, t }) => {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -4, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
-            className="precedent-card group bg-white border border-slate-200 rounded-2xl overflow-hidden cursor-pointer shadow-sm transition-all"
+            whileHover={{ y: -4, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.3)" }}
+            className="precedent-card group bg-card border border-border rounded-2xl overflow-hidden cursor-pointer shadow-sm transition-all"
             onClick={onClick}
         >
             <div className="precedent-card-body p-6">
                 <div className="precedent-card-header flex justify-between items-start mb-4">
                     <div className="flex-1">
-                        <h3 className="text-base font-black text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug">
+                        <h3 className="text-base font-black text-maintext group-hover:text-indigo-400 transition-colors leading-snug">
                             {case_identity.case_name || caseItem.case_name}
                         </h3>
-                        <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-500 font-bold uppercase tracking-wider">
+                        <div className="flex items-center gap-3 mt-1 text-[11px] text-subtext font-bold uppercase tracking-wider">
                             <span className="flex items-center gap-1"><Gavel size={12} /> {case_identity.court || caseItem.court}</span>
                             <span>•</span>
                             <span className="flex items-center gap-1"><Calendar size={12} /> {case_identity.year || caseItem.year}</span>
                         </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                        <div className="px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-full text-[10px] font-black">
+                        <div className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] font-black">
                             {similarity.relevance_score || caseItem.relevance_score || 0}% {t('relevance')}
                         </div>
                     </div>
                 </div>
 
-                <p className="precedent-facts text-xs text-slate-600 leading-relaxed line-clamp-2 mb-4 font-medium italic">
+                <p className="precedent-facts text-xs text-subtext leading-relaxed line-clamp-2 mb-4 font-medium italic">
                     "{case_context.facts || caseItem.facts || caseItem.summary}"
                 </p>
 
-                <div className="precedent-reasoning-preview bg-slate-50 rounded-xl p-4 border border-slate-100 mb-4">
-                    <div className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                <div className="precedent-reasoning-preview bg-background rounded-xl p-4 border border-border mb-4">
+                    <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                         <Shield size={10} /> {t('legalReasoning')}
                     </div>
                     <ReasoningSection
@@ -647,7 +647,7 @@ const PrecedentCard = ({ caseItem, onClick, onCopyCitation, t }) => {
                 <div className="precedent-card-footer flex items-center justify-between">
                     <div className="precedent-tags-container flex flex-wrap gap-1.5">
                         {caseItem.tags?.slice(0, 3).map((tag, i) => (
-                            <span key={i} className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[9px] font-bold uppercase tracking-tight">
+                            <span key={i} className="px-2 py-0.5 bg-background text-subtext rounded-md text-[9px] font-bold uppercase tracking-tight">
                                 {tag}
                             </span>
                         ))}
@@ -655,14 +655,14 @@ const PrecedentCard = ({ caseItem, onClick, onCopyCitation, t }) => {
                     <div className="precedent-actions flex items-center gap-2">
                         <button
                             onClick={(e) => { e.stopPropagation(); onCopyCitation(); }}
-                            className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-all group/btn"
+                            className="p-2 hover:bg-border rounded-lg text-subtext hover:text-indigo-400 transition-all group/btn"
                             title="Copy Citation"
                         >
                             <Copy size={16} className="group-hover/btn:scale-110 transition-transform" />
                         </button>
                         <motion.div
                             whileHover={{ x: 4 }}
-                            className="flex items-center gap-1 text-[10px] font-black text-indigo-600 uppercase tracking-widest"
+                            className="flex items-center gap-1 text-[10px] font-black text-indigo-400 uppercase tracking-widest"
                         >
                             {t('intelligenceReport')} <ChevronRight size={14} />
                         </motion.div>
@@ -726,7 +726,7 @@ export const CaseDetailView = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="precedent-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-0 sm:p-6 bg-slate-900/40 backdrop-blur-sm"
+            className="precedent-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-0 sm:p-6 bg-background/80 backdrop-blur-sm"
         >
             <div className="absolute inset-0" onClick={onClose} />
 
@@ -735,31 +735,31 @@ export const CaseDetailView = ({
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
                 transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                className="precedent-detail-modal relative w-full max-w-[1200px] h-full sm:h-[90vh] bg-[#F8FAFC] rounded-0 sm:rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col border border-[#E2E8F0]"
+                className="precedent-detail-modal relative w-full max-w-[1200px] h-full sm:h-[90vh] bg-background rounded-0 sm:rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col border border-border"
             >
                 {/* Header Section */}
-                <div className="precedent-modal-header px-6 sm:px-8 py-5 sm:py-6 bg-white border-b border-[#E2E8F0] flex justify-between items-center sticky top-0 z-20">
+                <div className="precedent-modal-header px-6 sm:px-8 py-5 sm:py-6 bg-background border-b border-border flex justify-between items-center sticky top-0 z-20">
                     <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-100">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-600 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
                             <Gavel size={20} className="text-white" />
                         </div>
                         <div className="overflow-hidden">
-                            <h2 className="text-lg sm:text-xl font-bold text-[#0F172A] truncate tracking-tight leading-tight mb-0.5 sm:mb-1">
+                            <h2 className="text-lg sm:text-xl font-bold text-maintext truncate tracking-tight leading-tight mb-0.5 sm:mb-1">
                                 {case_identity.case_name || caseItem.case_name}
                             </h2>
-                            <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-[10px] sm:text-[11px] text-[#94A3B8] font-semibold uppercase tracking-wider">
+                            <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-[10px] sm:text-[11px] text-subtext font-semibold uppercase tracking-wider">
                                 <span className="flex items-center gap-1.5"><Scale size={12} /> {case_identity.court || caseItem.court}</span>
                                 <span className="flex items-center gap-1.5"><Calendar size={12} /> {case_identity.year || caseItem.year}</span>
                                 <span className="flex items-center gap-1.5"><FileText size={12} /> {case_identity.citation || caseItem.citation}</span>
                                 {(case_identity.district || case_identity.area) && (
-                                    <span className="flex items-center gap-1.5 text-indigo-500"><MapPin size={12} /> {[case_identity.district, case_identity.area].filter(Boolean).join(', ')}</span>
+                                    <span className="flex items-center gap-1.5 text-indigo-400"><MapPin size={12} /> {[case_identity.district, case_identity.area].filter(Boolean).join(', ')}</span>
                                 )}
                             </div>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 hover:bg-slate-100 rounded-xl transition-all text-[#94A3B8] hover:text-[#0F172A]"
+                        className="p-2 hover:bg-card rounded-xl transition-all text-subtext hover:text-maintext"
                     >
                         <X size={24} />
                     </button>
@@ -772,14 +772,14 @@ export const CaseDetailView = ({
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center text-center p-8"
+                            className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center text-center p-8"
                         >
                             <div className="relative mb-6">
-                                <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
+                                <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin" />
                                 <Brain className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600 animate-pulse" size={24} />
                             </div>
-                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-2">Analyzing New Case Context</h3>
-                            <p className="text-xs text-slate-500 font-medium max-w-xs">
+                            <h3 className="text-lg font-black text-maintext uppercase tracking-tight mb-2">Analyzing New Case Context</h3>
+                            <p className="text-xs text-subtext font-medium max-w-xs">
                                 Recalculating relevance, reasoning match, and strategic alignment for your newly selected case...
                             </p>
                         </motion.div>
@@ -792,7 +792,7 @@ export const CaseDetailView = ({
                     <div className="precedent-modal-main md:w-[65%] overflow-y-auto custom-scrollbar px-6 sm:px-8 py-6 sm:py-8 space-y-6 min-h-0 overscroll-contain">
 
                         {/* Case Facts */}
-                        <div className="bg-white p-6 rounded-[20px] border border-[#E2E8F0] shadow-sm">
+                        <div className="bg-card p-6 rounded-[20px] border border-border shadow-sm">
                             <Section
                                 title={t('caseFacts')}
                                 content={case_context.facts || caseItem.facts}
@@ -803,11 +803,11 @@ export const CaseDetailView = ({
                         </div>
 
                         {/* Legal Issue */}
-                        <div className="bg-[#EEF2FF] p-6 rounded-[20px] border border-indigo-100/50">
+                        <div className="bg-indigo-500/10 p-6 rounded-[20px] border border-indigo-500/20">
                             <Section
                                 title={t('coreLegalIssue')}
                                 content={case_context.legal_issue || caseItem.issue}
-                                icon={<AlertCircle size={18} className="text-indigo-600" />}
+                                icon={<AlertCircle size={18} className="text-indigo-400" />}
                                 limit={500}
                                 isIssue
                                 t={t}
@@ -815,14 +815,14 @@ export const CaseDetailView = ({
                         </div>
 
                         {/* Reasoning */}
-                        <div className="bg-white p-6 rounded-[20px] border border-[#E2E8F0] shadow-sm">
-                            <h4 className="text-[11px] font-black text-[#94A3B8] uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
-                                <Brain size={18} className="text-indigo-500" /> {t('judgmentReasoning')}
+                        <div className="bg-card p-6 rounded-[20px] border border-border shadow-sm">
+                            <h4 className="text-[11px] font-black text-subtext uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
+                                <Brain size={18} className="text-indigo-400" /> {t('judgmentReasoning')}
                             </h4>
                             <div className="space-y-4">
                                 {formatToBullets(judgment_basis.legal_reasoning || caseItem.reasoning || caseItem.ratio_decidendi).map((point, i) => (
-                                    <div key={i} className="flex gap-3 text-[14px] text-[#475569] leading-relaxed font-medium">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0 mt-2" />
+                                    <div key={i} className="flex gap-3 text-[14px] text-subtext leading-relaxed font-medium">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0 mt-2" />
                                         <p>{point}</p>
                                     </div>
                                 ))}
@@ -830,13 +830,13 @@ export const CaseDetailView = ({
                         </div>
 
                         {/* Takeaways */}
-                        <div className="bg-white p-6 rounded-[20px] border border-[#E2E8F0] shadow-sm">
-                            <h4 className="text-[11px] font-black text-[#94A3B8] uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
-                                <Zap size={18} className="text-amber-500" /> {t('strategicTakeaways')}
+                        <div className="bg-card p-6 rounded-[20px] border border-border shadow-sm">
+                            <h4 className="text-[11px] font-black text-subtext uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
+                                <Zap size={18} className="text-amber-400" /> {t('strategicTakeaways')}
                             </h4>
                             <div className="grid grid-cols-1 gap-4">
                                 {(key_takeaways || caseItem.key_takeaways || []).map((item, i) => (
-                                    <div key={i} className="flex gap-3 text-[14px] text-[#475569] leading-relaxed font-medium">
+                                    <div key={i} className="flex gap-3 text-[14px] text-subtext leading-relaxed font-medium">
                                         <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 mt-2" />
                                         <span>{item}</span>
                                     </div>
@@ -846,11 +846,11 @@ export const CaseDetailView = ({
                     </div>
 
                     {/* RIGHT PANEL - Insights (35%) */}
-                    <div className="precedent-modal-sidebar md:w-[35%] bg-[#F8FAFC] border-l border-[#E2E8F0] p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar">
+                    <div className="precedent-modal-sidebar md:w-[35%] bg-background border-l border-border p-6 sm:p-8 space-y-6 overflow-y-auto custom-scrollbar">
 
                         {/* SMART ACTIONS */}
                         <div className="space-y-4">
-                            <h4 className="text-[11px] font-black text-[#94A3B8] uppercase tracking-[0.2em]">Smart Assistant Actions</h4>
+                            <h4 className="text-[11px] font-black text-subtext uppercase tracking-[0.2em]">Smart Assistant Actions</h4>
                             <div className="flex flex-col gap-2">
                                 <button
                                     onClick={onSummarize}
@@ -880,12 +880,12 @@ export const CaseDetailView = ({
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0 }}
-                                    className="p-6 bg-white rounded-3xl border-2 border-dashed border-indigo-100 flex flex-col items-center justify-center text-center gap-3"
+                                    className="p-6 bg-card rounded-3xl border-2 border-dashed border-indigo-500/20 flex flex-col items-center justify-center text-center gap-3"
                                 >
-                                    <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                    <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
                                     <div className="space-y-1">
-                                        <p className="text-[11px] font-black text-indigo-600 uppercase tracking-widest">Generating AI response...</p>
-                                        <p className="text-[10px] text-slate-400">Our senior legal brain is analyzing the judgment</p>
+                                        <p className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">Generating AI response...</p>
+                                        <p className="text-[10px] text-subtext">Our senior legal brain is analyzing the judgment</p>
                                     </div>
                                 </motion.div>
                             ) : (aiResponses.summarize || aiResponses.compare) && (
@@ -898,19 +898,19 @@ export const CaseDetailView = ({
                                     {aiResponses.summarize && (
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 text-amber-600">
+                                                <div className="flex items-center gap-2 text-amber-400">
                                                     <Sparkles size={16} />
                                                     <span className="text-[11px] font-black uppercase tracking-[0.2em]">AI Summary</span>
                                                 </div>
                                                 <button
                                                     onClick={() => onSummarize()}
-                                                    className="p-1.5 hover:bg-amber-50 rounded-lg text-amber-500 transition-all"
+                                                    className="p-1.5 hover:bg-amber-500/10 rounded-lg text-amber-400 transition-all"
                                                     title="Regenerate"
                                                 >
                                                     <RefreshCcw size={12} />
                                                 </button>
                                             </div>
-                                            <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm text-slate-700 text-[12px] leading-relaxed markdown-content">
+                                            <div className="bg-card p-5 rounded-2xl border border-amber-500/20 shadow-sm text-maintext text-[12px] leading-relaxed markdown-content">
                                                 <ReactMarkdown>{aiResponses.summarize}</ReactMarkdown>
                                             </div>
                                         </div>
@@ -919,19 +919,19 @@ export const CaseDetailView = ({
                                     {aiResponses.compare && (
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 text-indigo-600">
+                                                <div className="flex items-center gap-2 text-indigo-400">
                                                     <FileSearch size={16} />
                                                     <span className="text-[11px] font-black uppercase tracking-[0.2em]">Case Comparison</span>
                                                 </div>
                                                 <button
                                                     onClick={() => onCompare()}
-                                                    className="p-1.5 hover:bg-indigo-50 rounded-lg text-indigo-500 transition-all"
+                                                    className="p-1.5 hover:bg-indigo-500/10 rounded-lg text-indigo-400 transition-all"
                                                     title="Regenerate"
                                                 >
                                                     <RefreshCcw size={12} />
                                                 </button>
                                             </div>
-                                            <div className="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm text-slate-700 text-[12px] leading-relaxed markdown-content">
+                                            <div className="bg-card p-5 rounded-2xl border border-indigo-500/20 shadow-sm text-maintext text-[12px] leading-relaxed markdown-content">
                                                 <ReactMarkdown>{aiResponses.compare}</ReactMarkdown>
                                             </div>
                                         </div>
@@ -941,34 +941,34 @@ export const CaseDetailView = ({
                         </AnimatePresence>
 
                         {/* Relevance Score */}
-                        <div className="bg-white p-6 rounded-[20px] border border-[#E2E8F0] shadow-sm space-y-4">
+                        <div className="bg-card p-6 rounded-[20px] border border-border shadow-sm space-y-4">
                             <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-black text-[#94A3B8] uppercase tracking-widest">Relevance Match</span>
-                                <div className="px-3 py-1 bg-emerald-50 text-[#22C55E] border border-emerald-100 rounded-full text-[11px] font-bold">
+                                <span className="text-[11px] font-black text-subtext uppercase tracking-widest">Relevance Match</span>
+                                <div className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[11px] font-bold">
                                     {similarity.relevance_score || caseItem.relevance_score || 0}% {t('relevance')}
                                 </div>
                             </div>
-                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="w-full h-1.5 bg-background rounded-full overflow-hidden">
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${similarity.relevance_score || caseItem.relevance_score || 0}%` }}
                                     className="h-full bg-emerald-500 rounded-full"
                                 />
                             </div>
-                            <button className="w-full py-3 bg-indigo-50 text-indigo-600 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] hover:bg-indigo-100 transition-all">
+                            <button className="w-full py-3 bg-indigo-500/10 text-indigo-400 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] hover:bg-indigo-500/20 transition-all">
                                 {t('landmarkJudgement')}
                             </button>
                         </div>
 
                         {/* Final Verdict */}
-                        <div className="bg-white p-6 rounded-[24px] border border-[#E2E8F0] shadow-sm relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 -z-0 opacity-40" />
+                        <div className="bg-card p-6 rounded-[24px] border border-border shadow-sm relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 -z-0 opacity-40" />
                             <div className="relative z-10">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h4 className="text-[11px] font-black text-[#94A3B8] uppercase tracking-[0.2em]">{t('finalVerdict')}</h4>
+                                    <h4 className="text-[11px] font-black text-subtext uppercase tracking-[0.2em]">{t('finalVerdict')}</h4>
                                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${judgment_outcome.type?.toLowerCase().includes('allow')
-                                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                                            : 'bg-red-50 text-red-600 border border-red-100'
+                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
                                         }`}>
                                         {judgment_outcome.type || "Allowed"}
                                     </span>
@@ -976,16 +976,16 @@ export const CaseDetailView = ({
 
                                 <div className="space-y-6">
                                     <div>
-                                        <p className="text-[14px] font-bold text-[#0F172A] leading-relaxed italic mb-1">
+                                        <p className="text-[14px] font-bold text-maintext leading-relaxed italic mb-1">
                                             "{judgment_outcome.final_decision || caseItem.decision}"
                                         </p>
                                     </div>
 
-                                    <div className="space-y-3 pt-4 border-t border-slate-50">
-                                        <div className="text-[10px] font-black text-[#94A3B8] uppercase tracking-widest mb-2">Court Held</div>
+                                    <div className="space-y-3 pt-4 border-t border-border">
+                                        <div className="text-[10px] font-black text-subtext uppercase tracking-widest mb-2">Court Held</div>
                                         {formatToBullets(judgment_outcome.court_held || judgment_outcome.final_decision).slice(0, 2).map((point, i) => (
-                                            <div key={i} className="flex gap-2 text-[12px] text-[#475569] font-medium leading-relaxed">
-                                                <div className="text-emerald-500">•</div>
+                                            <div key={i} className="flex gap-2 text-[12px] text-subtext font-medium leading-relaxed">
+                                                <div className="text-emerald-400">•</div>
                                                 <p>{point}</p>
                                             </div>
                                         ))}
@@ -996,10 +996,10 @@ export const CaseDetailView = ({
 
                         {/* Key Principles */}
                         <div className="space-y-4">
-                            <h4 className="text-[11px] font-black text-[#94A3B8] uppercase tracking-[0.2em]">{t('legalPrinciples')}</h4>
+                            <h4 className="text-[11px] font-black text-subtext uppercase tracking-[0.2em]">{t('legalPrinciples')}</h4>
                             <div className="flex flex-wrap gap-2">
                                 {(judgment_basis.principles_applied || []).map((p, i) => (
-                                    <span key={i} className="px-3 py-1.5 bg-white border border-[#E2E8F0] text-[#475569] text-[11px] font-bold rounded-lg shadow-sm hover:border-indigo-200 transition-colors cursor-default">
+                                    <span key={i} className="px-3 py-1.5 bg-card border border-border text-subtext text-[11px] font-bold rounded-lg shadow-sm hover:border-indigo-400/50 transition-colors cursor-default">
                                         {p}
                                     </span>
                                 ))}
@@ -1008,11 +1008,11 @@ export const CaseDetailView = ({
 
                         {/* Similarity Analysis */}
                         <div className="space-y-4">
-                            <h4 className="text-[11px] font-black text-[#94A3B8] uppercase tracking-[0.2em]">{t('similarityAnalysis')}</h4>
+                            <h4 className="text-[11px] font-black text-subtext uppercase tracking-[0.2em]">{t('similarityAnalysis')}</h4>
                             <div className="space-y-2">
                                 {(similarity.matching_factors || []).map((factor, i) => (
-                                    <div key={i} className="flex gap-3 text-[12px] text-[#475569] font-bold leading-relaxed bg-white p-3 rounded-xl border border-[#E2E8F0] shadow-sm">
-                                        <CheckCircle2 size={16} className="text-[#22C55E] shrink-0" />
+                                    <div key={i} className="flex gap-3 text-[12px] text-subtext font-bold leading-relaxed bg-card p-3 rounded-xl border border-border shadow-sm">
+                                        <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
                                         {factor}
                                     </div>
                                 ))}
@@ -1022,7 +1022,7 @@ export const CaseDetailView = ({
                 </div>
 
                 {/* Footer Action Bar */}
-                <div className="precedent-modal-footer px-6 sm:px-8 py-4 sm:py-5 bg-white border-t border-[#E2E8F0] flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 sticky bottom-0 z-20">
+                <div className="precedent-modal-footer px-6 sm:px-8 py-4 sm:py-5 bg-background border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 sticky bottom-0 z-20">
                     <button
                         onClick={onCopyCitation}
                         className="btn-tertiary-cta mobile-priority-3 flex items-center justify-center gap-2 px-5 py-3 text-[11px] font-black uppercase tracking-widest rounded-xl w-full sm:w-auto"
@@ -1035,13 +1035,13 @@ export const CaseDetailView = ({
                             onClick={onDownloadPDF}
                             disabled={isPdfLoading}
                             className={`flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${isPdfLoading
-                                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 hover:shadow-indigo-300 active:scale-[0.98]'
+                                ? 'bg-card text-subtext cursor-not-allowed border border-border'
+                                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 active:scale-[0.98]'
                                 } w-full sm:w-auto`}
                         >
                             {isPdfLoading ? (
                                 <>
-                                    <div className="w-4 h-4 border-2 border-slate-300 border-t-indigo-600 rounded-full animate-spin" />
+                                    <div className="w-4 h-4 border-2 border-border border-t-indigo-600 rounded-full animate-spin" />
                                     <span>{t('generatingPDF')}</span>
                                 </>
                             ) : (
@@ -1093,11 +1093,11 @@ export const Section = ({ title, content, icon, limit = 200, isIssue = false, t 
 
     return (
         <div className="space-y-3">
-            <h4 className="text-[11px] font-black text-[#94A3B8] uppercase tracking-[0.2em] flex items-center gap-2">
+            <h4 className="text-[11px] font-black text-subtext uppercase tracking-[0.2em] flex items-center gap-2">
                 {icon} {title}
             </h4>
             <div className="relative">
-                <p className={`${isIssue ? 'text-[16px] font-bold text-[#0F172A]' : 'text-[14px] font-medium text-[#475569]'} leading-relaxed`}>
+                <p className={`${isIssue ? 'text-[16px] font-bold text-maintext' : 'text-[14px] font-medium text-subtext'} leading-relaxed`}>
                     {isIssue && !content?.includes('?') ? `"${displayText}?"` : displayText}
                     {!isExpanded && shouldTruncate && "..."}
                 </p>
@@ -1124,7 +1124,7 @@ export const ReasoningSection = ({ content, t }) => {
 
     return (
         <div>
-            <p className={`text-[11px] text-slate-800 font-bold leading-relaxed ${!isExpanded ? 'line-clamp-2' : ''}`}>
+            <p className={`text-[11px] text-maintext font-bold leading-relaxed ${!isExpanded ? 'line-clamp-2' : ''}`}>
                 {displayText}
                 {!isExpanded && shouldTruncate && "..."}
             </p>
@@ -1142,26 +1142,26 @@ export const ReasoningSection = ({ content, t }) => {
 
 export const CaseSelectionModal = ({ isOpen, onClose, onSelect, cases, currentProjectId, title, onCreateNew }) => {
     return (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-200"
+                className="bg-background rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-border"
             >
-                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-[#F8FAFC]">
+                <div className="p-6 border-b border-border flex justify-between items-center bg-card">
                     <div>
-                        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{title}</h3>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Select from your existing case files</p>
+                        <h3 className="text-lg font-black text-maintext uppercase tracking-tight">{title}</h3>
+                        <p className="text-[10px] text-subtext font-bold uppercase tracking-widest mt-0.5">Select from your existing case files</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X size={20} /></button>
+                    <button onClick={onClose} className="p-2 hover:bg-border rounded-full transition-colors text-subtext"><X size={20} /></button>
                 </div>
 
                 <div className="p-4 max-h-[450px] overflow-y-auto custom-scrollbar">
                     {cases.length === 0 ? (
                         <div className="py-12 text-center">
-                            <Briefcase size={40} className="text-slate-200 mx-auto mb-3" />
-                            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No cases found</p>
+                            <Briefcase size={40} className="text-subtext mx-auto mb-3" />
+                            <p className="text-sm font-bold text-subtext uppercase tracking-widest">No cases found</p>
                         </div>
                     ) : (
                         cases.map(c => (
@@ -1169,22 +1169,22 @@ export const CaseSelectionModal = ({ isOpen, onClose, onSelect, cases, currentPr
                                 key={c._id}
                                 onClick={() => onSelect(c)}
                                 className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all group text-left mb-2 border ${c._id === currentProjectId
-                                        ? 'bg-indigo-50 border-indigo-200 shadow-sm'
-                                        : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'
+                                    ? 'bg-indigo-500/10 border-indigo-500/20 shadow-sm'
+                                    : 'bg-background border-transparent hover:bg-card hover:border-border'
                                     }`}
                             >
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${c._id === currentProjectId ? 'bg-white' : 'bg-slate-100 group-hover:bg-white'
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${c._id === currentProjectId ? 'bg-card' : 'bg-card group-hover:bg-background'
                                     }`}>
-                                    <Briefcase size={18} className={c._id === currentProjectId ? 'text-indigo-600' : 'text-slate-500 group-hover:text-indigo-600'} />
+                                    <Briefcase size={18} className={c._id === currentProjectId ? 'text-indigo-400' : 'text-subtext group-hover:text-indigo-400'} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className={`text-sm font-black truncate ${c._id === currentProjectId ? 'text-indigo-700' : 'text-slate-800 group-hover:text-indigo-700'}`}>
+                                    <p className={`text-sm font-black truncate ${c._id === currentProjectId ? 'text-indigo-300' : 'text-maintext group-hover:text-indigo-300'}`}>
                                         {c.name}
                                     </p>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{c.caseType || 'General'}</span>
+                                        <span className="text-[9px] text-subtext font-bold uppercase tracking-widest">{c.caseType || 'General'}</span>
                                         {c.updatedAt && (
-                                            <span className="text-[9px] text-slate-300">• {new Date(c.updatedAt).toLocaleDateString()}</span>
+                                            <span className="text-[9px] text-subtext/60">• {new Date(c.updatedAt).toLocaleDateString()}</span>
                                         )}
                                     </div>
                                 </div>
@@ -1193,17 +1193,17 @@ export const CaseSelectionModal = ({ isOpen, onClose, onSelect, cases, currentPr
                                         <Zap size={12} fill="white" />
                                     </div>
                                 ) : (
-                                    <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+                                    <ChevronRight size={16} className="text-border group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
                                 )}
                             </button>
                         ))
                     )}
                 </div>
 
-                <div className="p-6 bg-slate-50 border-t border-slate-100">
+                <div className="p-6 bg-background border-t border-border">
                     <button
                         onClick={onCreateNew}
-                        className="w-full py-4 border-2 border-dashed border-slate-300 rounded-2xl text-[11px] font-black uppercase tracking-widest text-slate-400 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50/30 transition-all flex items-center justify-center gap-2"
+                        className="w-full py-4 border-2 border-dashed border-border rounded-2xl text-[11px] font-black uppercase tracking-widest text-subtext hover:border-indigo-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-all flex items-center justify-center gap-2"
                     >
                         <Plus size={16} /> Create New Case Workspace
                     </button>

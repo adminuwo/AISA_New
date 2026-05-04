@@ -131,20 +131,15 @@ const DashboardLayout = () => {
   const selectedLegalTool = useRecoilValue(activeLegalToolData);
   const legalView = useRecoilValue(legalViewData);
   const isMobile = window.innerWidth <= 768;
-  const isLegalMode = currentMode === 'LEGAL_TOOLKIT' || location.pathname === '/dashboard/cases';
-  const isMainChat = (location.pathname.startsWith('/dashboard/chat') || location.pathname === '/dashboard') && !isLegalMode;
-  
-  // Screens that should have a fixed, non-hiding navbar
-  const isWhitelistedLegalView = isLegalMode && (
-    selectedLegalTool?.id === 'legal_my_case' || 
-    selectedLegalTool?.id === 'legal_precedents' ||
-    legalView === 'DASHBOARD' || 
-    legalView === 'PRECEDENTS'
-  );
+  // ─── Route-based Navbar Visibility Logic ───
+  // Rule: Navbar is HIDDEN ONLY for 'My Case' and 'Legal Precedents'.
+  // It should be VISIBLE for all other features (Draft Maker, Evidence Analyst, etc.)
+  const searchParams = new URLSearchParams(location.search);
+  const toolParam = searchParams.get('tool');
+  const isMyCase = location.pathname === '/dashboard/cases' || toolParam === 'legal_my_case';
+  const isPrecedents = toolParam === 'legal_precedents' || toolParam === 'legal_case_law_research';
 
-  // Rule: In mobile view, render the navbar for Main Chat and ALL Legal Toolkit features.
-  // Auto-hide will be handled by isVisible state.
-  const shouldHideMobileNavbar = isMobile && !isMainChat && !isLegalMode;
+  const shouldHideMobileNavbar = isMobile && (isMyCase || isPrecedents);
 
   // ─── Scroll Direction Logic for Auto-Hide Navbar ───
   const [isVisible, setIsVisible] = useState(true); // visible by default as per requirement
@@ -163,8 +158,8 @@ const DashboardLayout = () => {
           ? window.scrollY
           : (target.scrollTop ?? 0);
 
-      // Always show header when at the very top or if in whitelisted view
-      if (currentScrollY < 10 || isWhitelistedLegalView) {
+      // Always show header when at the very top
+      if (currentScrollY < 10) {
         setIsVisible(true);
         lastScrollYRef.current = currentScrollY;
         return;
@@ -178,16 +173,14 @@ const DashboardLayout = () => {
       }
     };
 
-    // capture: true catches scroll from ALL nested containers (Chat internal scroll, window, etc.)
     window.addEventListener('scroll', handleScroll, { capture: true, passive: true });
     return () => window.removeEventListener('scroll', handleScroll, { capture: true, passive: true });
-  }, [isWhitelistedLegalView]); // Re-bind scroll listener if whitelist changes to ensure correct behavior
+  }, []); // Bind once
 
-  // Force visibility when navigating between routes or entering a whitelisted view
   useEffect(() => {
     setIsVisible(true);
     lastScrollYRef.current = 0;
-  }, [location.pathname, isWhitelistedLegalView]);
+  }, [location.pathname]);
 
   // Sync CSS variable so child pages (Chat) can transition their top-padding in lockstep
   useEffect(() => {
@@ -230,9 +223,9 @@ const DashboardLayout = () => {
       </div>
 
       {!tglState.focusMode && (
-        <Sidebar 
-          isOpen={isSidebarOpen} 
-          onClose={() => setIsSidebarOpen(false)} 
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
           onOpenSettings={() => setIsProfileMenuOpen(true)}
         />
       )}
@@ -302,7 +295,7 @@ const DashboardLayout = () => {
 
         <NotificationCenter isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} />
         {/* Outlet for pages */}
-        <main 
+        <main
           className={`flex-1 ${(location.pathname.includes('/chat') || location.pathname.includes('/cases')) ? 'overflow-hidden' : 'overflow-y-auto'} relative w-full scroll-smooth p-0 scrollbar-hide transition-all duration-300 ease-in-out`}
           style={{ paddingTop: 'var(--mobile-nav-h)' }}
         >
@@ -348,9 +341,9 @@ const NavigateProvider = () => {
 
   return (
     <>
-      <Toaster 
-        position="top-right" 
-        containerStyle={{ zIndex: 99999 }} 
+      <Toaster
+        position="top-right"
+        containerStyle={{ zIndex: 99999 }}
         toastOptions={{
           duration: 2500, // Reduced from default to meet user request for 2-3 sec auto-close
         }}

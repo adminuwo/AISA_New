@@ -109,7 +109,7 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
             initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
             animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
             exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            className="absolute inset-0 z-20 bg-indigo-600/95 rounded-[1.4rem] p-6 flex flex-col justify-between"
+            className="absolute inset-0 z-20 bg-indigo-600/95 rounded-[1.4rem] p-6 flex flex-col justify-start overflow-y-auto custom-scrollbar"
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -138,7 +138,7 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); if (isUnlocked) onClose(); onSelect(tool, isUnlocked); }}
-              className="w-full py-2 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-colors shadow-lg"
+              className="w-full py-2 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-colors shadow-lg mt-4"
             >
               {t('launchNow')}
             </button>
@@ -231,7 +231,7 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
   const SectionTitle = ({ children }) => (
     <div className="flex items-center gap-4 mb-5 mt-8 first:mt-0">
       <div className="w-1 h-1 rounded-full bg-slate-500" />
-      <h4 className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.28em] whitespace-nowrap">{children}</h4>
+      <h4 className="text-[8px] sm:text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.28em] whitespace-nowrap">{children}</h4>
       <div className="h-[1px] flex-1 bg-black/[0.06] dark:bg-white/10" />
     </div>
   );
@@ -309,7 +309,7 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
                     <h1 className="text-[17px] font-black text-slate-900 dark:text-white leading-tight tracking-tight">{tLegal('legalToolkitTitle')}</h1>
                     <div className="flex items-center gap-1">
                       <Sparkles className="w-2.5 h-2.5 text-indigo-500 animate-pulse" />
-                      <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.22em]">{tLegal('legalProfessionalToolkit')}</span>
+                      <span className="text-[7.5px] sm:text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.22em]">{tLegal('legalProfessionalToolkit')}</span>
                     </div>
                   </div>
                 </div>
@@ -353,7 +353,7 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
               </div>
 
               {/* Body */}
-              <div className="relative z-[8] flex-1 overflow-y-auto px-5 sm:px-11 py-5 sm:py-7 custom-scrollbar">
+              <div className="relative z-[8] flex-1 overflow-y-auto px-5 sm:px-11 py-5 sm:py-7 custom-scrollbar min-h-0">
 
                 {!isMaximized && (
                   <div className="mb-6">
