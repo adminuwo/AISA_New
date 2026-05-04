@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Briefcase, Scale, Plus, FolderOpen, Edit2, Trash2, 
+import {
+  Briefcase, Scale, Plus, FolderOpen, Edit2, Trash2,
   Users, ChevronRight, Check, X, ArrowLeft
 } from 'lucide-react';
 import { useLanguage } from '../../../context/LanguageContext';

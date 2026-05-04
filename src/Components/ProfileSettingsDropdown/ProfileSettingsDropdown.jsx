@@ -221,7 +221,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                     const res = await axios.put(apis.profile, { name: nicknameInput }, {
                         headers: { 'Authorization': `Bearer ${user?.token}` }
                     });
-                    
+
                     if (res.data) {
                         // Update local state and storage
                         const updatedUser = setUserData(res.data);
@@ -345,7 +345,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
             if (res.data && res.data.url) {
                 window.location.href = res.data.url;
             }
-        } catch(err) {
+        } catch (err) {
             toast.error("Failed to initiate connection. Please try again.");
         }
     };
@@ -375,7 +375,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
             setUserRecoil(prev => ({ ...prev, user: updatedUser }));
             setUserData(updatedUser);
 
-        } catch(err) {
+        } catch (err) {
             toast.dismiss(loadingToast);
             toast.error("Failed to disconnect. Please try again.");
         }
@@ -400,7 +400,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
 
     const handleDeleteChatSession = async (sessionId) => {
         if (!confirm(t('confirmDeleteChat') || "Are you sure you want to delete this chat session?")) return;
-        
+
         try {
             await axios.delete(`${API}/chat/${sessionId}`, {
                 headers: { 'Authorization': `Bearer ${user?.token}` }
@@ -414,18 +414,18 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
 
     const handleClearAllHistory = async () => {
         if (!confirm(t('confirmClearAllHistory') || "Are you sure you want to delete ALL chat history? This cannot be undone.")) return;
-        
+
         const loading = toast.loading(t('clearingHistory') || "Clearing history...");
         try {
             // Delete sessions one by one or via a bulk endpoint if available. 
             // In ChatSession.js, DELETE /api/chat/:sessionId is for one.
             // Let's see if we can do bulk. For now, individual is safer if no bulk exists.
-            await Promise.all(chatSessions.map(s => 
+            await Promise.all(chatSessions.map(s =>
                 axios.delete(`${API}/chat/${s.sessionId}`, {
                     headers: { 'Authorization': `Bearer ${user?.token}` }
                 })
             ));
-            
+
             toast.dismiss(loading);
             toast.success(t('historyCleared') || 'All history cleared');
             refreshChatSessions();
@@ -503,19 +503,19 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
     });
 
     const renderSettingRow = (label, description, control) => (
-        <div className="flex flex-wrap items-center justify-between py-4 border-b border-gray-100 dark:border-white/5 last:border-0 gap-4">
-            <div className="flex flex-col gap-1 pr-4 min-w-[200px] flex-1">
-                <span className="text-[14px] font-bold text-gray-700 dark:text-gray-200">{label}</span>
-                {description && <span className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">{description}</span>}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-gray-100 dark:border-white/5 last:border-0 gap-4">
+            <div className="flex flex-col gap-1 pr-4 flex-1">
+                <span className="text-sm font-black text-gray-800 dark:text-gray-100 tracking-tight">{label}</span>
+                {description && <span className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed font-medium">{description}</span>}
             </div>
-            <div className="shrink-0">
+            <div className="w-full sm:w-auto shrink-0">
                 {control}
             </div>
         </div>
     );
 
     const renderDropdown = (value, options, onChange, icon) => (
-        <div className="w-[160px] sm:w-[200px]">
+        <div className="w-full sm:w-[200px]">
             <CustomSelect value={value} options={options} onChange={onChange} icon={icon} />
         </div>
     );
@@ -592,16 +592,20 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
     const renderContent = () => {
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
-            const results = allSettings.filter(item => 
-                item.label.toLowerCase().includes(query) || 
+            const results = allSettings.filter(item =>
+                item.label.toLowerCase().includes(query) ||
                 (item.keywords && item.keywords.toLowerCase().includes(query))
             );
             return (
                 <div className="space-y-4">
-                    {results.map(item => <div key={item.id}>{item.component}</div>)}
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 px-1">{t('searchResults') || 'Search Results'}</h3>
+                    {results.map(item => <div key={item.id} className="bg-gray-50/50 dark:bg-white/[0.02] rounded-2xl p-4 border border-border/50">{item.component}</div>)}
                     {results.length === 0 && (
                         <div className="py-20 text-center opacity-50">
-                            <p>No results found for "{searchQuery}"</p>
+                            <div className="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Search className="w-8 h-8 text-subtext/40" />
+                            </div>
+                            <p className="text-sm font-bold">No results found for "{searchQuery}"</p>
                         </div>
                     )}
                 </div>
@@ -613,41 +617,51 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                 return <div className="space-y-0">{allSettings.filter(s => s.tab === 'personalization').map(s => <div key={s.id}>{s.component}</div>)}</div>;
             case 'notifications':
                 return (
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-white/5">
-                            <h3 className="text-xs font-bold text-gray-400">{t('notifications')} ({notifications.length})</h3>
-                            {notifications.length > 0 && <button onClick={clearAllNotifications} className="text-xs font-bold text-primary">{t('clearAll')}</button>}
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between px-1">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">{t('notifications')} ({notifications.length})</h3>
+                            {notifications.length > 0 && <button onClick={clearAllNotifications} className="text-xs font-bold text-primary hover:underline">{t('clearAll')}</button>}
                         </div>
-                        <div className="space-y-3 mt-4">
+                        <div className="space-y-3">
                             {notifications.length > 0 ? notifications.map(n => (
-                                <div key={n.id} className="p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl border border-border flex justify-between gap-4">
-                                    <div>
-                                        <h4 className="font-bold text-sm">{n.title}</h4>
-                                        <p className="text-xs text-subtext">{n.desc}</p>
+                                <div key={n.id} className="p-4 bg-gray-50/80 dark:bg-white/5 rounded-2xl border border-border/50 flex items-start justify-between gap-4 transition-all hover:border-primary/20">
+                                    <div className="space-y-1">
+                                        <h4 className="font-bold text-sm text-maintext leading-tight">{n.title}</h4>
+                                        <p className="text-xs text-subtext leading-relaxed">{n.desc}</p>
                                     </div>
-                                    <button onClick={() => deleteNotification(n.id)} className="text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
+                                    <button onClick={() => deleteNotification(n.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors shrink-0"><Trash2 size={16} /></button>
                                 </div>
-                            )) : <div className="py-20 text-center opacity-40"><p>{t('noNotifications')}</p></div>}
+                            )) : (
+                                <div className="py-20 text-center">
+                                    <div className="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Bell className="w-8 h-8 text-subtext/20" />
+                                    </div>
+                                    <p className="text-sm text-subtext font-medium">{t('noNotifications')}</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 );
             case 'feedback':
                 return (
                     <div className="space-y-6">
-                        <div className="bg-primary/5 rounded-2xl p-6 border border-primary/10">
-                            <h3 className="text-lg font-bold mb-2">Share your feedback</h3>
-                            <p className="text-sm text-subtext mb-4">How can we improve AISA for you?</p>
+                        <div className="bg-primary/5 rounded-[2.5rem] p-5 sm:p-8 border border-primary/20 shadow-xl shadow-primary/5">
+                            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 text-primary">
+                                <MessageSquare className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl sm:text-2xl font-black mb-2 tracking-tight">Share your feedback</h3>
+                            <p className="text-xs sm:text-sm text-subtext mb-8 leading-relaxed font-medium">Your feedback helps us build the future of AISA™. Tell us what you'd like to see next.</p>
                             <textarea
-                                rows={4}
+                                rows={5}
                                 value={issueText}
                                 onChange={(e) => setIssueText(e.target.value)}
                                 placeholder="Tell us what's on your mind..."
-                                className="w-full bg-white dark:bg-zinc-800 rounded-xl p-4 text-sm focus:outline-none border border-border focus:border-primary transition-all text-maintext resize-none"
+                                className="w-full bg-white dark:bg-[#1E2438] rounded-2xl p-4 text-sm focus:outline-none border border-border focus:border-primary transition-all text-maintext resize-none shadow-sm"
                             />
                             <button
                                 onClick={handleSupportSubmit}
                                 disabled={isSending || !issueText.trim()}
-                                className="mt-4 px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all disabled:opacity-50"
+                                className="w-full mt-6 px-8 py-4 bg-primary text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg shadow-primary/30 hover:opacity-90 transition-all disabled:opacity-50 active:scale-[0.98]"
                             >
                                 {isSending ? 'Sending...' : 'Submit Feedback'}
                             </button>
@@ -655,40 +669,25 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                     </div>
                 );
             case 'terms':
-                return (
-                    <div className="space-y-4 h-full flex flex-col">
-                        <div className="flex items-center justify-between mb-4 border-b border-border pb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                                    <Scale className="w-6 h-6 text-primary" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-maintext">{t('termsOfService')}</h2>
-                                    <p className="text-xs text-subtext mt-0.5">{t('lastUpdated')}: January 22, 2026</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-[65vh]">
-                            <TermsOfServiceContent />
-                        </div>
-                    </div>
-                );
             case 'privacy':
+                const isPrivacy = activeTab === 'privacy';
                 return (
-                    <div className="space-y-4 h-full flex flex-col">
-                        <div className="flex items-center justify-between mb-4 border-b border-border pb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                                    <Shield className="w-6 h-6 text-primary" />
+                    <div className="space-y-8 animate-in fade-in duration-500">
+                        <div className="p-5 sm:p-6 bg-gradient-to-br from-primary/10 to-transparent rounded-[2rem] sm:rounded-3xl border border-primary/10">
+                            <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white dark:bg-[#1E2438] flex items-center justify-center shadow-lg text-primary border border-primary/5 shrink-0">
+                                    {isPrivacy ? <Shield className="w-5 h-5 sm:w-6 sm:h-6" /> : <Scale className="w-5 h-5 sm:w-6 sm:h-6" />}
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold text-maintext">{t('privacyPolicy')}</h2>
-                                    <p className="text-xs text-subtext mt-0.5">{t('lastUpdated')}: January 22, 2026</p>
+                                    <h2 className="text-xl sm:text-2xl font-black text-maintext tracking-tight">{isPrivacy ? t('privacyPolicy') : t('termsOfService')}</h2>
+                                    <p className="text-[10px] text-subtext font-bold uppercase tracking-widest mt-0.5 sm:mt-1 opacity-60">{t('lastUpdated')}: Jan 2026</p>
                                 </div>
                             </div>
+                            <p className="text-[11px] sm:text-xs text-subtext leading-relaxed font-medium">Please read our {isPrivacy ? 'privacy policy' : 'terms of service'} carefully to understand how we handle your data and the rules of our platform.</p>
                         </div>
-                        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-[65vh]">
-                            <PrivacyPolicyContent />
+                        
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-maintext space-y-6 leading-relaxed">
+                            {isPrivacy ? <PrivacyPolicyContent /> : <TermsOfServiceContent />}
                         </div>
                     </div>
                 );
@@ -700,7 +699,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-xs font-bold text-gray-400 uppercase">{t('chatHistory')}</h4>
                                 {chatSessions?.length > 0 && (
-                                    <button 
+                                    <button
                                         onClick={handleClearAllHistory}
                                         className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 px-2 py-1 rounded-lg transition-all"
                                     >
@@ -721,14 +720,14 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                                     <div key={s.sessionId} className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-zinc-800 rounded-lg text-xs group">
                                                         <span className="truncate flex-1 font-medium text-gray-600 dark:text-gray-300">{s.title || t('newChat')}</span>
                                                         <div className="flex items-center gap-1">
-                                                            <button 
-                                                                onClick={() => { window.location.href = `/dashboard/chat/${s.sessionId}`; onClose(); }} 
+                                                            <button
+                                                                onClick={() => { window.location.href = `/dashboard/chat/${s.sessionId}`; onClose(); }}
                                                                 className="px-2 py-1 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded font-bold opacity-0 group-hover:opacity-100 transition-all text-[10px]"
                                                             >
                                                                 {t('viewLabel')}
                                                             </button>
-                                                            <button 
-                                                                onClick={(e) => { e.stopPropagation(); handleDeleteChatSession(s.sessionId); }} 
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleDeleteChatSession(s.sessionId); }}
                                                                 className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
                                                                 title="Delete Session"
                                                             >
@@ -768,17 +767,17 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                 return (
                     <div className="space-y-6">
                         {/* Profile Header Card */}
-                        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-3xl p-6 border border-primary/20 shadow-xl shadow-primary/5 relative overflow-hidden group">
+                        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-3xl p-3.5 sm:p-6 border border-primary/20 shadow-xl shadow-primary/5 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                                 <Shield className="w-32 h-32 rotate-12" />
                             </div>
-                            <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
-                                <div 
+                            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 relative z-10">
+                                <div
                                     className="relative group/avatar cursor-pointer shrink-0"
                                     onClick={() => fileInputRef.current?.click()}
                                 >
                                     <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover/avatar:opacity-100 transition-opacity" />
-                                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white dark:bg-zinc-900 flex items-center justify-center text-primary border border-primary/20 shadow-lg overflow-hidden relative z-10 transition-transform group-hover/avatar:scale-105">
+                                    <div className="w-14 h-14 sm:w-24 sm:h-24 rounded-2xl bg-white dark:bg-zinc-900 flex items-center justify-center text-primary border border-primary/20 shadow-lg overflow-hidden relative z-10 transition-transform group-hover/avatar:scale-105">
                                         {user.avatar ? (
                                             <img src={user.avatar} alt={user.name} className="w-full h-full object-cover group-hover/avatar:opacity-50 transition-opacity" />
                                         ) : (
@@ -788,7 +787,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                             <Camera className="w-6 h-6 text-white" />
                                         </div>
                                     </div>
-                                    <button 
+                                    <button
                                         className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center shadow-lg border-2 border-white dark:border-[#161B2E] z-20 hover:scale-110 transition-transform"
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -799,23 +798,22 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                     </button>
                                 </div>
 
-                                <div className="flex-1 text-center sm:text-left space-y-3">
+                                <div className="flex-1 text-center sm:text-left space-y-1.5 sm:space-y-3">
                                     <div>
-                                        <h3 className="text-2xl font-black text-gray-800 dark:text-white capitalize flex items-center justify-center sm:justify-start gap-3">
+                                        <h3 className="text-xl sm:text-2xl font-black text-gray-800 dark:text-white capitalize flex items-center justify-center sm:justify-start gap-2 sm:gap-3">
                                             {user.name}
-                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${
-                                                planName.toLowerCase().includes('pro') ? 'bg-amber-500/20 text-amber-600 border-amber-500/30' : 
-                                                planName.toLowerCase().includes('founder') ? 'bg-purple-500/20 text-purple-600 border-purple-500/30' : 
-                                                'bg-primary/20 text-primary border-primary/30'
-                                            }`}>
+                                            <span className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border shadow-sm ${planName.toLowerCase().includes('pro') ? 'bg-amber-500/20 text-amber-600 border-amber-500/30' :
+                                                    planName.toLowerCase().includes('founder') ? 'bg-purple-500/20 text-purple-600 border-purple-500/30' :
+                                                        'bg-primary/20 text-primary border-primary/30'
+                                                }`}>
                                                 {planName.replace(' Plan', '')}
                                             </span>
                                         </h3>
-                                        <p className="text-sm font-bold text-gray-500/80 mt-1">{user.email}</p>
+                                        <p className="text-xs sm:text-sm font-bold text-gray-500/80 mt-0.5 sm:mt-1">{user.email}</p>
                                     </div>
-                                    
+
                                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                                        <button 
+                                        <button
                                             onClick={() => window._aisa_sync_profile && window._aisa_sync_profile()}
                                             className="inline-flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-white/5 hover:bg-primary/10 hover:text-primary rounded-xl transition-all group/sync border border-border/50 text-[10px] font-black uppercase tracking-widest"
                                         >
@@ -824,7 +822,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                         </button>
 
                                         {user.avatar && (
-                                            <button 
+                                            <button
                                                 onClick={handleRemoveAvatar}
                                                 className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/5 hover:bg-red-500/10 text-red-500 rounded-xl transition-all group/remove border border-red-500/20 text-[10px] font-black uppercase tracking-widest"
                                             >
@@ -849,7 +847,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                         <p className="text-[11px] text-subtext font-bold uppercase tracking-wider">Active Login Sessions</p>
                                     </div>
                                 </div>
-                                <button 
+                                <button
                                     onClick={fetchSessions}
                                     className={`p-2 hover:bg-primary/10 rounded-xl transition-all text-subtext hover:text-primary group ${loadingSessions ? 'animate-spin' : ''}`}
                                     title="Refresh Sessions"
@@ -860,16 +858,15 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
 
                             <div className="grid grid-cols-1 gap-3">
                                 {sessions.length > 0 ? sessions.map(session => (
-                                    <motion.div 
+                                    <motion.div
                                         layout
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        key={session._id} 
-                                        className={`group relative p-5 rounded-3xl border transition-all flex items-center justify-between gap-4 ${
-                                            session.isCurrent 
-                                                ? 'bg-primary/[0.03] border-primary/30 shadow-lg shadow-primary/5 ring-1 ring-primary/10' 
+                                        key={session._id}
+                                        className={`group relative p-4 sm:p-5 rounded-3xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${session.isCurrent
+                                                ? 'bg-primary/[0.03] border-primary/30 shadow-lg shadow-primary/5 ring-1 ring-primary/10'
                                                 : 'bg-white/40 dark:bg-white/[0.02] border-border/50 hover:border-primary/20 hover:bg-white/60 dark:hover:bg-white/[0.04]'
-                                        }`}
+                                            }`}
                                     >
                                         {session.isCurrent && (
                                             <div className="absolute -top-2.5 right-6 px-3 py-1 bg-primary text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-primary/20 z-10">
@@ -878,9 +875,8 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                         )}
 
                                         <div className="flex items-center gap-4 min-w-0">
-                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner transition-transform group-hover:scale-110 ${
-                                                session.device === 'Mobile' ? 'bg-orange-500/10 text-orange-500' : 'bg-blue-500/10 text-blue-500'
-                                            }`}>
+                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner transition-transform group-hover:scale-110 ${session.device === 'Mobile' ? 'bg-orange-500/10 text-orange-500' : 'bg-blue-500/10 text-blue-500'
+                                                }`}>
                                                 {session.device === 'Mobile' ? (
                                                     <Smartphone className="w-6 h-6" />
                                                 ) : session.device === 'Tablet' ? (
@@ -889,32 +885,38 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                                     <Monitor className="w-6 h-6" />
                                                 )}
                                             </div>
-                                            <div className="min-w-0">
+                                            <div className="min-w-0 flex-1">
                                                 <div className="flex items-center gap-2 mb-0.5">
                                                     <span className="text-sm font-black text-gray-800 dark:text-white truncate">{session.os} • {session.browser}</span>
                                                 </div>
                                                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                                    <p className="text-[11px] text-subtext font-bold flex items-center gap-1.5">
+                                                    <p className="text-[10px] text-subtext font-bold flex items-center gap-1.5">
                                                         <Globe className="w-3 h-3 text-primary/60" />
                                                         {session.ip}
                                                     </p>
-                                                    <p className="text-[11px] text-subtext font-bold flex items-center gap-1.5">
+                                                    <p className="text-[10px] text-subtext font-bold flex items-center gap-1.5">
                                                         <Clock className="w-3 h-3 text-primary/60" />
                                                         {new Date(session.lastActive).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                     </p>
                                                 </div>
                                             </div>
+                                            
+                                            {session.isCurrent && (
+                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex sm:hidden items-center justify-center text-primary shrink-0 animate-pulse">
+                                                    <ShieldCheck className="w-4 h-4" />
+                                                </div>
+                                            )}
                                         </div>
-                                        
+
                                         {!session.isCurrent ? (
-                                            <button 
+                                            <button
                                                 onClick={() => handleRevokeSession(session._id)}
-                                                className="px-4 py-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 shadow-sm hover:shadow-red-500/20"
+                                                className="w-full sm:w-auto px-4 py-2.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0 shadow-sm hover:shadow-red-500/20 active:scale-95"
                                             >
                                                 End Session
                                             </button>
                                         ) : (
-                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0 animate-pulse">
+                                            <div className="hidden sm:flex w-8 h-8 rounded-full bg-primary/10 items-center justify-center text-primary shrink-0 animate-pulse">
                                                 <ShieldCheck className="w-4 h-4" />
                                             </div>
                                         )}
@@ -949,8 +951,8 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                 <p className="font-bold text-red-500">{t('dangerZone') || 'Danger Zone'}</p>
                                 <p className="text-[11px] text-subtext leading-tight max-w-[280px]">Permanently delete your account and all associated data. This action is irreversible.</p>
                             </div>
-                            <button 
-                                onClick={() => setShowDeleteModal(true)} 
+                            <button
+                                onClick={() => setShowDeleteModal(true)}
                                 className="px-5 py-2.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-xl font-bold transition-all"
                             >
                                 {t('deleteAccount') || 'Delete Account'}
@@ -1022,16 +1024,16 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         {/* Help Sub-Tabs */}
-                        <div className="flex items-center gap-2 p-1 bg-gray-50 dark:bg-white/5 rounded-2xl w-fit">
+                        <div className="flex items-center gap-1 p-1 bg-gray-50 dark:bg-white/5 rounded-2xl w-full sm:w-fit">
                             <button
                                 onClick={() => setFaqSubTab('faq')}
-                                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${faqSubTab === 'faq' ? 'bg-white dark:bg-white/10 text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${faqSubTab === 'faq' ? 'bg-white dark:bg-white/10 text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                             >
                                 Browse FAQ
                             </button>
                             <button
                                 onClick={() => setFaqSubTab('ticket')}
-                                className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${faqSubTab === 'ticket' ? 'bg-white dark:bg-white/10 text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${faqSubTab === 'ticket' ? 'bg-white dark:bg-white/10 text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                             >
                                 Submit Ticket
                             </button>
@@ -1052,12 +1054,12 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                 </div>
 
                                 {/* Categories Pills */}
-                                <div className="flex flex-wrap gap-2">
+                                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 pb-2">
                                     {faqs.map((cat, idx) => (
                                         <button
                                             key={cat.category}
                                             onClick={() => { setSelectedFaqCategory(idx); setOpenFaqIndex(null); }}
-                                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${selectedFaqCategory === idx ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-white dark:bg-white/5 border-border text-gray-500 hover:border-primary/30'}`}
+                                            className={`px-3 py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center text-center ${idx === faqs.length - 1 && faqs.length % 2 !== 0 ? 'col-span-2' : ''} ${selectedFaqCategory === idx ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-white dark:bg-white/5 border-border text-gray-500 hover:border-primary/30'}`}
                                         >
                                             {cat.category}
                                         </button>
@@ -1184,11 +1186,11 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                             <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg bg-white dark:bg-[#1E2438] border border-gray-100 dark:border-white/10">
                                                 {/* Real Gmail SVG Logo */}
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-9 h-9">
-                                                    <path fill="#4caf50" d="M45,16.2l-5,2.75l-5,4.75L35,40h7c1.657,0,3-1.343,3-3V16.2z"/>
-                                                    <path fill="#1e88e5" d="M3,16.2l3.614,1.71L13,23.7V40H6c-1.657,0-3-1.343-3-3V16.2z"/>
-                                                    <polygon fill="#e53935" points="35,11.2 24,19.45 13,11.2 12,17 13,23.7 24,31.95 35,23.7 36,17"/>
-                                                    <path fill="#c62828" d="M3,12.298V16.2l10,7.5V11.2L9.876,8.859C9.132,8.301,8.228,8,7.298,8h0 C4.924,8,3,9.924,3,12.298z"/>
-                                                    <path fill="#fbc02d" d="M45,12.298V16.2l-10,7.5V11.2l3.124-2.341C38.868,8.301,39.772,8,40.702,8h0 C43.076,8,45,9.924,45,12.298z"/>
+                                                    <path fill="#4caf50" d="M45,16.2l-5,2.75l-5,4.75L35,40h7c1.657,0,3-1.343,3-3V16.2z" />
+                                                    <path fill="#1e88e5" d="M3,16.2l3.614,1.71L13,23.7V40H6c-1.657,0-3-1.343-3-3V16.2z" />
+                                                    <polygon fill="#e53935" points="35,11.2 24,19.45 13,11.2 12,17 13,23.7 24,31.95 35,23.7 36,17" />
+                                                    <path fill="#c62828" d="M3,12.298V16.2l10,7.5V11.2L9.876,8.859C9.132,8.301,8.228,8,7.298,8h0 C4.924,8,3,9.924,3,12.298z" />
+                                                    <path fill="#fbc02d" d="M45,12.298V16.2l-10,7.5V11.2l3.124-2.341C38.868,8.301,39.772,8,40.702,8h0 C43.076,8,45,9.924,45,12.298z" />
                                                 </svg>
                                             </div>
                                             {gmailApp && (
@@ -1253,7 +1255,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                             className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${feature.active
                                                 ? 'bg-primary/10 text-primary border-primary/20'
                                                 : 'bg-gray-100 dark:bg-white/5 text-gray-400 border-gray-200 dark:border-white/10'
-                                            }`}
+                                                }`}
                                         >
                                             {feature.active ? '✓ ' : ''}{feature.label}
                                         </span>
@@ -1282,8 +1284,25 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
 
     return createPortal(
         <AnimatePresence>
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-[2px]" onClick={onClose}>
-                <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="w-full sm:max-w-[850px] h-full sm:h-[85vh] bg-white dark:bg-[#161B2E] flex flex-col sm:flex-row shadow-2xl sm:rounded-[2rem] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none p-0 sm:p-4">
+                {/* Semi-transparent Blurred Overlay */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                    className="absolute inset-0 bg-black/40 backdrop-blur-md pointer-events-auto"
+                />
+
+                {/* Settings Container (Drawer on Mobile, Centered Modal on Desktop) */}
+                    <motion.div
+                        initial={window.innerWidth < 640 ? { x: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
+                        animate={window.innerWidth < 640 ? { x: 0 } : { opacity: 1, scale: 1, y: 0 }}
+                        exit={window.innerWidth < 640 ? { x: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        className="absolute sm:relative top-0 left-0 h-full sm:h-[85vh] w-full sm:max-w-5xl bg-white dark:bg-[#161B2E] flex flex-col sm:flex-row shadow-2xl sm:rounded-[2rem] border-r sm:border border-white/5 pointer-events-auto overflow-hidden"
+                        onClick={e => e.stopPropagation()}
+                    >
                     <input 
                         type="file" 
                         ref={fileInputRef} 
@@ -1291,101 +1310,114 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                         accept="image/*" 
                         style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }} 
                     />
-                    <div className={`w-full sm:w-[240px] bg-gray-50 dark:bg-black/20 flex flex-col border-r border-gray-100 dark:border-white/5 ${view === 'detail' ? 'hidden sm:flex' : 'flex'}`}>
-                        <div className="p-5 flex justify-between items-center">
-                            <h2 className="text-lg font-bold">Settings</h2>
-                            <button onClick={onClose} className="sm:hidden text-subtext"><X size={20} /></button>
+                    
+                    {/* Navigation Sidebar (Always visible on Desktop, Conditional on Mobile) */}
+                    <div className={`flex flex-col h-full w-full sm:w-[320px] bg-gray-50/30 dark:bg-black/20 border-r border-gray-100 dark:border-white/5 shrink-0 transition-all ${view === 'detail' ? 'hidden sm:flex' : 'flex'}`}>
+                        {/* Sticky Header */}
+                        <div className="sticky top-0 z-20 px-6 py-6 flex justify-between items-center bg-transparent shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                                    <Settings className="w-5 h-5 text-primary" />
+                                </div>
+                                <h2 className="text-2xl font-black tracking-tight">{t('settings') || 'Settings'}</h2>
+                            </div>
+                            <button onClick={onClose} className="sm:hidden p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-all">
+                                <X size={20} className="text-gray-400" />
+                            </button>
                         </div>
 
-                        {/* SYNC PROFILE FUNCTION */}
-                        {(() => {
-                            const handleSync = async () => {
-                                const loading = toast.loading("Syncing with social profile...");
-                                try {
-                                    const res = await axios.get(apis.syncProfile, {
-                                        headers: { 'Authorization': `Bearer ${user?.token}` }
-                                    });
-                                    if (res.data.avatar) {
-                                        const updatedUser = { ...user, avatar: res.data.avatar };
-                                        setUserRecoil(prev => ({ ...prev, user: updatedUser }));
-                                        setUserData(updatedUser);
-                                        toast.dismiss(loading);
-                                        toast.success(res.data.message);
-                                    } else {
-                                        toast.dismiss(loading);
-                                        toast.error(res.data.message || "No new photo found.");
-                                    }
-                                } catch (err) {
-                                    toast.dismiss(loading);
-                                    const errMsg = err.response?.data?.error || err.message || "Sync failed";
-                                    toast.error(`${errMsg}. Ensure you are logged in with Google/Microsoft.`);
-                                }
-                            };
-                            window._aisa_sync_profile = handleSync;
-                            return null;
-                        })()}
-
-                        <div className="px-4 pb-3">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input className="w-full bg-white dark:bg-white/5 border border-border rounded-xl pl-10 pr-4 py-2 text-sm outline-none focus:border-primary transition-all" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+                        {/* Search Section */}
+                        <div className="px-6 pb-4 shrink-0">
+                            <div className="relative group">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                <input 
+                                    className="w-full bg-white dark:bg-white/5 border border-border rounded-2xl pl-11 pr-4 py-3.5 text-sm outline-none focus:border-primary/50 transition-all shadow-sm" 
+                                    placeholder="Search settings..." 
+                                    value={searchQuery} 
+                                    onChange={e => setSearchQuery(e.target.value)} 
+                                />
                             </div>
                         </div>
 
-                        <nav className="flex-1 px-2 py-2 space-y-1 overflow-y-auto">
+                        {/* Scrollable Tabs List */}
+                        <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto custom-scrollbar">
                             {tabs.map(tab => (
-                                <button key={tab.id} onClick={() => { setActiveTab(tab.id); setView('detail'); }} className={`w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 rounded-xl text-sm transition-all ${activeTab === tab.id ? 'bg-white dark:bg-[#1E2438] shadow-sm text-primary' : 'text-subtext hover:bg-gray-100 dark:hover:bg-white/5'}`}>
-                                    <tab.icon className="w-4 h-4" />
-                                    <span className="font-bold">{tab.label}</span>
-                                    <ChevronRight className="w-4 h-4 ml-auto sm:hidden opacity-50" />
+                                <button 
+                                    key={tab.id} 
+                                    onClick={() => { setActiveTab(tab.id); setView('detail'); }} 
+                                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-sm transition-all relative group ${activeTab === tab.id ? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20' : 'text-subtext hover:bg-gray-100 dark:hover:bg-white/5'}`}
+                                >
+                                    {activeTab === tab.id && (
+                                        <motion.div layoutId="activeTabIndicator" className="absolute left-0 w-1.5 h-8 bg-primary rounded-r-full" />
+                                    )}
+                                    <div className={`p-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-primary text-white' : 'bg-gray-200/50 dark:bg-white/5 text-gray-400 group-hover:text-primary group-hover:bg-primary/5'}`}>
+                                        <tab.icon className="w-4 h-4" />
+                                    </div>
+                                    <span className="font-black flex-1 text-left">{tab.label}</span>
+                                    <ChevronRight className={`w-4 h-4 opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all ${activeTab === tab.id ? 'opacity-100 text-primary' : ''}`} />
                                 </button>
                             ))}
-                            
-
                         </nav>
 
+                        {/* Footer Actions */}
                         {user?.token && (
-                            <div className="p-4 space-y-1 border-t border-gray-100 dark:border-white/5">
-                                <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-500 hover:bg-red-50 font-bold transition-all"><LogOut className="w-4 h-4" /> {t('logOut')}</button>
+                            <div className="p-6 border-t border-gray-100 dark:border-white/5">
+                                <button onClick={onLogout} className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl text-[10px] text-red-500 hover:bg-red-500/10 font-black uppercase tracking-[0.2em] transition-all border border-red-500/10 active:scale-95 bg-white/50 dark:bg-transparent shadow-sm">
+                                    <LogOut className="w-4 h-4" /> {t('logOut')}
+                                </button>
                             </div>
                         )}
                     </div>
 
-                    <div className={`flex-1 flex flex-col min-w-0 bg-white dark:bg-[#161B2E] overflow-hidden ${view === 'sidebar' ? 'hidden sm:flex' : 'flex'}`}>
-                        <div className="px-5 py-4 sm:px-8 sm:py-6 flex items-center justify-between border-b sm:border-b-0 border-gray-100 dark:border-white/5 shrink-0">
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setView('sidebar')} className="sm:hidden p-1 hover:bg-black/5 rounded-full"><ChevronLeft size={24} /></button>
-                                <h2 className="text-lg sm:text-xl font-bold">{searchQuery ? 'Search Results' : tabs.find(t => t.id === activeTab)?.label}</h2>
+                    {/* Detail View / Content Area (Always visible on Desktop, Conditional on Mobile) */}
+                    <div className={`flex-1 flex flex-col min-w-0 bg-white dark:bg-transparent overflow-hidden ${view === 'sidebar' ? 'hidden sm:flex' : 'flex'}`}>
+                        {/* Sticky Detail Header */}
+                        <div className="sticky top-0 z-20 px-5 sm:px-8 py-4 sm:py-6 flex items-center justify-between shrink-0 bg-white/80 dark:bg-[#161B2E]/80 backdrop-blur-md">
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setView('sidebar')} className="sm:hidden p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-all active:scale-90">
+                                    <ChevronLeft size={20} className="text-gray-400" />
+                                </button>
+                                <h2 className="text-2xl font-black tracking-tight text-maintext">{searchQuery ? 'Search Results' : tabs.find(t => t.id === activeTab)?.label}</h2>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full"><X size={20} className="text-gray-400" /></button>
+                            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-all group active:scale-90">
+                                <X size={24} className="text-gray-400 group-hover:text-maintext transition-colors" />
+                            </button>
                         </div>
-                        <div className="flex-1 overflow-y-auto px-5 sm:px-8 pb-10 custom-scrollbar">{renderContent()}</div>
+
+                        {/* Scrollable Content */}
+                        <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-4 pb-20 custom-scrollbar space-y-10">
+                            {renderContent()}
+                        </div>
                     </div>
                 </motion.div>
             </div>
-
             {/* Account Deletion Modal */}
             {showDeleteModal && (
-                <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowDeleteModal(false)}>
-                    <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="bg-white dark:bg-[#1E2438] p-8 rounded-3xl w-full max-w-sm shadow-2xl border border-red-500/10 text-center" onClick={e => e.stopPropagation()}>
-                        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={() => setShowDeleteModal(false)}>
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+                        animate={{ opacity: 1, scale: 1, y: 0 }} 
+                        className="bg-white dark:bg-[#1E2438] p-6 sm:p-8 rounded-[2rem] w-full max-w-sm shadow-2xl border border-red-500/10 text-center" 
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                             <Trash2 className="w-8 h-8 text-red-500" />
                         </div>
-                        <h3 className="text-xl font-black text-gray-900 dark:text-white mb-3">Delete Account?</h3>
+                        <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">Delete Account?</h3>
                         <p className="text-sm text-subtext mb-8 leading-relaxed">
-                            Are you absolutely sure? This will permanently remove your profile, data, and access. **This cannot be undone.**
+                            Are you absolutely sure? This will permanently remove your profile, data, and access. <strong className="text-red-500">This cannot be undone.</strong>
                         </p>
                         <div className="flex flex-col gap-3">
-                            <button 
-                                onClick={handleDeleteAccount} 
-                                disabled={deleteLoading} 
+                            <button
+                                onClick={handleDeleteAccount}
+                                disabled={deleteLoading}
                                 className="w-full py-4 bg-red-500 text-white rounded-2xl font-black text-sm tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-500/25 disabled:opacity-50 active:scale-95 uppercase"
                             >
                                 {deleteLoading ? 'Deleting Account...' : 'Yes, Delete Permanently'}
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setShowDeleteModal(false)}
-                                className="w-full py-4 bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 rounded-2xl font-bold text-sm tracking-widest hover:bg-gray-100 dark:hover:bg-white/10 transition-all active:scale-95 uppercase"
+                                className="w-full py-4 bg-gray-50 dark:bg-white/5 text-gray-500 dark:text-gray-400 rounded-2xl font-black text-sm tracking-widest hover:bg-gray-100 dark:hover:bg-white/10 transition-all active:scale-95 uppercase"
                             >
                                 Cancel
                             </button>
@@ -1396,25 +1428,55 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
 
             {/* Password Reset Modal */}
             {showResetModal && (
-                <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowResetModal(false)}>
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white dark:bg-[#1E2438] p-6 rounded-2xl w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-lg font-bold mb-4">Reset Password</h3>
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={() => setShowResetModal(false)}>
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+                        animate={{ opacity: 1, scale: 1, y: 0 }} 
+                        className="bg-white dark:bg-[#1E2438] p-6 sm:p-8 rounded-[2rem] w-full max-w-sm shadow-2xl" 
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+                                <Lock className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-2xl font-black tracking-tight">Reset Password</h3>
+                        </div>
+                        
                         {resetStep === 1 ? (
-                            <button onClick={handleSendOtp} disabled={resetLoading} className="w-full bg-primary text-white py-3 rounded-xl font-bold shadow-lg shadow-primary/20 disabled:opacity-50">
-                                {resetLoading ? 'Sending...' : 'Send OTP to Email'}
-                            </button>
+                            <div className="space-y-6">
+                                <p className="text-sm text-subtext leading-relaxed">We'll send a one-time verification code to your registered email address.</p>
+                                <button 
+                                    onClick={handleSendOtp} 
+                                    disabled={resetLoading} 
+                                    className="w-full bg-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/30 disabled:opacity-50 active:scale-95 transition-all"
+                                >
+                                    {resetLoading ? 'Sending...' : 'Send Verification Code'}
+                                </button>
+                            </div>
                         ) : (
                             <div className="space-y-4">
-                                <input type="text" placeholder="Enter OTP" value={resetOtp} onChange={e => setResetOtp(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-xl outline-none" />
-                                <input type="password" placeholder="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-xl outline-none" />
-                                <button onClick={handleResetPassword} disabled={resetLoading} className="w-full bg-primary text-white py-3 rounded-xl font-bold shadow-lg shadow-primary/20">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Verification Code</label>
+                                    <input type="text" placeholder="Enter 6-digit OTP" value={resetOtp} onChange={e => setResetOtp(e.target.value)} className="w-full p-4 bg-gray-50 dark:bg-white/5 border border-border rounded-2xl outline-none focus:border-primary transition-all text-sm" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">New Password</label>
+                                    <input type="password" placeholder="Create strong password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-4 bg-gray-50 dark:bg-white/5 border border-border rounded-2xl outline-none focus:border-primary transition-all text-sm" />
+                                </div>
+                                <button 
+                                    onClick={handleResetPassword} 
+                                    disabled={resetLoading} 
+                                    className="w-full bg-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/30 mt-2 active:scale-95 transition-all"
+                                >
                                     {resetLoading ? 'Updating...' : 'Update Password'}
                                 </button>
+                                <button onClick={() => setResetStep(1)} className="w-full py-2 text-xs font-bold text-subtext hover:text-primary transition-colors">Resend Code</button>
                             </div>
                         )}
                     </motion.div>
                 </div>
             )}
+            
             {/* Image Cropping Modal */}
             {showCropper && (
                 <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/80 backdrop-blur-md p-4" onClick={() => setShowCropper(false)}>
