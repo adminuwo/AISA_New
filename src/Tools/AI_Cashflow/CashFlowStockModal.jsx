@@ -425,12 +425,12 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
 
    return (
       <AnimatePresence>
-         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-1 sm:p-4 bg-black/40 backdrop-blur-sm">
+         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm">
             <motion.div
                initial={{ opacity: 0, scale: 0.98 }}
                animate={{ opacity: 1, scale: 1 }}
                exit={{ opacity: 0, scale: 0.98 }}
-               className="relative w-full w-[99vw] sm:w-[95vw] max-w-7xl bg-[#fdfaf5] dark:bg-[#09090b] rounded-[10px] sm:rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col h-[98vh] sm:h-[94vh] border border-white/10"
+               className="relative w-full h-full sm:w-[95vw] sm:h-[94vh] max-w-7xl bg-[#fdfaf5] dark:bg-[#09090b] rounded-none sm:rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col border border-white/10"
             >
                {/* Header */}
                <div className="px-3 py-3 sm:px-6 sm:py-5 bg-[#5154ff] flex items-center justify-between shrink-0">
