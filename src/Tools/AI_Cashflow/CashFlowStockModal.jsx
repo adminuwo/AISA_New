@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, TrendingUp, BarChart3, Globe, Zap, Loader2, Check, ExternalLink, ChevronDown, Activity, Sparkles, AlertCircle, Maximize, BookOpen, Shield, TrendingDown, Award, ChevronRight } from 'lucide-react';
+import { X, Search, TrendingUp, BarChart3, Globe, Zap, Loader2, Check, ExternalLink, ChevronDown, Activity, Sparkles, AlertCircle, Maximize2, Minimize2, Maximize, BookOpen, Shield, TrendingDown, Award, ChevronRight, MessageSquare } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
@@ -118,7 +119,7 @@ const COUNTRIES = [
    { code: 'HK', name: 'Hong Kong', flag: '🇭🇰' },
 ];
 
-const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStock }) => {
+const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStock, onDataUpdate }) => {
    const [searchTerm, setSearchTerm] = useState('');
    const [searchResults, setSearchResults] = useState([]);
    const [isSearching, setIsSearching] = useState(false);
@@ -129,6 +130,7 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
    const [isStockSelectOpen, setIsStockSelectOpen] = useState(false);
    const [chartInterval, setChartInterval] = useState('D');
    const [fullScreenChart, setFullScreenChart] = useState(null);
+   const [isMaximized, setIsMaximized] = useState(false);
    const [cashflowCost, setCashflowCost] = useState(100);
 
    // Tab-specific data states
@@ -173,6 +175,9 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
    useEffect(() => {
       if (isOpen && initialStock) {
          setSelectedStock(initialStock);
+      }
+      if (!isOpen) {
+         setIsMaximized(false);
       }
    }, [isOpen, initialStock]);
 
@@ -342,6 +347,19 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
        }
     }, [activeTab, selectedStock, isOpen, socket]);
 
+    // Sync financial data with parent for chat context
+    useEffect(() => {
+       if (isOpen && onDataUpdate) {
+          onDataUpdate({
+             selectedStock,
+             activeTab,
+             tabData,
+             grahamData,
+             kiyosakiData
+          });
+       }
+    }, [selectedStock, activeTab, tabData, grahamData, kiyosakiData, isOpen, onDataUpdate]);
+
    const handleFinalSelect = () => {
       onSelect(selectedStock);
       onClose();
@@ -423,30 +441,95 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
 
    if (!isOpen) return null;
 
-   return (
-      <AnimatePresence>
-         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm">
+   return createPortal(
+      <AnimatePresence mode="wait">
+         {isOpen && (
             <motion.div
-               initial={{ opacity: 0, scale: 0.98 }}
-               animate={{ opacity: 1, scale: 1 }}
-               exit={{ opacity: 0, scale: 0.98 }}
-               className="relative w-full h-full sm:w-[95vw] sm:h-[94vh] max-w-7xl bg-[#fdfaf5] dark:bg-[#09090b] rounded-none sm:rounded-[14px] shadow-[0_30px_70px_-20px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col border border-white/10"
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               className={`fixed inset-0 z-[9990] flex items-center justify-center overflow-hidden transition-all duration-300 ${isMaximized ? 'p-0' : 'p-0 sm:p-4 md:p-6'}`}
             >
-               {/* Header */}
-               <div className="px-3 py-3 sm:px-6 sm:py-5 bg-[#5154ff] flex items-center justify-between shrink-0">
-                  <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white/10 flex items-center justify-center text-white border border-white/5 shadow-inner shrink-0">
-                        <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6 shadow-sm" />
+               {/* Backdrop */}
+               <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={onClose}
+                  className="absolute inset-0 bg-black/60 backdrop-blur-md"
+               />
+               <motion.div
+                  initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                  layout
+                  transition={{
+                     layout: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+                     opacity: { duration: 0.2 },
+                     scale: { duration: 0.3 }
+                  }}
+                  className={`relative z-10 flex flex-col bg-white dark:bg-[#09090b] shadow-2xl overflow-hidden transition-all duration-500 ease-in-out ${
+                     isMaximized ? 'w-screen h-screen rounded-none' : 'w-[95vw] sm:w-[90vw] max-w-6xl h-[90vh] rounded-[24px] border border-white/10'
+                  }`}
+                  style={{
+                     boxShadow: isMaximized ? 'none' : '0 40px 80px -15px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.1)'
+                  }}
+               >
+                  {/* Header - Refined to match AILegal style and prevent overlap */}
+                  <div className={`relative z-20 px-4 py-3 sm:px-8 bg-white dark:bg-zinc-900 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0 transition-all ${isMaximized ? 'sm:py-6' : 'sm:py-5'}`}>
+                     <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 shrink-0">
+                           <TrendingUp className="w-6 h-6" />
+                        </div>
+                        <div className="min-w-0">
+                           <h2 className={`font-black text-slate-800 dark:text-white leading-tight font-sans tracking-tight truncate transition-all ${isMaximized ? 'text-xl sm:text-2xl' : 'text-lg sm:text-xl'}`}>AI CashFlow Explorer</h2>
+                           <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                              <p className="text-[10px] sm:text-[11px] text-slate-600 dark:text-zinc-300 font-extrabold uppercase tracking-[0.15em]">Live Marketplace Intelligence</p>
+                           </div>
+                        </div>
                      </div>
-                     <div className="min-w-0">
-                        <h2 className="text-base sm:text-2xl font-black text-white leading-tight font-sans tracking-tight truncate">AI CashFlow Explorer</h2>
-                        <p className="text-[8px] sm:text-[10px] text-white/60 font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] mt-0.5 truncate">Market Intelligence · Real-time Analytics · Strategy</p>
+                     
+                     <div className="flex items-center gap-2 sm:gap-3">
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => {
+                               setIsMaximized(false);
+                               // Small delay to allow minimize transition
+                               setTimeout(() => {
+                                  const chatInput = document.querySelector('textarea');
+                                  if (chatInput) {
+                                     chatInput.focus();
+                                     chatInput.value = `Analyze ${selectedStock?.symbol} further: `;
+                                  }
+                               }, 500);
+                            }}
+                            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/25"
+                         >
+                            <MessageSquare size={14} />
+                            Ask AISA
+                         </motion.button>
+
+                         <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setIsMaximized(!isMaximized)}
+                            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-all border border-slate-200 dark:border-zinc-700"
+                         >
+                            {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                        </motion.button>
+                        
+                        <motion.button
+                           whileHover={{ scale: 1.05, rotate: 90 }}
+                           whileTap={{ scale: 0.95 }}
+                           onClick={onClose}
+                           className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-rose-500 transition-all border border-slate-200 dark:border-zinc-700 shadow-sm"
+                        >
+                           <X size={20} strokeWidth={2.5} />
+                        </motion.button>
                      </div>
                   </div>
-                  <button onClick={onClose} className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-white/90 hover:text-white group shrink-0">
-                     <X className="w-6 h-6 sm:w-8 sm:h-8 group-hover:rotate-90 transition-transform" />
-                  </button>
-               </div>
 
                {/* Stock Selection Section */}
                <div className="px-3 py-3 sm:px-8 sm:py-8 border-b border-gray-100 dark:border-zinc-800 flex flex-col sm:flex-row gap-3 sm:gap-6 bg-[#fdfaf5] dark:bg-[#09090b] shrink-0">
@@ -652,22 +735,27 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
                                        </div>
                                     </div>
                                     {tabData['Realtime chart'].quote?.price && (
-                                       <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                                          <button onClick={() => setFullScreenChart('realtime')} className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 text-[9px] sm:text-[11px] font-black uppercase tracking-wider rounded-lg transition-colors sm:mr-4 border border-gray-200 dark:border-zinc-700 shadow-sm">
+                                       <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
+                                          <button 
+                                             onClick={() => setFullScreenChart('realtime')} 
+                                             className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 text-[10px] sm:text-[11px] font-black uppercase tracking-wider rounded-xl transition-all border border-slate-200 dark:border-zinc-700 shadow-sm active:scale-95"
+                                          >
                                              <Maximize className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Pro View
                                           </button>
-                                          <div className="flex flex-col items-center justify-center px-3 py-1 sm:px-5 sm:py-1.5 bg-[#fffafb] dark:bg-red-500/10 border border-[#f23645] rounded-[6px] min-w-[70px] sm:min-w-[100px] shadow-sm cursor-pointer hover:bg-red-50 dark:hover:bg-red-500/20 transition-colors">
-                                             <span className="text-[14px] sm:text-[18px] font-semibold text-[#f23645] leading-tight">
-                                                {parseFloat(tabData['Realtime chart'].quote.price - 0.25).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                             </span>
-                                             <span className="text-[10px] sm:text-[12px] font-medium text-[#f23645] uppercase tracking-wide">SELL</span>
-                                          </div>
-                                          <span className="text-[11px] sm:text-[13px] font-medium text-[#333] dark:text-zinc-400">0.50</span>
-                                          <div className="flex flex-col items-center justify-center px-3 py-1 sm:px-5 sm:py-1.5 bg-[#f8fbff] dark:bg-blue-500/10 border border-[#2962ff] rounded-[6px] min-w-[70px] sm:min-w-[100px] shadow-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-500/20 transition-colors">
-                                             <span className="text-[14px] sm:text-[18px] font-semibold text-[#2962ff] leading-tight">
-                                                {parseFloat(tabData['Realtime chart'].quote.price + 0.25).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                             </span>
-                                             <span className="text-[10px] sm:text-[12px] font-medium text-[#2962ff] uppercase tracking-wide">BUY</span>
+                                          <div className="flex items-center gap-2">
+                                             <div className="flex flex-col items-center justify-center px-4 py-1.5 sm:px-6 sm:py-2 bg-rose-50/50 dark:bg-red-500/10 border border-rose-200 dark:border-red-500/30 rounded-xl min-w-[80px] sm:min-w-[110px] shadow-sm cursor-pointer hover:bg-rose-100/50 dark:hover:bg-red-500/20 transition-all group/sell active:scale-95">
+                                                <span className="text-[15px] sm:text-[19px] font-black text-rose-600 dark:text-rose-500 leading-tight">
+                                                   {parseFloat(tabData['Realtime chart'].quote.price - 0.25).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                                <span className="text-[9px] sm:text-[10px] font-bold text-rose-400 dark:text-rose-600 uppercase tracking-widest group-hover/sell:text-rose-600">SELL</span>
+                                             </div>
+                                             <span className="text-[11px] sm:text-[13px] font-black text-slate-300 dark:text-zinc-700 mx-1">/</span>
+                                             <div className="flex flex-col items-center justify-center px-4 py-1.5 sm:px-6 sm:py-2 bg-indigo-50/50 dark:bg-blue-500/10 border border-indigo-200 dark:border-blue-500/30 rounded-xl min-w-[80px] sm:min-w-[110px] shadow-sm cursor-pointer hover:bg-indigo-100/50 dark:hover:bg-blue-500/20 transition-all group/buy active:scale-95">
+                                                <span className="text-[15px] sm:text-[19px] font-black text-indigo-600 dark:text-blue-500 leading-tight">
+                                                   {parseFloat(tabData['Realtime chart'].quote.price + 0.25).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                                <span className="text-[9px] sm:text-[10px] font-bold text-indigo-400 dark:text-blue-600 uppercase tracking-widest group-hover/buy:text-indigo-600">BUY</span>
+                                             </div>
                                           </div>
                                        </div>
                                     )}
@@ -1154,8 +1242,10 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
                )}
             </AnimatePresence>
 
-         </div>
-      </AnimatePresence>
+         </motion.div>
+         )}
+      </AnimatePresence>,
+      document.body
    );
 };
 

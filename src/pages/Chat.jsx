@@ -769,6 +769,7 @@ const Chat = () => {
       return saved ? JSON.parse(saved) : null;
     } catch (e) { return null; }
   });
+  const [financialContext, setFinancialContext] = useState(null);
   const [stockSearchResults, setStockSearchResults] = useState([]);
   const [isSearchingStocks, setIsSearchingStocks] = useState(false);
   const [isVideoGeneration, setIsVideoGeneration] = useState(false);
@@ -1213,7 +1214,8 @@ const Chat = () => {
 
   // ─── AI CashFlow Search Logic ─────────────────────────────────────────────
   useEffect(() => {
-    if (!isCashFlowMode || inputValue.length < 2) {
+    // Only search if CashFlow mode is active AND the input looks like a ticker/name (no spaces)
+    if (!isCashFlowMode || inputValue.length < 2 || inputValue.includes(' ')) {
       setStockSearchResults([]);
       return;
     }
@@ -2447,7 +2449,7 @@ const Chat = () => {
       setMessages(prev => [...prev, userMsg, readingMsg]);
       setInputValue('');
       setStockSearchResults([]);
-      setSelectedStock(null);
+      // Keep selectedStock for context!
 
       // Save user message to backend
       if (activeSessionId && activeSessionId !== 'new') {
@@ -2484,7 +2486,8 @@ const Chat = () => {
           chatStorageService.saveMessage(activeSessionId, finalMsg, null, currentProjectId).catch(e => console.error(e));
         }
 
-        setIsCashFlowMode(false); // Return to normal chat
+        // Store financial context for follow-up questions
+        setFinancialContext(summary);
         refreshSubscription();
 
       } catch (err) {
@@ -3905,15 +3908,22 @@ const Chat = () => {
 
       // Handle AI CashFlow Mode
       if (isCashFlowMode || toolOverride === 'cashflow') {
-        if (!selectedStock) {
-          toast.error("Please select a stock from the search results first.");
-          isSendingRef.current = false;
-          setIsLoading(false);
-          isGlobalSending = false;
+        // If we have context and the user is asking a follow-up, let it go to Gemini
+        const isFollowUp = financialContext && (contentToSend.includes(' ') || contentToSend.length > 8);
+        
+        if (isFollowUp) {
+          console.log('[CashFlow] Routing as follow-up chat');
+        } else {
+          if (!selectedStock) {
+            toast.error("Please select a stock from the search results first.");
+            isSendingRef.current = false;
+            setIsLoading(false);
+            isGlobalSending = false;
+            return;
+          }
+          await handleStockAnalysis(selectedStock, activeSessionId);
           return;
         }
-        await handleStockAnalysis(selectedStock, activeSessionId);
-        return;
       }
 
       // Handle Voice Reader Mode - Just read, no AI response
@@ -4300,7 +4310,6 @@ ${deepSearchActive ? `### DEEP SEARCH MODE ENABLED (CRITICAL):
 - YOU MUST perform extensive web searching to gather every relevant detail.
 - Do NOT be brief. Expand on every point. Use multiple sections and subsections.
 - Clearly structure your findings with professional formatting and cite sources if possible.` : ''}
-
 ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
 - The user wants to convert the uploaded document.
 - Identify the source file format (PDF/DOCX) and the requested target format.
@@ -4317,6 +4326,34 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
 }
 \`\`\`
 - Keep the response text brief, explaining what you are doing.` : ''}
+
+${((isCashFlowMode || isStockModalOpen) && financialContext) ? `
+### LIVE MARKETPLACE INTELLIGENCE (AI CASHFLOW™):
+You have access to live financial data for **${financialContext.selectedStock?.name || financialContext.selectedStock?.symbol}**.
+
+**Current Market Data (${financialContext.activeTab}):**
+${financialContext.tabData?.[financialContext.activeTab] ? JSON.stringify(financialContext.tabData[financialContext.activeTab], null, 2) : 'Data loading...'}
+
+${financialContext.grahamData ? `
+**Benjamin Graham Analysis (Intelligent Investor Model):**
+- Intrinsic Value: ${financialContext.grahamData.intrinsicValue}
+- Recommendation: ${financialContext.grahamData.recommendation}
+- Analysis: ${financialContext.grahamData.analysis}
+` : ''}
+
+${financialContext.kiyosakiData ? `
+**Robert Kiyosaki Analysis (Rich Dad Model):**
+- Asset Score: ${financialContext.kiyosakiData.assetScore}
+- Recommendation: ${financialContext.kiyosakiData.recommendation}
+- Analysis: ${financialContext.kiyosakiData.analysis}
+` : ''}
+
+**YOUR ROLE FOR THIS STOCK:**
+- You are a senior financial analyst and wealth manager.
+- Reason over the LIVE data above to answer user queries about this stock.
+- If data is missing for a specific tab, mention you are analyzing the currently active tab in the CashFlow card.
+- Provide sharp, data-driven insights.
+` : ''}
 `;
         // Default AI message sending
         // If magic editing is active, ensure the ref image is included in attachments
@@ -7536,10 +7573,19 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                             <button
                               key={stock.symbol}
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 setSelectedStock(stock);
-                                setInputValue(stock.name);
+                                setInputValue(''); // Clear input for follow-up
                                 setStockSearchResults([]);
+                                
+                                // Auto-trigger analysis
+                                let activeSessionId = currentSessionId;
+                                if (activeSessionId === 'new') {
+                                  activeSessionId = await chatStorageService.createSession(currentProjectId);
+                                  setCurrentSessionId(activeSessionId);
+                                  navigate(`/dashboard/chat/${activeSessionId}`, { replace: true });
+                                }
+                                handleStockAnalysis(stock, activeSessionId);
                               }}
                               className="w-full text-left px-4 py-3 hover:bg-primary/10 border-b border-slate-100 dark:border-zinc-800 last:border-0 flex items-center justify-between group transition-colors"
                             >
@@ -8088,6 +8134,8 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                     e.stopPropagation();
                                     setIsCashFlowMode(false);
                                     setActiveTool(null);
+                                    setSelectedStock(null);
+                                    setFinancialContext(null);
                                   }}
                                   className="ml-1 hover:text-primary/80 p-0.5"
                                 >
@@ -9175,6 +9223,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
           onSelect={(stock) => handleStockAnalysis(stock)}
           isDarkMode={isDarkMode}
           initialStock={selectedStock}
+          onDataUpdate={(data) => setFinancialContext(data)}
         />
 
 
