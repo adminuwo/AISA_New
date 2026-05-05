@@ -417,7 +417,7 @@ const getModeInfo = (mode) => {
     case MODES.FILE_ANALYSIS:
       return { label: "AI File Analysis", icon: Search, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20" };
     case MODES.LEGAL_TOOLKIT:
-      return { label: "AI Legal Toolkit", icon: Scale, color: "text-indigo-600", bg: "bg-indigo-600/10", border: "border-indigo-600/20" };
+      return { label: "AI Legal™", icon: Scale, color: "text-indigo-600", bg: "bg-indigo-600/10", border: "border-indigo-600/20" };
     case MODES.CASHFLOW:
       return { label: "AI CashFlow", icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" };
     default:
@@ -6135,7 +6135,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
           onScroll={handleScroll}
           className={`relative flex-1 aisa-scalable-text chatgpt-container scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent ${((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT')
             ? 'z-20 h-full w-full overflow-hidden flex flex-col bg-slate-50 min-h-0'
-            : 'overflow-y-auto pt-4 lg:pt-6 pb-64 md:pb-72'
+            : `overflow-y-auto ${((currentMode === 'LEGAL_TOOLKIT' && (selectedLegalTool?.id === 'legal_my_case' || selectedLegalTool?.id === 'legal_precedents')) || location.pathname === '/dashboard/cases') ? 'pt-4' : 'pt-[76px]'} lg:pt-6 pb-64 md:pb-72`
             }`}
           style={{
             overflowY: ((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT') ? 'hidden' : 'auto',
@@ -7400,7 +7400,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                           setActiveLegalToolkit(true);
                           setActiveTool('legal');
 
-                          toast.success("AI Legal Toolkit Active ⚖️");
+                          toast.success("AI Legal™ Activated");
                         }
                       }}
                     />
@@ -8271,7 +8271,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                   <span
                                     className="uppercase tracking-wide text-[8px] sm:text-[10px] font-black truncate max-w-[80px] sm:max-w-[120px] cursor-pointer hover:text-primary transition-colors"
                                     onClick={() => setActiveLegalToolkit(true)}
-                                    title="Open AI Legal Toolkit"
+                                    title="Open AI Legal™"
                                   >
                                     {currentCase ? 'My Case' : 'AI Legal'}
                                     {((selectedLegalTool && selectedLegalTool?.id !== 'legal_my_case') || activeTool) && (
@@ -9212,7 +9212,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
               }, {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: `**Premium Mode Restricted**\n\nThe **${tool.name}** tool is part of our Premium AI Legal Toolkit.\n\n**To access this tool:**\n1. Select "Unlock All" to get full toolkit access.\n2. Or upgrade your subscription to the **FOUNDER PLAN**.\n\n*Would you like to see pricing for the AI Legal Archive?*`,
+                content: `**Premium Mode Restricted**\n\nThe **${tool.name}** tool is part of our Premium AI Legal™ suite.\n\n**To access this tool:**\n1. Select "Unlock All" to get full suite access.\n2. Or upgrade your subscription to the **FOUNDER PLAN**.\n\n*Would you like to see pricing for the AI Legal Archive?*`,
                 isPremiumRestricted: true,
                 timestamp: Date.now()
               }]);

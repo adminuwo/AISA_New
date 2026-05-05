@@ -125,10 +125,13 @@ const useScrollNavbar = () => {
     const handleScroll = (e) => {
       // Support both window scroll and container scroll (Chat page)
       const target = e.target;
-      const currentScrollY =
-        target === document || target === document.documentElement
-          ? window.scrollY
-          : (target.scrollTop ?? 0);
+      
+      const isDoc = target === document || target === document.documentElement;
+      const isChat = target.classList && target.classList.contains('chatgpt-container');
+      
+      if (!isDoc && !isChat) return;
+
+      const currentScrollY = isDoc ? window.scrollY : (target.scrollTop ?? 0);
 
       // Always show at top
       if (currentScrollY < 10) {
@@ -180,12 +183,11 @@ const DashboardLayout = () => {
   const tool = searchParams.get("tool");
 
   // Jaha navbar NAHI chahiye
-  const hideNavbarTools = ["legal_my_case", "legal_precedents", "legal_case_law_research", "my-case", "legal-precedents"];
+  const hideNavbarTools = ["legal_my_case", "legal_precedents", "my-case", "legal-precedents"];
   const isHiddenTool = 
     hideNavbarTools.includes(tool) || 
     hideNavbarTools.includes(selectedLegalTool?.id) ||
-    location.pathname === '/dashboard/cases' || 
-    currentMode === 'LEGAL_TOOLKIT';
+    location.pathname === '/dashboard/cases';
   
   // Navbar is allowed if it's NOT a hidden tool on mobile. 
   // On desktop, we always allow the header.
@@ -294,7 +296,7 @@ const DashboardLayout = () => {
         {/* Outlet for pages */}
         <main
           className={`flex-1 ${(location.pathname.includes('/chat') || location.pathname.includes('/cases')) ? 'overflow-hidden' : 'overflow-y-auto'} relative w-full scroll-smooth p-0 scrollbar-hide transition-all duration-300 ease-in-out`}
-          style={{ paddingTop: 'var(--mobile-nav-h)' }}
+          style={{ paddingTop: (isMobile && (location.pathname.includes('/chat') || location.pathname.includes('/cases'))) ? '0px' : 'var(--mobile-nav-h)' }}
         >
           <Outlet />
         </main>
