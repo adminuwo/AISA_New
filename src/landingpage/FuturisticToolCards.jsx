@@ -523,9 +523,9 @@ const FuturisticToolCards = ({ onToolSelect, activeToolId, isAdmin = false }) =>
   };
 
   return (
-    <div className="w-full pt-0 pb-4 sm:pb-8 px-4 sm:px-6 flex flex-col items-center gap-4 sm:gap-6" ref={ref}>
+    <div className="w-full pt-0 pb-4 sm:pb-8 px-0 sm:px-0 flex flex-col items-center gap-4 sm:gap-6" ref={ref}>
       <motion.div
-        className="w-full grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-8 max-w-7xl"
+        className="w-full grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-8 max-w-7xl mx-auto"
         variants={containerVariants}
         initial="hidden"
         animate="visible"

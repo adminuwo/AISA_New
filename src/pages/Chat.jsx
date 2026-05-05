@@ -7266,14 +7266,14 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-                className="absolute inset-0 z-10 pointer-events-auto flex flex-col items-center overflow-y-auto overflow-x-hidden pt-4 sm:pt-6 pb-40 md:pb-48 scrollbar-hide"
+                className="absolute inset-0 z-10 pointer-events-auto flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden pb-32 md:pb-48 scrollbar-hide"
               >
-                <div className="relative z-10 flex flex-col items-center w-full max-w-7xl mx-auto px-4 sm:px-6 h-max">
+                <div className="relative z-10 flex flex-col items-center w-full max-w-7xl mx-auto px-4 sm:px-6 h-max mt-8 sm:mt-0">
                   <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.1 }}
-                    className="-mt-4 sm:-mt-6 mb-0"
+                    className="mb-4 sm:mb-6"
                   >
                     <img
                       src={logo}
@@ -7281,7 +7281,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                       className="w-16 h-12 sm:w-20 sm:h-16 mx-auto object-cover object-top drop-shadow-[0_0_30px_rgba(var(--color-primary-rgb),0.4)] transition-all duration-700 hover:scale-110"
                     />
                   </motion.div>
-                  <section className="w-full px-1 sm:px-2 md:px-0 mt-0">
+                  <section className="w-full px-0 mt-0">
                     <FuturisticToolCards
                       isAdmin={isAdminUser}
                       activeToolId={
