@@ -11,6 +11,7 @@ import {
 import toast from 'react-hot-toast';
 import LegalLogo from './components/LegalLogo';
 import { useLanguage } from '../../context/LanguageContext';
+import { useIsDark } from '../../context/ThemeContext';
 import { Globe } from 'lucide-react';
 
 export const PREMIUM_TOOLS = (t) => [
@@ -91,6 +92,7 @@ export const PREMIUM_TOOLS = (t) => [
 
 const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }) => {
   const isUnlocked = true; // All legal tools are now available for ALL tiers (Free included)
+  const isDark = useIsDark();
   const Icon = tool.icon;
   const [showWorkflow, setShowWorkflow] = useState(false);
 
@@ -155,8 +157,12 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
       <div className="flex flex-col gap-4 relative z-10">
         <div className="flex items-start justify-between">
           <div className="flex flex-col items-center gap-1">
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${isUnlocked ? 'bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_6_16px_rgba(99,102,241,0.35)]' : 'bg-white/80 border border-white/80 shadow-sm'}`}>
-              <Icon className={`w-5.5 h-5.5 ${isUnlocked ? 'text-white' : 'text-slate-400'}`} />
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${
+              isUnlocked 
+                ? (isDark ? 'bg-gradient-to-br from-indigo-600 to-violet-800 border border-white/10' : 'bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_6_16px_rgba(99,102,241,0.35)]') 
+                : 'bg-white/80 dark:bg-zinc-700/50 border border-white/80 dark:border-white/10 shadow-sm'
+            }`}>
+              <Icon className={`w-5.5 h-5.5 ${isUnlocked ? 'text-white' : 'text-slate-400 dark:text-zinc-500'}`} />
             </div>
             {tool.id === 'legal_case_predictor' && (
               <span className={`text-[6px] font-black uppercase tracking-[0.1em] transition-colors ${isUnlocked ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`}>सत्यमेव जयते</span>
@@ -202,6 +208,7 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
 
 const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdmin = false }) => {
   const { toolkitLanguage, setToolkitLanguage, tLegal } = useLanguage();
+  const isDark = useIsDark();
   const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
@@ -260,7 +267,7 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.15 } }}
-          className="fixed inset-0 z-[9990] flex items-center justify-center p-4 sm:p-6"
+          className={`fixed inset-0 z-[9990] flex items-center justify-center transition-all duration-300 ${isMaximized ? 'p-0' : 'p-4 sm:p-6'}`}
         >
           {/* Backdrop */}
           <div
@@ -269,7 +276,7 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
           />
 
           {/* Outer wrapper */}
-          <div className={`relative z-10 w-full flex items-center justify-center ${isMaximized ? 'h-full' : 'max-w-5xl'}`}>
+          <div className={`relative z-10 w-full flex items-center justify-center transition-all duration-300 ${isMaximized ? 'h-full' : 'max-w-5xl'}`}>
 
             {/* Main card */}
             <motion.div
@@ -282,14 +289,14 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
                 opacity: { duration: 0.18 },
                 scale: { duration: 0.22 }
               }}
-              className={`relative z-[2] flex flex-col overflow-hidden w-full ${isMaximized ? 'modal-maximized rounded-[27px]' : 'modal-default rounded-[28px]'}`}
+              className={`relative z-[2] flex flex-col overflow-hidden w-full transition-all duration-300 ${isMaximized ? 'h-full sm:h-[95vh] sm:max-w-[95vw] rounded-none sm:rounded-[27px]' : 'modal-default rounded-[28px]'}`}
               style={{
-                boxShadow: '0 40px 80px -15px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.1)',
-                maxHeight: '90vh'
+                boxShadow: isMaximized ? 'none' : '0 40px 80px -15px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.1)',
+                maxHeight: isMaximized ? '100vh' : '90vh'
               }}
             >
               {/* Clean frosted glass base */}
-              <div className="absolute inset-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-[40px] z-0 rounded-[28px]" />
+              <div className={`absolute inset-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-[40px] z-0 transition-all duration-300 ${isMaximized ? 'rounded-none' : 'rounded-[28px]'}`} />
 
               {/* Header */}
               <div
@@ -300,7 +307,11 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
                   <div className="flex flex-col items-center gap-1.5">
                     <motion.div
                       whileHover={{ rotate: 180, scale: 1.08 }}
-                      className="w-[42px] h-[42px] rounded-[14px] bg-gradient-to-br from-indigo-500 via-[#4F46E5] to-[#3B82F6] flex items-center justify-center shadow-[0_6px_15px_rgba(99,102,241,0.35)] border border-white/30"
+                      className={`w-[42px] h-[42px] rounded-[14px] flex items-center justify-center border border-white/30 ${
+                        isDark 
+                        ? 'bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 shadow-none' 
+                        : 'bg-gradient-to-br from-indigo-500 via-[#4F46E5] to-[#3B82F6] shadow-[0_6px_15px_rgba(99,102,241,0.35)]'
+                      }`}
                     >
                       <LegalLogo size={24} color="white" showText={true} />
                     </motion.div>
@@ -336,17 +347,17 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
                       whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                       onClick={() => setIsMaximized(!isMaximized)}
                       title={isMaximized ? 'Restore' : 'Maximize'}
-                      className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:shadow-md transition-all shadow-sm border border-black/5 dark:border-white/10"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:shadow-md transition-all shadow-sm border border-black/5 dark:border-white/10"
                     >
-                      {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                      {isMaximized ? <Minimize2 className="w-4.5 h-4.5" /> : <Maximize2 className="w-4.5 h-4.5" />}
                     </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}
                       onClick={onClose}
                       title="Close"
-                      className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:shadow-md transition-all shadow-sm border border-black/5 dark:border-white/10"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:shadow-md transition-all shadow-sm border border-black/5 dark:border-white/10"
                     >
-                      <X size={18} strokeWidth={2.5} />
+                      <X size={20} strokeWidth={2.5} />
                     </motion.button>
                   </div>
                 </div>
@@ -375,17 +386,24 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
                   }}
                   className="group relative cursor-pointer rounded-[1.4rem] sm:rounded-[1.8rem] p-4 sm:p-7 mb-5 sm:mb-8 overflow-hidden"
                   style={{
-                    background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 40%, #7c3aed 100%)',
-                    boxShadow: '0 25px 60px -10px rgba(79,70,229,0.5)',
+                    background: isDark 
+                      ? 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 100%)' 
+                      : 'linear-gradient(135deg, #4f46e5 0%, #6366f1 40%, #7c3aed 100%)',
+                    boxShadow: isDark 
+                      ? '0 25px 60px -10px rgba(0,0,0,0.5)' 
+                      : '0 25px 60px -10px rgba(79,70,229,0.5)',
                   }}
                   whileHover={{ scale: 1.015, y: -3 }}
                   whileTap={{ scale: 0.985 }}
                 >
+                  {/* Texture Overlay */}
+                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] dark:opacity-[0.05] z-0 pointer-events-none" />
+                  
                   {/* Animated shimmer sweep */}
                   <motion.div
                     animate={{ x: ['-100%', '200%'] }}
                     transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', repeatDelay: 2.5 }}
-                    className="absolute top-0 bottom-0 w-[45%] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 pointer-events-none"
+                    className={`absolute top-0 bottom-0 w-[45%] bg-gradient-to-r from-transparent ${isDark ? 'via-white/10' : 'via-white/20'} to-transparent skew-x-12 pointer-events-none`}
                   />
                   <div className="absolute top-0 right-0 w-60 h-60 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl animate-pulse" />
                   <div className="absolute bottom-0 left-0 w-48 h-48 bg-violet-400/25 rounded-full -ml-10 -mb-10 blur-2xl" />
@@ -410,8 +428,11 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
                     </div>
 
                     <motion.button
-                      whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                      className="w-full sm:w-auto mt-0 sm:mt-0 px-4 py-2.5 sm:px-6 sm:py-3 bg-white text-indigo-700 font-black rounded-xl sm:rounded-2xl shadow-xl hover:shadow-2xl transition-all text-[10px] sm:text-[11px] uppercase tracking-[0.15em] shrink-0"
+                      whileHover={{ scale: 1.05, boxShadow: isDark ? '0 0 20px rgba(99,102,241,0.4)' : '0 10px 25px rgba(0,0,0,0.1)' }} 
+                      whileTap={{ scale: 0.95 }}
+                      className={`w-full sm:w-auto mt-0 sm:mt-0 px-4 py-2.5 sm:px-6 sm:py-3 font-black rounded-xl sm:rounded-2xl transition-all text-[10px] sm:text-[11px] uppercase tracking-[0.15em] shrink-0 ${
+                        isDark ? 'bg-indigo-500 text-white shadow-lg' : 'bg-white text-indigo-700 shadow-xl hover:shadow-2xl'
+                      }`}
                     >
                       {tLegal('startChatBtn')}
                     </motion.button>

@@ -1015,7 +1015,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
               <div className="flex items-center gap-1 sm:gap-2">
                 <button 
                   onClick={() => setIsMaximized(!isMaximized)}
-                  className="p-1.5 hover:bg-white/10 rounded-full transition-all active:scale-90 shrink-0 hidden sm:block"
+                  className="p-1.5 hover:bg-white/10 rounded-full transition-all active:scale-90 shrink-0"
                 >
                   {isMaximized ? <Minimize2 size={18} className="sm:w-5 sm:h-5" /> : <Maximize2 size={18} className="sm:w-5 sm:h-5" />}
                 </button>

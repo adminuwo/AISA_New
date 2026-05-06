@@ -119,12 +119,16 @@ const FuturisticToolCards = ({ onToolSelect, activeToolId, activeTab, onTabChang
                 >
                   <div className="flex flex-col h-full gap-3 sm:gap-4 relative z-10">
                     <div className="flex items-center justify-between">
-                      <div className={`w-[38px] h-[38px] sm:w-[42px] sm:h-[42px] rounded-full flex items-center justify-center transition-all duration-300 ${tool.id === 'legal' ? 'bg-gradient-to-br from-indigo-50 to-indigo-100 shadow-inner' : lightBg}`}>
-                        {tool.id === 'legal' ? (
-                          <LegalLogo size={28} color={accentColor} showText={true} />
-                        ) : (
-                          <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${iconColor}`} />
-                        )}
+                      <div className="flex items-center gap-3">
+                        <div className={`w-[38px] h-[38px] sm:w-[42px] sm:h-[42px] rounded-full flex items-center justify-center transition-all duration-300 ${tool.id === 'legal' && !isDark ? 'bg-gradient-to-br from-indigo-50 to-indigo-100 shadow-inner' : lightBg}`}>
+                          {tool.id === 'legal' ? (
+                            <LegalLogo size={28} color={isDark ? '#818cf8' : accentColor} showText={true} />
+                          ) : (
+                            <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${iconColor}`} />
+                          )}
+                        </div>
+                        {/* Heading next to icon on mobile */}
+                        <h4 className={`sm:hidden text-[14px] font-bold tracking-tight ${isDark ? 'text-zinc-100' : 'text-slate-900'}`}>{tool.label}</h4>
                       </div>
                       <div className={`p-1.5 rounded-lg opacity-0 sm:group-hover:opacity-100 transition-all transform translate-x-2 sm:group-hover:translate-x-0 ${isDark ? 'bg-white/5 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
                         <ArrowRight size={14} />
@@ -132,7 +136,8 @@ const FuturisticToolCards = ({ onToolSelect, activeToolId, activeTab, onTabChang
                     </div>
 
                     <div className="space-y-1">
-                      <h4 className={`text-[13px] sm:text-[15px] font-semibold tracking-tight ${isDark ? 'text-zinc-100' : 'text-slate-900'}`}>{tool.label}</h4>
+                      {/* Heading below icon on desktop */}
+                      <h4 className={`hidden sm:block text-[13px] sm:text-[15px] font-semibold tracking-tight ${isDark ? 'text-zinc-100' : 'text-slate-900'}`}>{tool.label}</h4>
                       <p className={`text-[10px] sm:text-[12px] leading-relaxed line-clamp-2 font-medium ${isDark ? 'text-zinc-500' : 'text-slate-500'}`}>
                         {tool.desc}
                       </p>
