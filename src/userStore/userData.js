@@ -2,7 +2,7 @@ import { atom } from "recoil"
 
 const getAvatarUrl = (user) => {
   if (!user || !user.email) return "";
-  let baseUrl = window._env_?.VITE_AISA_BACKEND_API || import.meta.env.VITE_AISA_BACKEND_API || "http://localhost:8080/api";
+  let baseUrl = window._env_?.VITE_AISA_BACKEND_API || import.meta.env.VITE_AISA_BACKEND_API || "http://localhost:8081/api";
   // Remove /api suffix to get the base host for the proxy avatar URL
   if (baseUrl.endsWith('/api')) {
     baseUrl = baseUrl.slice(0, -4);

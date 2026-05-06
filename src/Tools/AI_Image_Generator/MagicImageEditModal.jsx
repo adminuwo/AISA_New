@@ -4,7 +4,7 @@ import { X, Upload, Wand2, Download, Image as ImageIcon, Loader2, ArrowRight, Ro
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const baseURL = window._env_?.VITE_AISA_BACKEND_API || import.meta.env.VITE_AISA_BACKEND_API || "http://localhost:8080/api";
+const baseURL = window._env_?.VITE_AISA_BACKEND_API || import.meta.env.VITE_AISA_BACKEND_API || "http://localhost:8081/api";
 
 const MagicImageEditModal = ({ isOpen, onClose, onCreditDeduction }) => {
     const [selectedImage, setSelectedImage] = useState(null);

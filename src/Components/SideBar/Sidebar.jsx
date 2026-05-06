@@ -542,22 +542,46 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
               AISA
             </div>
             <button
-              onClick={() => {
+              onClick={async () => {
+                const targetUrl =
+                  (window._env_ && window._env_.VITE_AI_MALL) ||
+                  import.meta.env.VITE_AI_MALL;
+
+                if (!targetUrl) {
+                  console.error('[SSO] VITE_AI_MALL is not set in environment.');
+                  return;
+                }
+
+                const sessionToken = getUserData()?.token || localStorage.getItem('token');
+                if (!sessionToken) {
+                  // Not logged in — just navigate without SSO
+                  window.location.href = targetUrl;
+                  return;
+                }
+
                 setIsNavigating(true);
-                setTimeout(() => {
-                  const targetUrl = (window._env_ && window._env_.VITE_AI_MALL) || import.meta.env.VITE_AI_MALL;
-                  if (targetUrl) {
-                    const ssoToken = getUserData()?.token || localStorage.getItem('token');
-                    const base = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
-                    const finalUrl = ssoToken
-                      ? `${base}?sso_token=${encodeURIComponent(ssoToken)}&from=aisa`
-                      : targetUrl;
-                    window.location.href = finalUrl;
-                  } else {
-                    console.error("VITE_AI_MALL is undefined in this environment.");
-                    setIsNavigating(false);
-                  }
-                }, 300);
+
+                try {
+                  // Ask our OWN backend to generate a short-lived (60s) SSO handoff token
+                  const AISA_API =
+                    (window._env_ && window._env_.VITE_AISA_BACKEND_API) ||
+                    import.meta.env.VITE_AISA_BACKEND_API ||
+                    'http://localhost:8081/api';
+
+                  const { data } = await axios.post(
+                    `${AISA_API}/auth/sso/generate`,
+                    {},
+                    { headers: { Authorization: `Bearer ${sessionToken}` } }
+                  );
+
+                  const base = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
+                  window.location.href = `${base}?sso_token=${encodeURIComponent(data.sso_token)}&from=aisa`;
+                } catch (err) {
+                  console.error('[SSO] Failed to generate SSO token:', err.message);
+                  setIsNavigating(false);
+                  // Fallback: navigate without SSO
+                  window.location.href = targetUrl;
+                }
               }}
               className={`relative z-10 w-[46px] flex justify-center items-center text-[9px] font-black tracking-wider transition-colors duration-300 ${isNavigating ? 'text-white' : (isDark ? 'text-zinc-500 hover:text-zinc-300' : 'text-slate-400 hover:text-slate-600')}`}
             >
