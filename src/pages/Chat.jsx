@@ -577,6 +577,7 @@ const Chat = () => {
   const [isAutoPreviewDisabled, setIsAutoPreviewDisabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSessionLoading, setIsSessionLoading] = useState(false);
+  const [isHydrating, setIsHydrating] = useState(!!sessionId && sessionId !== 'new');
   const [showHistory, setShowHistory] = useState(false);
   const messagesEndRef = useRef(null);
   const [currentSessionId, setCurrentSessionId] = useState(sessionId || 'new');
@@ -3175,35 +3176,25 @@ const Chat = () => {
   };
 
 
-  useEffect(() => {
-    const loadSessions = async () => {
+  useEffect(() => {    const loadSessions = async () => {
       const data = await chatStorageService.getSessions(currentProjectId);
       setSessions(data);
 
-      // Fetch User Subscribed Agents
       try {
         const user = JSON.parse(localStorage.getItem('user'));
         const userId = user?.id || user?._id;
         if (userId) {
-          try {
-            const token = getUserData()?.token || localStorage.getItem("token");
-            const res = await axios.post(apis.getUserAgents, { userId }, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const agents = res.data?.agents || [];
-            // Add default AI Ads agent if not present
-            const processedAgents = [{ agentName: 'AI Ads', category: 'General', avatar: '/AGENTS_IMG/AI Ads_BRAIN_LOGO.png' }, ...agents];
-            setUserAgents(processedAgents);
-          } catch (agentErr) {
-            // Silently use defaults if fetch fails (no console warning)
-            setUserAgents([{ agentName: 'AI Ads', category: 'General', avatar: '/AGENTS_IMG/AI Ads_BRAIN_LOGO.png' }]);
-          }
+          const token = getUserData()?.token || localStorage.getItem("token");
+          const res = await axios.post(apis.getUserAgents, { userId }, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const agents = res.data?.agents || [];
+          const processedAgents = [{ agentName: 'AI Ads', category: 'General', avatar: '/AGENTS_IMG/AI Ads_BRAIN_LOGO.png' }, ...agents];
+          setUserAgents(processedAgents);
         } else {
-          // No user logged in, use default
           setUserAgents([{ agentName: 'AI Ads', category: 'General', avatar: '/AGENTS_IMG/AI Ads_BRAIN_LOGO.png' }]);
         }
       } catch (err) {
-        // Silently handle errors
         setUserAgents([{ agentName: 'AI Ads', category: 'General', avatar: '/AGENTS_IMG/AI Ads_BRAIN_LOGO.png' }]);
       }
     };
@@ -3211,167 +3202,130 @@ const Chat = () => {
   }, [messages, setSessions, currentProjectId]);
 
   const isNavigatingRef = useRef(false);
+  const lastLoadedSessionRef = useRef(null);
 
   useEffect(() => {
     const initChat = async () => {
-      // If we just navigated from 'new' to a real ID in handleSendMessage,
-      // don't clear the messages we already have in state.
       if (isNavigatingRef.current) {
         isNavigatingRef.current = false;
+        setIsHydrating(false);
         return;
       }
 
-      if (sessionId && sessionId !== 'new') {
-        const currentSession = sessionId;
-        setCurrentSessionId(sessionId);
-        setIsSessionLoading(true);
-        setMessages([]); // Clear previous messages while loading new history to prevent flickering
-        console.log(`[DEBUG] Initializing chat for session: ${sessionId}`);
-        const sessionData = await chatStorageService.getHistory(sessionId);
-
-        // Safety Check: If sessionId has changed since we started fetching, abort state updates
-        if (currentSession !== sessionId) {
-          console.warn(`[Navigation] Session changed during load (${currentSession} -> ${sessionId}). Aborting context sync.`);
-          setIsSessionLoading(false);
-          return;
-        }
-
-        console.log(`[DEBUG] Received history:`, sessionData);
-
-        // --- CONTEXT SYNC ---
-        // If the loaded session belongs to a project, ensure the project context is active
-        if (sessionData.projectId && sessionData.projectId !== currentProjectId) {
-          console.log(`[DEBUG] Syncing project context to: ${sessionData.projectId}`);
-          setCurrentProjectId(sessionData.projectId);
-        }
-
-        // --- MODE RESTORE & RESET ---
-        // Restore legal My Case mode only if the session belongs to an actual legal case
-        if (sessionData.projectId && currentCase?.isLegalCase) {
-          setCurrentMode('LEGAL_TOOLKIT');
-          setSelectedLegalTool(prev =>
-            prev?.id === 'legal_my_case' ? prev : { id: 'legal_my_case', name: 'My Case' }
-          );
-          setLegalView('CHAT');
-        } else {
-          // Fix: Don't automatically reset mode to NORMAL_CHAT if it's already in LEGAL_TOOLKIT
-          // This ensures the mode stays active as requested by the user until manually cancelled.
-          if (currentMode !== 'LEGAL_TOOLKIT') {
-            setCurrentMode('NORMAL_CHAT');
-            setSelectedLegalTool(null);
-            // Also reset other specific tool modes
-            setIsDeepSearch(false);
-            setIsWebSearch(false);
-            setIsImageGeneration(false);
-            setIsVideoGeneration(false);
-            setIsAudioConvertMode(false);
-            setIsDocumentConvert(false);
-            setIsCodeWriter(false);
-            setIsFileAnalysis(false);
-            setIsCashFlowMode(false);
-            setActiveLegalToolkit(false);
-          }
-        }
-
-
-        const historyMessages = sessionData.messages || [];
-
-        // Regenerate Blob URLs for audio conversions on load
-
-
-        const processedHistory = historyMessages.map(msg => {
-          // Ensure every message has a valid unique ID (backend might supply _id)
-          if (!msg.id) {
-            msg.id = (msg._id || Math.random().toString(36).substr(2, 9)).toString();
-          }
-
-          if (msg.conversion && msg.conversion.file) {
-            try {
-              const byteChars = atob(msg.conversion.file);
-              const byteNums = new Array(byteChars.length);
-              for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
-              const byteArray = new Uint8Array(byteNums);
-              const blob = new Blob([byteArray], { type: msg.conversion.mimeType || 'audio/mpeg' });
-              msg.conversion.blobUrl = URL.createObjectURL(blob);
-            } catch (e) { console.error("Blob recovery failed:", e); }
-          }
-          return msg;
-        });
-
-        if (processedHistory && processedHistory.length > 0) {
-          const lastMsg = processedHistory[processedHistory.length - 1];
-          setSuggestions([]);
-          console.log(`[DEBUG] First message role: ${processedHistory[0].role}, content preview: ${processedHistory[0].content?.substring(0, 20)}`);
-        }
-        setMessages(processedHistory);
+      const currentSession = sessionId;
+      
+      if (currentSession && currentSession !== 'new' && lastLoadedSessionRef.current === currentSession && messages.length > 0) {
+        setIsHydrating(false);
         setIsSessionLoading(false);
-      } else {
-        setMessages([]); // Clear messages immediately for fresh context
-        setCurrentSessionId('new');
-        // Fix: Don't automatically reset mode to NORMAL_CHAT if it's already in LEGAL_TOOLKIT
-        // This ensures the mode stays active as requested by the user until manually cancelled.
-        if (!currentProjectId || currentProjectId === 'default' || currentProjectId === 'all') {
-          setCurrentCase(null);
-          // Preserve LEGAL_TOOLKIT mode and legal view if user was on the dashboard
-          if (currentMode !== 'LEGAL_TOOLKIT') {
-            setCurrentMode('NORMAL_CHAT');
-            setSelectedLegalTool(null);
-          }
-        } else if (currentCase?.isLegalCase) {
-          // Ensure legal mode is maintained for legal cases
-          setCurrentMode('LEGAL_TOOLKIT');
-          setSelectedLegalTool({ id: 'legal_my_case', name: 'My Case Assistant' });
-        }
-        // Avoid forcing setLegalView('CHAT') here so we don't overwrite the user's dashboard view on refresh
-
-        // --- SMART WELCOME ---
-        const user = getUserData();
-        if (user && user.token) {
-          try {
-            const res = await axios.get(`${apis.baseUrl}/api/memory`, {
-              headers: { Authorization: `Bearer ${user.token}` }
-            });
-            const mem = res.data;
-            setMemoryRecoil(mem);
-
-            if (mem && mem.isMemoryEnabled) {
-              const name = mem.name || user.name || "friend";
-              const business = mem.businessType;
-
-              // setSuggestions removed as per user request
-
-              // If critical info is missing, show onboarding
-              if (!mem.name && !mem.businessType && sessionId === 'new') {
-                setShowOnboarding(true);
-              }
-
-              let greeting = `Hello ${name}! 👋 Welcome back. `;
-              if (business) greeting += `How is everything going with your ${business} work? `;
-              greeting += "I've loaded your context and I'm ready to assist. What can we achieve today?";
-
-              setMessages([{
-                id: 'welcome-' + Date.now(),
-                role: 'model',
-                content: greeting,
-                timestamp: new Date()
-              }]);
-            } else {
-              setMessages([]);
-            }
-          } catch (e) {
-            setMessages([]);
-          }
-        } else {
-          setMessages([]);
-        }
+        return;
       }
 
-      setShowHistory(false);
+      setIsSessionLoading(true);
+      
+      try {
+        if (sessionId && sessionId !== 'new') {
+          if (lastLoadedSessionRef.current && lastLoadedSessionRef.current !== sessionId) {
+            setMessages([]); 
+          }
+          
+          const sessionData = await chatStorageService.getHistory(sessionId);
+          if (currentSession !== sessionId) return;
+
+          const historyMessages = Array.isArray(sessionData) ? sessionData : (sessionData.messages || []);
+          const sessionMeta = Array.isArray(sessionData) ? {} : sessionData;
+
+          if (sessionMeta.projectId && sessionMeta.projectId !== currentProjectId) {
+            setCurrentProjectId(sessionMeta.projectId);
+          }
+
+          if (sessionMeta.detectedMode === 'LEGAL_TOOLKIT' || (sessionMeta.projectId && currentCase?.isLegalCase)) {
+            if (currentMode !== 'LEGAL_TOOLKIT') {
+              setCurrentMode('LEGAL_TOOLKIT');
+            }
+          }
+
+          const processedHistory = historyMessages.map(msg => {
+            if (!msg.id) msg.id = (msg._id || Math.random().toString(36).substr(2, 9)).toString();
+            if (msg.conversion && msg.conversion.file && !msg.conversion.blobUrl) {
+              try {
+                const byteCharacters = atob(msg.conversion.file);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: msg.conversion.mimeType });
+                msg.conversion.blobUrl = URL.createObjectURL(blob);
+              } catch (e) { console.error("Blob recovery failed:", e); }
+            }
+            return msg;
+          });
+
+          if (processedHistory.length > 0 || lastLoadedSessionRef.current !== sessionId) {
+            setMessages(processedHistory);
+          }
+          
+          lastLoadedSessionRef.current = sessionId;
+
+          const params = new URLSearchParams(location.search);
+          const toolParam = params.get('tool');
+          if (toolParam?.startsWith('legal_')) {
+            const legalTool = PREMIUM_TOOLS.find(t => t.id === toolParam);
+            activateToolWithTypingEffect(toolParam, legalTool?.name, false); 
+          }
+        } else {
+          setCurrentSessionId('new');
+          lastLoadedSessionRef.current = 'new';
+          setMessages([]); 
+          
+          if (!currentProjectId || currentProjectId === 'default' || currentProjectId === 'all') {
+            setCurrentCase(null);
+            if (currentMode !== 'LEGAL_TOOLKIT') {
+              setCurrentMode('NORMAL_CHAT');
+              setSelectedLegalTool(null);
+            }
+          } else if (currentCase?.isLegalCase) {
+            setCurrentMode('LEGAL_TOOLKIT');
+            setSelectedLegalTool({ id: 'legal_my_case', name: 'My Case Assistant' });
+          }
+
+          const user = getUserData();
+          if (user && user.token) {
+            try {
+              const res = await axios.get(`${apis.baseUrl}/api/memory`, {
+                headers: { Authorization: `Bearer ${user.token}` }
+              });
+              const mem = res.data;
+              setMemoryRecoil(mem);
+              if (mem && mem.isMemoryEnabled) {
+                const name = mem.name || user.name || "friend";
+                const business = mem.businessType;
+                if (!mem.name && !mem.businessType && sessionId === 'new') setShowOnboarding(true);
+
+                let greeting = `Hello ${name}! 👋 Welcome back. `;
+                if (business) greeting += `How is everything going with your ${business} work? `;
+                greeting += "I've loaded your context and I'm ready to assist. What can we achieve today?";
+
+                setMessages([{
+                  id: 'welcome-' + Date.now(),
+                  role: 'model',
+                  content: greeting,
+                  timestamp: new Date()
+                }]);
+              }
+            } catch (e) { console.warn("Memory load failed", e); }
+          }
+        }
+      } catch (err) {
+        console.error("Chat initialization failed:", err);
+      } finally {
+        setIsHydrating(false);
+        setIsSessionLoading(false);
+        setShowHistory(false);
+      }
     };
     initChat();
   }, [sessionId, location.key, currentProjectId]);
 
-  const chatContainerRef = useRef(null);
+    const chatContainerRef = useRef(null);
   const shouldAutoScrollRef = useRef(true);
   const isStreamingRef = useRef(false); // true while AI is typing word-by-word
 
@@ -5948,6 +5902,15 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
       setIsVoiceSettingsOpen(true);
     }
   }, [isAudioConvertMode]);
+
+  if (isHydrating) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen w-screen bg-[#0b0c15] text-white">
+        <Loader />
+        <p className="mt-4 text-sm font-bold opacity-50 uppercase tracking-widest animate-pulse">Restoring Session...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full bg-transparent relative overflow-hidden aisa-scalable-text h-full">
