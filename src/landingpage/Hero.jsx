@@ -506,7 +506,7 @@ const Hero = () => {
             textAlign: 'center',
           }}
         >
-          AISA™ is an advanced AI platform designed to empower users with intelligent tools for comprehensive research, creative content generation, and insightful data analysis. To provide a seamless experience, AISA™ optionally requests basic Google account access to securely authenticate users and personalize their workspace.
+          AISA™ is an advanced AI platform designed to empower users with intelligent tools for comprehensive research, creative content generation, and insightful data analysis. To provide a seamless experience.
         </motion.p>
 
         {/* Subtitle */}
@@ -563,7 +563,7 @@ const Hero = () => {
           <motion.button
             whileHover={{ scale: 1.05, background: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(99, 102, 241, 0.12)' }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => window.location.href = 'https://aimall24.com'}
+            onClick={() => window.location.href = import.meta.env.VITE_AI_MALL}
             style={{
               padding: '16px 42px', borderRadius: '16px',
               background: isDarkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(99, 102, 241, 0.06)',

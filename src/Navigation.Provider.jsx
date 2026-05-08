@@ -15,11 +15,12 @@ import SharedChat from './pages/SharedChat';
 
 
 
-import { AppRoute } from './types';
+import { AppRoute, apis } from './types';
 import { Menu, Bell, Sun, Moon, LogIn, User } from 'lucide-react';
 import { useTheme } from './context/ThemeContext';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { toggleState, getUserData, clearUser, activeModeData, activeLegalToolData, legalViewData } from './userStore/userData';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { toggleState, getUserData, clearUser, activeModeData, activeLegalToolData, legalViewData, userData, setUserData } from './userStore/userData';
+import axios from 'axios';
 import { usePersonalization } from './context/PersonalizationContext';
 import NotificationCenter from './Components/NotificationBar/NotificationCenter.jsx';
 import ProfileSettingsDropdown from './Components/ProfileSettingsDropdown/ProfileSettingsDropdown.jsx';
@@ -50,8 +51,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 // Redirects logged-in users to chat on direct access,
 // but allows them to view landing page when clicking logo from within app
 const HomeRedirect = () => {
-  const user = getUserData();
-  const hasToken = user?.token;
+  const hasToken = !!localStorage.getItem('token');
   const location = useLocation();
 
   // Check if user came from clicking the logo (internal navigation)
@@ -76,8 +76,7 @@ const HomeRedirect = () => {
 // ------------------------------
 // Protects login/signup pages - redirects authenticated users to chat
 const GuestRoute = ({ children }) => {
-  const user = getUserData();
-  const hasToken = user?.token;
+  const hasToken = !!localStorage.getItem('token');
 
   // If user is already logged in, redirect to chat
   if (hasToken) {
@@ -169,8 +168,11 @@ const DashboardLayout = () => {
   const location = useLocation();
   const isFullScreen = false;
 
-  const user = getUserData() || { name: 'Guest' };
-  const token = getUserData()?.token;
+  const currentUserData = useRecoilValue(userData);
+  // Re-evaluate user and token based on Recoil state changes or fallback to localStorage
+  const user = currentUserData?.user || getUserData() || { name: 'Guest' };
+  const token = currentUserData?.user?.token || getUserData()?.token;
+  
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -331,11 +333,69 @@ const PlaceholderPage = ({ title }) => (
 // App Router
 // ------------------------------
 
+const SSOInterceptor = ({ children }) => {
+  const [isVerifying, setIsVerifying] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const setUserRecoil = useSetRecoilState(userData);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const ssoToken = params.get('sso_token');
+    const fromApp = params.get('from');
+
+    // Only process if we have a token AND we aren't already logged in
+    if (ssoToken) {
+      // Strip token from URL immediately to prevent re-triggering
+      window.history.replaceState({}, '', location.pathname);
+
+      if (!localStorage.getItem('token')) {
+        setIsVerifying(true);
+        axios.post(apis.ssoHandoff, { sso_token: ssoToken, from: fromApp })
+          .then(res => {
+            const { token, user } = res.data;
+            setUserData(user);
+            setUserRecoil({ user: user });
+            localStorage.setItem("userId", user.id);
+            localStorage.setItem("token", token);
+            // After successful handoff, just let them be on the dashboard!
+            if (location.pathname === '/' || location.pathname === '/login') {
+               navigate('/dashboard/chat', { replace: true });
+            }
+          })
+          .catch(err => {
+            console.error('[SSO] Handoff failed:', err);
+            navigate('/login', { replace: true });
+          })
+          .finally(() => setIsVerifying(false));
+      } else {
+        // If already logged in, just ensure they go to the dashboard if they were sent to login
+        if (location.pathname === '/login' || location.pathname === '/') {
+          navigate('/dashboard/chat', { replace: true });
+        }
+      }
+    }
+  }, [location, navigate, setUserRecoil]);
+
+  if (isVerifying) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#020617] backdrop-blur-xl">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin shadow-[0_0_15px_rgba(139,92,246,0.5)]"></div>
+          <p className="text-white text-xs font-black uppercase tracking-widest animate-pulse">Synchronizing Session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return children;
+};
+
 const NavigateProvider = () => {
   const [tglState] = useRecoilState(toggleState);
 
   return (
-    <>
+    <SSOInterceptor>
       <Toaster
         position="top-right"
         containerStyle={{ zIndex: 99999 }}
@@ -393,7 +453,7 @@ const NavigateProvider = () => {
         {/* Catch All */}
         <Route path="*" element={<Navigate to={AppRoute.LANDING} replace />} />
       </Routes>
-    </>
+    </SSOInterceptor>
   );
 };
 

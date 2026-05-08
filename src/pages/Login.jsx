@@ -55,6 +55,8 @@ const Login = () => {
     const provider = params.get('provider');
     const picture = params.get('picture');
 
+    // sso_token is now handled globally in Navigation.Provider.jsx via SSOInterceptor
+
     if (isSocialAuth && token && userId) {
       toast.success(`Successfully authenticated as ${userName}!`);
 

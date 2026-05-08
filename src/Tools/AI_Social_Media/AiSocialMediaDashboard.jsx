@@ -38,6 +38,12 @@ const TwitterXIcon = ({ className }) => (
   </svg>
 );
 
+const ensureStringId = (id) => {
+  if (!id) return id;
+  if (typeof id === 'object') return id._id || id.id || String(id);
+  return String(id);
+};
+
 // Mock/Initial state for usage
 const INITIAL_USAGE = {
   imageUsed: 0,
@@ -1106,15 +1112,20 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
 
     const toastId = toast.loading(`Deleting ${wsName}...`);
     try {
+      // 1. Clear the calendar specifically for this workspace first (clean-up)
+      try {
+        await apiService.clearCalendarForWorkspace(wsId);
+      } catch (e) { console.warn("Calendar clear skipped during delete:", e.message); }
+
       const res = await apiService.deleteSocialAgentWorkspace(wsId);
       if (res.success) {
         toast.success(`"${wsName}" deleted permanently`, { id: toastId });
 
         // Update local state without whole page refresh
-        const updatedList = allWorkspaces.filter(w => w._id !== wsId);
+        const updatedList = allWorkspaces.filter(w => ensureStringId(w._id) !== ensureStringId(wsId));
         setAllWorkspaces(updatedList);
 
-        if (workspace?._id === wsId) {
+        if (ensureStringId(workspace?._id) === ensureStringId(wsId)) {
           if (updatedList.length > 0) {
             await switchWorkspace(updatedList[0]);
           } else {

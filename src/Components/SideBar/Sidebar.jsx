@@ -56,7 +56,7 @@ import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ProfileSettingsDropdown from '../ProfileSettingsDropdown/ProfileSettingsDropdown.jsx';
 import { getSubscriptionDetails } from '../../services/pricingService';
-import apiService from '../../services/apiService';
+import { apiService } from '../../services/apiService';
 import DeleteConfirmModal from '../DeleteConfirmModal.jsx';
 
 
@@ -541,16 +541,32 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
               AISA
             </div>
             <button
-              onClick={() => {
+              onClick={async () => {
+                const targetUrl = (window._env_ && window._env_.VITE_AI_MALL) || import.meta.env.VITE_AI_MALL;
+                if (!targetUrl) {
+                  console.error("VITE_AI_MALL is undefined in this environment.");
+                  return;
+                }
+
+                const sessionToken = getUserData()?.token || localStorage.getItem('token');
+                if (!sessionToken) {
+                  // Not logged in — just navigate
+                  window.location.href = targetUrl;
+                  return;
+                }
+
                 setIsNavigating(true);
-                setTimeout(() => {
-                  const targetUrl = (window._env_ && window._env_.VITE_AI_MALL) || import.meta.env.VITE_AI_MALL;
-                  if (targetUrl) {
-                    window.location.href = targetUrl;
-                  } else {
-                    console.error("VITE_AI_MALL is undefined in this environment.");
-                  }
-                }, 300);
+                try {
+                  const { data } = await axios.post(apis.ssoGenerate, {}, {
+                    headers: { 'Authorization': `Bearer ${sessionToken}` }
+                  });
+                  const base = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
+                  window.location.href = `${base}/dashboard/marketplace?sso_token=${encodeURIComponent(data.sso_token)}&from=aisa`;
+                } catch (err) {
+                  console.error('[SSO] Failed to generate handoff token:', err);
+                  setIsNavigating(false);
+                  window.location.href = targetUrl;
+                }
               }}
               className={`relative z-10 w-[46px] flex justify-center items-center text-[9px] font-bold transition-colors ${isNavigating ? 'text-white' : (isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-[#8B5CF6]')}`}
             >

@@ -58,7 +58,7 @@ export const AppRoute = {
 };
 
 // API Base URL - import.meta.env is baked at build time (most reliable), window._env_ is runtime
-const API = import.meta.env.VITE_AISA_BACKEND_API || window._env_?.VITE_AISA_BACKEND_API || "http://localhost:8080/api";
+const API = import.meta.env.VITE_AISA_BACKEND_API || window._env_?.VITE_AISA_BACKEND_API || window._env_?.AISA_BACKEND_API || "http://localhost:8081/api";
 
 const apis = {
   resetPassword: `${API}/auth/reset-password-otp`,
@@ -91,6 +91,8 @@ const apis = {
   forgotPassword: `${API}/auth/forgot-password`,
   emailVerificationApi: `${API}/auth/verify-email`,
   resendCode: `${API}/auth/resend-code`,
+  ssoGenerate: `${API}/auth/sso/generate`,
+  ssoHandoff: `${API}/auth/sso/handoff`,
   subscription: {
     status: `${API}/subscription/status`,
     credits: `${API}/subscription/user-credits`,
@@ -117,6 +119,7 @@ const apis = {
   },
   imageProxy: `${API}/image/proxy`,
   precedents: `${API}/precedents`,
+  baseUrl: API,
 };
 
 export { API, apis };
