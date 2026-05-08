@@ -217,12 +217,12 @@ const TOOL_PRICING = {
     models: [
       { id: 'gemini-3.1-flash-image-preview', name: 'AISA™ Gemini 3.1 Flash', price: 45, speed: 'Fast', description: 'Latest preview — fastest Gemini image generation' },
       { id: 'gemini-3-pro-image-preview', name: 'AISA™ Gemini 3 Pro', price: 75, speed: 'Pro', description: 'Pro-grade scene understanding & generation' },
-      { id: 'gemini-2.5-flash-image', name: 'AISA™ Gemini 2.5 Flash', price: 30, speed: 'Stable', description: 'Stable & reliable production image generation' }
+      { id: 'gemini-1.5-flash', name: 'AISA™ Gemini 1.5 Flash', price: 30, speed: 'Stable', description: 'Stable & reliable production image generation' }
     ],
     editModels: [
       { id: 'gemini-3.1-flash-image-preview', name: 'AISA™ Gemini 3.1 Flash', price: 45, speed: 'Fast', description: 'Latest preview model — fastest AI image editing' },
       { id: 'gemini-3-pro-image-preview', name: 'AISA™ Gemini 3 Pro', price: 75, speed: 'Pro', description: 'Pro-grade image editing with rich scene understanding' },
-      { id: 'gemini-2.5-flash-image', name: 'AISA™ Gemini 2.5 Flash', price: 30, speed: 'Stable', description: 'Stable & reliable — production-ready image edits' }
+      { id: 'gemini-1.5-flash', name: 'AISA™ Gemini 1.5 Flash', price: 30, speed: 'Stable', description: 'Stable & reliable — production-ready image edits' }
     ]
   },
   video: {
@@ -233,7 +233,7 @@ const TOOL_PRICING = {
   },
   document: {
     models: [
-      { id: 'gemini-2.5-flash', name: 'AISA™ Flash', price: 0, speed: 'Fast', description: 'Basic document analysis' },
+      { id: 'gemini-1.5-flash', name: 'AISA™ Flash', price: 0, speed: 'Fast', description: 'Basic document analysis' },
       { id: 'gemini-pro', name: 'AISA™ Pro', price: 20, speed: 'Medium', description: 'Advanced document processing' },
       { id: 'gpt4', name: 'AISA™ Premium', price: 30, speed: 'Medium', description: 'Premium document analysis' }
     ]
@@ -778,7 +778,7 @@ const Chat = () => {
   const [selectedLegalTool, setSelectedLegalTool] = useRecoilState(activeLegalToolData);
   const [videoAspectRatio, setVideoAspectRatio] = useState('');
   const [videoModelId, setVideoModelId] = useState('veo-3.1-fast-generate-001');
-  const [editModelId, setEditModelId] = useState('gemini-2.5-flash');
+  const [editModelId, setEditModelId] = useState('gemini-1.5-flash');
   const [videoResolution, setVideoResolution] = useState('1080p');
   const v = personalizations?.voice || { languageCode: 'en-US', voiceName: 'en-US-Chirp3-HD-Autonoe', pitch: 0, speed: 1.0 };
   const [audioLangCode, setAudioLangCode] = useState(v.languageCode);
@@ -793,10 +793,12 @@ const Chat = () => {
   const [isPlayingSample, setIsPlayingSample] = useState(false);
   const sampleAudioRef = useRef(null);
   const [imageAspectRatio, setImageAspectRatio] = useState('1:1');
-  const [imageModelId, setImageModelId] = useState('gemini-2.5-flash');
+  const [imageModelId, setImageModelId] = useState('gemini-1.5-flash');
   const [isMagicSettingsOpen, setIsMagicSettingsOpen] = useState(false);
   const abortControllerRef = useRef(null);
   const voiceUsedRef = useRef(false); // Track if voice input was used
+  const isRoutingRef = useRef(false); // Track if we are routing to a magic tool
+
 
   const [showGmailModal, setShowGmailModal] = useState(false);
 
@@ -2024,6 +2026,7 @@ const Chat = () => {
       console.error('Video generation error:', error);
       toast.error('Error initiating video generation');
     } finally {
+      setTypingMessageId(null);
       setIsLoading(false);
     }
   };
@@ -2143,6 +2146,7 @@ const Chat = () => {
       console.error('Image generation error:', error);
       toast.error('Error initiating image generation');
     } finally {
+      setTypingMessageId(null);
       setIsLoading(false);
     }
   };
@@ -2338,6 +2342,7 @@ const Chat = () => {
       console.error('Image editing error:', error);
       toast.error('Error initiating image editing');
     } finally {
+      setTypingMessageId(null);
       setIsLoading(false);
     }
   };
@@ -2418,6 +2423,7 @@ const Chat = () => {
       console.error('Deep search error:', error);
       toast.error('Error initiating deep search');
     } finally {
+      setTypingMessageId(null);
       setIsLoading(false);
     }
   };
@@ -2508,6 +2514,7 @@ const Chat = () => {
       console.error("handleStockAnalysis error:", err);
       toast.error("Error initiating analysis");
     } finally {
+      setTypingMessageId(null);
       setIsLoading(false);
     }
   };
@@ -3555,6 +3562,7 @@ const Chat = () => {
 
 
   const handleSendMessage = async (e, overrideContent, toolOverride = null) => {
+    isRoutingRef.current = false; // Reset for this call
     if (e) e.preventDefault();
 
     // GLOBAL LOCK & DEBOUNCE (Combined with isSendingRef for maximum protection)
@@ -3627,6 +3635,7 @@ const Chat = () => {
         !isDocumentConvert && !isVoiceMode;
 
       if (isCurrentModeChat) {
+        isRoutingRef.current = true; // Signal that we are routing to prevent UI flicker
         console.log(`[IntentRouting] High confidence intent (${intentSuggestion.intent}) detected. Routing to pipeline.`);
         const activeSuggestion = intentSuggestion;
         setIntentSuggestion(null); // Clear state immediately
@@ -3636,7 +3645,7 @@ const Chat = () => {
         setTimeout(() => {
           isSendingRef.current = false;
           isGlobalSending = false;
-          setIsLoading(false);
+          // Note: We DON'T setIsLoading(false) here to avoid the flicker
           handleSendMessage(e, contentToSend, activeSuggestion.intent);
         }, 50);
         return;
@@ -4500,11 +4509,8 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
           isStreamingRef.current = false;
 
           if (!isSendingRef.current) {
-            setTypingMessageId(null);
             return; // Exit function if stopped
           }
-
-          setTypingMessageId(null); // Clear typing status
 
           // Add conversion data and media if available
           const finalModelMsg = { ...modelMsg, content: partContent };
@@ -4599,10 +4605,18 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
       console.error("Chat Error:", error);
       toast.error(`Error: ${error.message || "Failed to send message"}`);
     } finally {
-      setIsLoading(false);
-      isSendingRef.current = false;
-      isGlobalSending = false; // RELEASE GLOBAL LOCK
-      abortControllerRef.current = null; // Clean up abort controller
+      // ALWAYS reset one-time tool flags to prevent them from sticking
+      setIsDocumentConvert(false);
+      setIsAudioConvertMode(false);
+      setIsFileAnalysis(false);
+
+      if (!isRoutingRef.current) {
+        setTypingMessageId(null);
+        setIsLoading(false);
+        isSendingRef.current = false;
+        isGlobalSending = false; // RELEASE GLOBAL LOCK
+        abortControllerRef.current = null; // Clean up abort controller
+      }
     }
   };
 
@@ -5675,7 +5689,8 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
       } catch (e) {
         console.error("Audio edit error:", e);
       } finally {
-        setIsLoading(false);
+      setTypingMessageId(null);
+      setIsLoading(false);
       }
       return;
     }
@@ -5759,6 +5774,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
       const historyData = await chatStorageService.getHistory(sessionId);
       setMessages(historyData.messages || (Array.isArray(historyData) ? historyData : []));
     } finally {
+      setTypingMessageId(null);
       setIsLoading(false);
     }
   };
