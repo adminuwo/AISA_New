@@ -542,7 +542,7 @@ const Chat = () => {
 
       try {
         await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': await makeImagePromise() })
+          new ClipboardItem({ 'image/png': makeImagePromise() })
         ]);
         toast.dismiss(t);
         toast.success('Image copied! ✨');
@@ -555,11 +555,17 @@ const Chat = () => {
           toast.dismiss(t);
           toast.success('Image copied! ✨');
         } else {
-            <span className="text-[10px] opacity-80 leading-tight">Your browser security blocked the action even through the master proxy. Please **right-click** and **"Copy Image"** instead.</span>
-          </span>
-        ),
-        { duration: 4000 }
-      );
+          throw err;
+        }
+      }
+    } catch (err) {
+      console.error('Copy failure:', err);
+      toast.dismiss(t);
+      if (!window.isSecureContext) {
+        toast.error((t) => (<span className="flex flex-col gap-1"><span className="font-bold text-xs text-amber-500">Insecure Connection (HTTP)</span><span className="text-[10px] opacity-80 leading-tight">Browsers block image copying on HTTP sites. Use <b>HTTPS</b> or <b>Right-Click &gt; Copy Image</b>.</span></span>), { duration: 6000 });
+      } else {
+        toast.error((t) => (<span className="flex flex-col gap-1"><span className="font-bold text-xs">Copy failed</span><span className="text-[10px] opacity-80 leading-tight">Browser security blocked the action. Please <b>right-click</b> and <b>"Copy Image"</b> instead.</span></span>), { duration: 4000 });
+      }
     }
   };
   const { sessionId } = useParams();
