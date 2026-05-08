@@ -458,22 +458,32 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
 
   const handleCopyImageToClipboard = async (url) => {
     try {
-      const proxyUrl = toProxyUrl(url);
-      const response = await fetch(proxyUrl);
-      const blob = await response.blob();
+      let blob;
+      try {
+        const proxyUrl = toProxyUrl(url);
+        const response = await fetch(proxyUrl);
+        blob = await response.blob();
+      } catch (e) {
+        const response = await fetch(url);
+        blob = await response.blob();
+      }
 
       // AISA standard: Convert to PNG if not already, for clipboard compatibility
-      const pngBlob = blob.type === 'image/png' ? blob : await new Promise((resolve) => {
+      const pngBlob = blob.type === 'image/png' ? blob : await new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = 'anonymous';
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          canvas.getContext('2d').drawImage(img, 0, 0);
-          canvas.toBlob(resolve, 'image/png');
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Canvas failed')), 'image/png');
+          } catch(err) {
+            reject(err);
+          }
         };
-        img.src = proxyUrl;
+        img.onerror = () => reject(new Error('Image failed'));
+        img.src = URL.createObjectURL(blob);
       });
 
       await navigator.clipboard.write([

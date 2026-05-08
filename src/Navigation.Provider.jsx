@@ -117,38 +117,46 @@ const MobileNotificationBell = ({ onClick }) => {
 // ─── SCROLL SHOW/HIDE LOGIC (FIXED VERSION 🔥) ───
 const useScrollNavbar = () => {
   const [visible, setVisible] = useState(true);
-  const lastScrollY = useRef(0);
-  const scrollThreshold = 10;
+  const lastScrollY = useRef(new Map());
+  const scrollThreshold = 15;
 
   useEffect(() => {
     const handleScroll = (e) => {
-      // Support both window scroll and container scroll (Chat page)
       const target = e.target;
       
-      const isDoc = target === document || target === document.documentElement;
-      const isChat = target.classList && target.classList.contains('chatgpt-container');
+      // In DashboardLayout, the document itself does not scroll (fixed inset-0).
+      // Any document scroll events are bogus (mobile browser UI shifts, etc) and cause flickering.
+      if (target === document || target === document.documentElement || target === window) {
+        return; 
+      }
       
-      if (!isDoc && !isChat) return;
+      const isChat = target.classList && target.classList.contains('chatgpt-container');
+      const isMain = target.tagName === 'MAIN';
+      
+      // Only track scroll events from our known scrollable containers
+      if (!isChat && !isMain) return;
 
-      const currentScrollY = isDoc ? window.scrollY : (target.scrollTop ?? 0);
+      const targetKey = isChat ? 'chat' : 'main';
+      const currentScrollY = target.scrollTop ?? 0;
+      const prevScrollY = lastScrollY.current.get(targetKey) || 0;
 
-      // Always show at top
-      if (currentScrollY < 10) {
+      // Always show at top (with a small buffer for bounce)
+      if (currentScrollY <= 10) {
         setVisible(true);
-        lastScrollY.current = currentScrollY;
+        lastScrollY.current.set(targetKey, currentScrollY);
         return;
       }
 
-      const diff = currentScrollY - lastScrollY.current;
+      const diff = currentScrollY - prevScrollY;
       if (Math.abs(diff) > scrollThreshold) {
-        if (currentScrollY > lastScrollY.current) {
+        if (currentScrollY > prevScrollY) {
           // scroll down
           setVisible(false);
         } else {
           // scroll up
           setVisible(true);
         }
-        lastScrollY.current = currentScrollY;
+        lastScrollY.current.set(targetKey, currentScrollY);
       }
     };
 
