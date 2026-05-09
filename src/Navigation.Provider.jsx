@@ -125,10 +125,10 @@ const useScrollNavbar = () => {
     const handleScroll = (e) => {
       // Support both window scroll and container scroll (Chat page)
       const target = e.target;
-      
+
       const isDoc = target === document || target === document.documentElement;
       const isChat = target.classList && target.classList.contains('chatgpt-container');
-      
+
       if (!isDoc && !isChat) return;
 
       const currentScrollY = isDoc ? window.scrollY : (target.scrollTop ?? 0);
@@ -184,11 +184,11 @@ const DashboardLayout = () => {
   const hideNavbarTools = ["legal_my_case", "legal_precedents", "my-case", "legal-precedents"];
 
   // Jaha navbar NAHI chahiye
-  const isHiddenTool = 
+  const isHiddenTool =
     currentMode === 'LEGAL_TOOLKIT' ||
-    hideNavbarTools.includes(tool) || 
+    hideNavbarTools.includes(tool) ||
     location.pathname === '/dashboard/cases';
-  
+
   // Navbar is hidden if it's a restricted tool view, regardless of device.
   const allowNavbar = !isHiddenTool;
 

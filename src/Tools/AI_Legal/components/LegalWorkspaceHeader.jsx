@@ -28,13 +28,15 @@ const LegalWorkspaceHeader = ({
       <div className="flex flex-col gap-4 sm:gap-6">
         {/* Navigation & Status Row */}
         <div className="flex items-center justify-between w-full">
-          <button
-            onClick={handleBackToDashboard}
-            className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest bg-slate-100 dark:bg-zinc-800/50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full transition-all hover:gap-3 group"
-          >
-            <ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform sm:w-[14px]" />
-            {tLegal('backToCaseList')}
-          </button>
+          {selectedLegalTool?.id === 'legal_my_case' && (
+            <button
+              onClick={handleBackToDashboard}
+              className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest bg-slate-100 dark:bg-zinc-800/50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full transition-all hover:gap-3 group"
+            >
+              <ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform sm:w-[14px]" />
+              {tLegal('backToCaseList')}
+            </button>
+          )}
         </div>
 
         {currentCase && (

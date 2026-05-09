@@ -1560,3 +1560,12 @@ body.modal-open-hide-navbar {
     height: 100dvh !important;
   }
 }
+
+::selection { background: rgba(180, 180, 180, 0.28) !important; color: inherit !important; }
+::-moz-selection { background: rgba(180, 180, 180, 0.28) !important; color: inherit !important; }
+.dark ::selection { background: rgba(255, 255, 255, 0.18) !important; color: inherit !important; }
+.dark ::-moz-selection { background: rgba(255, 255, 255, 0.18) !important; color: inherit !important; }
+
+.chatgpt-message-row { user-select: text !important; }
+.chatgpt-message-row * { user-select: text !important; }
+.selection-toolbar-container { user-select: none !important; }

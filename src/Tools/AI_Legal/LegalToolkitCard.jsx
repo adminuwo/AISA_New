@@ -97,11 +97,11 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
   return (
     <motion.div
       whileHover={{ y: -4, scale: 1.01 }}
-      onClick={() => { 
-        if (isUnlocked) { 
+      onClick={() => {
+        if (isUnlocked) {
           // If selecting a sub-tool, we want to ensure we're in the right mode for the 'Activated' screen
-          onSelect(tool, isUnlocked); 
-        } 
+          onSelect(tool, isUnlocked);
+        }
       }}
       className={`group relative cursor-pointer rounded-[1.4rem] p-4 transition-all duration-300 border overflow-hidden
         bg-white/65 border-white/75 backdrop-blur-[12px] shadow-[0_4px_16px_rgba(99,102,241,0.06)]
@@ -142,7 +142,7 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
               </div>
             </div>
             <button
-            onClick={(e) => { e.stopPropagation(); if (isUnlocked) onSelect(tool, isUnlocked); }}
+              onClick={(e) => { e.stopPropagation(); if (isUnlocked) onSelect(tool, isUnlocked); }}
               className="w-full py-2 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-colors shadow-lg mt-4"
             >
               {t('launchNow')}

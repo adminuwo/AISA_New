@@ -25,6 +25,7 @@ import {
   Trash2,
   Edit2,
   Check,
+  Square,
   FolderPlus,
   Folder,
   FolderOpen,
@@ -58,6 +59,8 @@ import ProfileSettingsDropdown from '../ProfileSettingsDropdown/ProfileSettingsD
 import { getSubscriptionDetails } from '../../services/pricingService';
 import apiService from '../../services/apiService';
 import DeleteConfirmModal from '../DeleteConfirmModal.jsx';
+import { useGenerationStore, selectGeneratingChatIds } from '../../userStore/useGenerationStore';
+import { useShallow } from 'zustand/react/shallow';
 
 
 const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
@@ -107,6 +110,10 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
   const [sessionToShare, setSessionToShare] = useState(null);
   const [currentMode, setMode] = useRecoilState(activeModeData);
   const [expandedHistoryGroups, setExpandedHistoryGroups] = useState({});
+
+  // ── Live generation status ──────────────────────────────────────
+  // Subscribe to the global generation store so generating chats show live dots
+  const generatingChatIds = useGenerationStore(useShallow(selectGeneratingChatIds));
 
   const toggleHistoryGroup = (groupKey) => {
     setExpandedHistoryGroups(prev => ({
@@ -348,6 +355,9 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
     e.stopPropagation();
     try {
       await chatStorageService.deleteSession(sessionIdToDelete);
+      // Clean up global generation state for this chat
+      useGenerationStore.getState().clearGeneration(sessionIdToDelete);
+      
       const updatedSessions = await chatStorageService.getSessions(currentProjectId);
       setSessions(updatedSessions);
       if (currentSessionId === sessionIdToDelete) {
@@ -974,13 +984,11 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                       </div>
                                     ) : (
                                       <div className="sidebar-chat-container relative">
-                                        <div
-                                          onClick={() => {
-                                            navigate(`/dashboard/chat/${session.sessionId}`);
-                                            onClose();
-                                          }}
-                                          className={`sidebar-chat-item group/item transition-all duration-500 mx-2 cursor-pointer
-                                        ${currentSessionId === session.sessionId
+                                        <NavLink
+                                          to={`/dashboard/chat/${session.sessionId}`}
+                                          onClick={onClose}
+                                          className={({ isActive }) => `sidebar-chat-item group/item transition-all duration-500 mx-2 cursor-pointer
+                                        ${isActive
                                               ? (isDark ? 'bg-white/[0.08] text-white border border-white/10 shadow-2xl backdrop-blur-3xl' : 'bg-white text-primary border border-primary/20 shadow-lg shadow-primary/10 backdrop-blur-3xl ring-4 ring-primary/5')
                                               : (isDark ? 'text-subtext/60 hover:bg-white/[0.04] hover:text-white border border-transparent' : 'text-slate-700 hover:bg-white hover:text-slate-900 border border-transparent hover:shadow-md hover:scale-[1.01]')
                                             }
@@ -993,8 +1001,21 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                             />
                                           )}
                                           <div className="sidebar-chat-title-group text-left flex-1 min-w-0">
-                                            <div className="sidebar-chat-title truncate">
-                                              {highlightMatch(session.title || "Untitled Intelligence", searchQuery)}
+                                            <div className="sidebar-chat-title flex items-center gap-1.5">
+                                              {/* ── Live Generation Indicator ── */}
+                                              {generatingChatIds.includes(session.sessionId) && (
+                                                <span
+                                                  title="Generating response..."
+                                                  className="flex items-center gap-[3px] shrink-0"
+                                                >
+                                                  <span className="w-[5px] h-[5px] rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                  <span className="w-[5px] h-[5px] rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '120ms' }} />
+                                                  <span className="w-[5px] h-[5px] rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '240ms' }} />
+                                                </span>
+                                              )}
+                                              <span className="truncate">
+                                                {highlightMatch(session.title || "Untitled Intelligence", searchQuery)}
+                                              </span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                               {searchQuery && session.projectId && (
@@ -1009,13 +1030,26 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                           </div>
 
                                           <div className="sidebar-chat-actions">
-                                            <button
-                                              onClick={(e) => { e.stopPropagation(); startRename(e, session); }}
-                                              className="sidebar-chat-action-btn"
-                                              title="Rename Chat"
-                                            >
-                                              <Edit2 />
-                                            </button>
+                                            {generatingChatIds.includes(session.sessionId) ? (
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  useGenerationStore.getState().abortGeneration(session.sessionId);
+                                                }}
+                                                className="sidebar-chat-action-btn stop-btn text-red-500 hover:text-red-600 bg-red-500/10 rounded-lg p-1 animate-pulse"
+                                                title="Stop Generation"
+                                              >
+                                                <Square className="w-2.5 h-2.5 fill-current" />
+                                              </button>
+                                            ) : (
+                                              <button
+                                                onClick={(e) => { e.stopPropagation(); startRename(e, session); }}
+                                                className="sidebar-chat-action-btn"
+                                                title="Rename Chat"
+                                              >
+                                                <Edit2 />
+                                              </button>
+                                            )}
                                             <button
                                               onClick={(e) => { e.stopPropagation(); handleDeleteSession(e, session.sessionId); }}
                                               className="sidebar-chat-action-btn delete"
@@ -1024,7 +1058,7 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                               <X />
                                             </button>
                                           </div>
-                                        </div>
+                                        </NavLink>
                                       </div>
                                     )}
                                   </motion.div>
