@@ -509,10 +509,13 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
       </AnimatePresence>
 
       {isOpen && (
-        <div
-          className={`fixed inset-0 z-[90] backdrop-blur-[6px] lg:hidden animate-in fade-in duration-300
-            ${isDark ? 'bg-black/60' : 'bg-slate-900/40'}`}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           onClick={onClose}
+          className={`fixed inset-0 z-[1990] backdrop-blur-[6px] lg:hidden animate-in fade-in duration-300
+            ${isDark ? 'bg-black/60' : 'bg-slate-900/40'}`}
         />
       )}
 
@@ -520,9 +523,10 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
         ref={sidebarRef}
         onMouseMove={handleSidebarMouseMove}
         className={`
-          fixed inset-y-0 left-0 z-[100] w-[280px] sm:w-72 lg:w-[280px] 
+          fixed inset-y-0 left-0 z-[2000] w-[280px] sm:w-72 lg:w-[280px] 
           sidebar-glass flex flex-col transition-all duration-500 ease-in-out 
           lg:relative lg:translate-x-0 
+          bg-white dark:bg-[#0f172a] lg:bg-transparent
           shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]
           lg:shadow-none overflow-hidden
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -535,20 +539,32 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
           <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-primary/30 blur-[100px] animate-float-slow" style={{ animationDelay: '-5s' }} />
         </div>
         {/* Brand & Top Actions */}
-        <div className="p-6 pb-2 mb-2 flex items-center justify-between relative z-10 flex-wrap gap-y-3">
-          <Link to="/" state={{ fromLogo: true }} className="group/logo flex items-center gap-2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-150 animate-pulse opacity-0 group-hover/logo:opacity-100 transition-opacity" />
-              <img
-                src={logo}
-                alt="AISA™"
-                className="h-9 w-auto relative z-10 transition-transform duration-500 group-hover/logo:scale-110 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]"
-              />
-            </div>
-            <span className="text-xl font-black tracking-tighter transition-all duration-300" style={{ background: 'linear-gradient(135deg, #9333ea 0%, #3b82f6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: '"Times New Roman", Times, serif', display: 'inline-block', paddingRight: '2px' }}>AISA<span style={{ fontSize: '0.6em', verticalAlign: 'super', marginLeft: '2px' }}>™</span></span>
-          </Link>
+        <div className="p-5 pb-2 mb-2 flex flex-col gap-4 relative z-10 border-b border-white/5 lg:border-none">
+          <div className="flex items-center justify-between w-full">
+            <Link to="/" state={{ fromLogo: true }} className="group/logo flex items-center gap-2">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-150 animate-pulse opacity-0 group-hover/logo:opacity-100 transition-opacity" />
+                <img
+                  src={logo}
+                  alt="AISA™"
+                  className="h-8 w-auto relative z-10 transition-transform duration-500 group-hover/logo:scale-110"
+                />
+              </div>
+              <span className="text-lg font-black tracking-tighter" style={{ background: 'linear-gradient(135deg, #9333ea 0%, #3b82f6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: '"Times New Roman", Times, serif' }}>AISA™</span>
+            </Link>
 
-          <div className="flex items-center relative z-10 bg-black/5 border border-[#9333ea]/30 rounded-full p-0.5 w-24 h-7">
+            <button
+              onClick={onClose}
+              className={`lg:hidden p-2 rounded-xl transition-all border shadow-sm active:scale-95
+                ${isDark
+                  ? 'text-subtext hover:text-white bg-white/5 hover:bg-white/10 border-white/10'
+                  : 'text-slate-500 hover:text-primary bg-slate-100 hover:bg-slate-200 border-slate-200'}`}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="flex items-center relative z-10 bg-black/5 border border-[#9333ea]/30 rounded-full p-0.5 w-fit h-7">
             <motion.div
               className="absolute top-0.5 bottom-0.5 left-0.5 w-[46px] rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_2px_4px_rgba(0,0,0,0.1)] z-0"
               style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #60a5fa 100%)' }}
@@ -564,27 +580,15 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
             <button
               onClick={async () => {
                 const targetUrl = (window._env_ && window._env_.VITE_AI_MALL) || import.meta.env.VITE_AI_MALL;
-                if (!targetUrl) {
-                  console.error("VITE_AI_MALL is undefined in this environment.");
-                  return;
-                }
-
+                if (!targetUrl) return;
                 const sessionToken = getUserData()?.token || localStorage.getItem('token');
-                if (!sessionToken) {
-                  // Not logged in — just navigate
-                  window.location.href = targetUrl;
-                  return;
-                }
-
+                if (!sessionToken) { window.location.href = targetUrl; return; }
                 setIsNavigating(true);
                 try {
-                  const { data } = await axios.post(apis.ssoGenerate, {}, {
-                    headers: { 'Authorization': `Bearer ${sessionToken}` }
-                  });
+                  const { data } = await axios.post(apis.ssoGenerate, {}, { headers: { 'Authorization': `Bearer ${sessionToken}` } });
                   const base = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
                   window.location.href = `${base}/dashboard/marketplace?sso_token=${encodeURIComponent(data.sso_token)}&from=aisa`;
                 } catch (err) {
-                  console.error('[SSO] Failed to generate handoff token:', err);
                   setIsNavigating(false);
                   window.location.href = targetUrl;
                 }
@@ -594,16 +598,6 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
               MALL
             </button>
           </div>
-
-          <button
-            onClick={onClose}
-            className={`lg:hidden p-2.5 rounded-2xl transition-all border shadow-sm active:scale-95
-              ${isDark
-                ? 'text-subtext hover:text-white bg-white/5 hover:bg-white/10 border-white/10'
-                : 'text-slate-500 hover:text-primary bg-slate-100 hover:bg-slate-200 border-slate-200'}`}
-          >
-            <X className="w-5.5 h-5.5" />
-          </button>
         </div>
 
 
@@ -1033,7 +1027,7 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                             />
                                           )}
                                           <div className="sidebar-chat-title-group text-left flex-1 min-w-0">
-                                            <div className="sidebar-chat-title flex items-center gap-1.5 mb-0.5">
+                                            <div className="sidebar-chat-title flex items-center gap-1.5">
                                               {/* ── Icon Selection ── */}
                                               {session.activeTool?.startsWith('legal_') ? (() => {
                                                 const tool = session.activeTool.toLowerCase();
@@ -1061,10 +1055,10 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                                 {highlightMatch(session.title || "Untitled Intelligence", searchQuery)}
                                               </span>
                                             </div>
-                                            <div className="flex flex-wrap items-center gap-1.5">
+                                            <div className="flex flex-wrap items-center gap-1 mt-0.5">
                                               {/* ── AI LEGAL Badge ── */}
                                               {session.activeTool?.startsWith('legal_') && (
-                                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/20">
+                                                <div className="flex items-center gap-1 px-1.5 py-[1px] rounded-md bg-purple-500/10 border border-purple-500/20">
                                                   <span className="text-[8px] font-black text-purple-500 uppercase tracking-tighter">AI LEGAL</span>
                                                   <span className="text-[8px] font-bold text-purple-400/70 truncate max-w-[80px]">
                                                     {session.activeTool.replace('legal_', '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
@@ -1074,7 +1068,7 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
 
                                               {/* ── Project Badge ── */}
                                               {session.projectId && (
-                                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 border border-primary/20">
+                                                <div className="flex items-center gap-1 px-1.5 py-[1px] rounded-md bg-primary/10 border border-primary/20">
                                                   <Folder className="w-2.5 h-2.5 text-primary" />
                                                   <span className="text-[9px] font-bold text-primary truncate max-w-[60px]">
                                                     {projects.find(p => p._id === session.projectId)?.name || "Personal"}

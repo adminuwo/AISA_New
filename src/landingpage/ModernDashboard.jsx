@@ -153,7 +153,7 @@ const ModernDashboard = ({ userName, onToolSelect, activeToolId, activeCategory 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.25 }}
-            className="max-w-2xl mx-auto text-center px-4 mt-4 mb-8 sm:mt-6 sm:mb-10"
+            className="max-w-4xl mx-auto text-center px-4 mt-4 mb-8 sm:mt-6 sm:mb-10"
           >
             <p className="text-[13px] sm:text-[15px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
               {currentCategoryData?.description}
@@ -316,7 +316,7 @@ const DashboardCard = ({ tool, onSelect, isActive, isDark }) => {
               <Icon className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px]" style={{ color: tool.color }} />
             </div>
             {/* Title next to icon on mobile */}
-            <h4 className="sm:hidden font-bold text-[11px] text-slate-900 dark:text-white group-hover:text-primary transition-colors leading-tight truncate">
+            <h4 className="sm:hidden font-bold text-[11px] text-slate-900 dark:text-white group-hover:text-primary transition-colors leading-tight line-clamp-2">
               {tool.label}
             </h4>
           </div>
