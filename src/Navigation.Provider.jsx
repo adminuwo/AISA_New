@@ -419,6 +419,7 @@ const NavigateProvider = () => {
         containerStyle={{ zIndex: 99999 }}
         toastOptions={{
           duration: 2500, // Reduced from default to meet user request for 2-3 sec auto-close
+          className: '!bg-white dark:!bg-[#1E2438] !text-slate-800 dark:!text-white !border !border-slate-100 dark:!border-white/10 !shadow-lg',
         }}
       />
       <CreditUpsellPopup />

@@ -86,7 +86,7 @@ const CustomSelect = ({ value, onChange, options, color = 'indigo', className = 
           leaveFrom="opacity-100 translate-y-0"
           leaveTo="opacity-0 translate-y-1"
         >
-          <Listbox.Options className="absolute z-[2000] mt-3 max-h-72 w-full overflow-auto rounded-[24px] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl py-3 text-sm shadow-[0_30px_70px_-10px_rgba(0,0,0,0.4)] dark:shadow-[0_30px_70px_-10px_rgba(0,0,0,0.7)] ring-1 ring-black/5 dark:ring-white/10 focus:outline-none border border-slate-100/50 dark:border-white/10 animate-in fade-in slide-in-from-top-2 custom-scrollbar">
+          <Listbox.Options className="absolute z-[2000] mt-3 max-h-72 w-full overflow-auto rounded-[24px] bg-white/95 dark:bg-[#1E2438]/95 backdrop-blur-2xl py-3 text-sm shadow-[0_30px_70px_-10px_rgba(0,0,0,0.4)] dark:shadow-[0_30px_70px_-10px_rgba(0,0,0,0.7)] ring-1 ring-black/5 dark:ring-white/10 focus:outline-none border border-slate-100/50 dark:border-white/10 animate-in fade-in slide-in-from-top-2 custom-scrollbar">
             {options.map((option, idx) => {
               const optValue = typeof option === 'string' ? option : option.value;
               const optLabel = typeof option === 'string' ? option : option.label;
@@ -1491,7 +1491,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
             { id: 'strategy', label: 'Strategy Flow', val: calendarEntries.length, icon: CalendarRange, color: 'text-amber-500', bg: 'bg-amber-500/10' },
             { id: 'vault', label: 'Assets in Vault', val: (assets || []).filter(a => a.assetSource === 'generated').length, icon: Library, color: 'text-primary', bg: 'bg-primary/10' }
           ].map((stat, i) => (
-            <div key={stat.id} className="p-4 md:p-6 rounded-[24px] md:rounded-[32px] bg-white dark:bg-zinc-900 border border-slate-100 dark:border-white/5 flex flex-col items-center text-center group hover:border-primary/30 transition-all shadow-sm relative overflow-hidden">
+            <div key={stat.id} className="p-4 md:p-6 rounded-[24px] md:rounded-[32px] bg-white dark:bg-[#1E2438] border border-slate-100 dark:border-white/5 flex flex-col items-center text-center group hover:border-primary/30 transition-all shadow-sm relative overflow-hidden">
               {stat.pulse && <div className="absolute top-0 right-0 p-3"><div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /></div>}
               <div className={`w-10 h-10 md:w-12 md:h-12 rounded-[14px] md:rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center mb-3 md:mb-4 group-hover:scale-110 transition-transform`}>
                 <stat.icon className={`w-5 h-5 md:w-6 md:h-6 ${stat.spin ? 'animate-spin' : ''}`} />
@@ -1602,7 +1602,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
                 <button
                   key={i}
                   onClick={() => setActiveTab(action.tab)}
-                  className="p-8 rounded-[40px] bg-white dark:bg-zinc-900 border border-slate-100 dark:border-white/5 hover:border-primary transition-all text-left shadow-sm flex flex-col justify-between group h-full"
+                  className="p-8 rounded-[40px] bg-white dark:bg-[#1E2438] border border-slate-100 dark:border-white/5 hover:border-primary transition-all text-left shadow-sm flex flex-col justify-between group h-full"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className={`w-14 h-14 rounded-2xl ${action.bg} ${action.color} flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-sm`}>
@@ -1627,7 +1627,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
         {/* ── SECTION 6: Intelligence & Visual Vault ─────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Hashtag Intelligence Summary */}
-          <div className="p-8 rounded-[40px] bg-white dark:bg-zinc-900 border border-slate-100 dark:border-white/5 shadow-sm">
+          <div className="p-8 rounded-[40px] bg-white dark:bg-[#1E2438] border border-slate-100 dark:border-white/5 shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <Hash className="w-5 h-5 text-emerald-500" />
@@ -1650,7 +1650,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
           </div>
 
           {/* Content Pipeline Status */}
-          <div className="p-8 rounded-[40px] bg-white dark:bg-zinc-900 border border-slate-100 dark:border-white/5 shadow-sm">
+          <div className="p-8 rounded-[40px] bg-white dark:bg-[#1E2438] border border-slate-100 dark:border-white/5 shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <Sparkles className="w-5 h-5 text-primary" />
@@ -1674,7 +1674,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
           </div>
 
           {/* Post Generation QuickView */}
-          <div className="p-8 rounded-[40px] bg-white dark:bg-zinc-900 border border-slate-100 dark:border-white/5 shadow-sm">
+          <div className="p-8 rounded-[40px] bg-white dark:bg-[#1E2438] border border-slate-100 dark:border-white/5 shadow-sm">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <Library className="w-5 h-5 text-primary" />
@@ -1685,7 +1685,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
 
             <div className="grid grid-cols-3 gap-2">
               {(assets || []).filter(a => a.assetSource === 'generated').slice(0, 6).map((asset, i) => (
-                <div key={i} className="aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-white/5 group relative">
+                <div key={i} className="aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-[#161B2E] border border-slate-200 dark:border-white/5 group relative">
                   <img src={asset.gcsUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Artifact" />
                 </div>
               ))}
@@ -1718,7 +1718,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[200] bg-white/40 dark:bg-black/40 backdrop-blur-sm flex items-center justify-center pointer-events-none"
             >
-              <div className="bg-white dark:bg-zinc-900 px-8 py-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4 border border-primary/20 scale-110">
+              <div className="bg-white dark:bg-[#1E2438] px-8 py-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4 border border-primary/20 scale-110">
                 <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
                   <RefreshCw className="w-8 h-8 text-primary animate-spin" />
                 </div>
@@ -1748,7 +1748,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
 
           <div className="w-full xl:w-[500px] group relative">
             <div className="absolute -inset-1 bg-gradient-to-r from-primary via-indigo-500 to-purple-600 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-            <div className="relative bg-white dark:bg-zinc-900 rounded-[24px] p-5 border border-slate-100 dark:border-white/5 shadow-xl overflow-hidden">
+            <div className="relative bg-white dark:bg-[#1E2438] rounded-[24px] p-5 border border-slate-100 dark:border-white/5 shadow-xl overflow-hidden">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Zap className="w-5 h-5 text-primary" />
@@ -1793,7 +1793,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
             {/* ROW 1: CORE & VOICE */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* CARD 1: CORE IDENTITY */}
-              <div className="bg-white dark:bg-zinc-900 rounded-[16px] p-4 border border-slate-100 dark:border-white/5 shadow-sm space-y-4 hover:border-primary/20 transition-all duration-500 group">
+              <div className="bg-white dark:bg-[#1E2438] rounded-[16px] p-4 border border-slate-100 dark:border-white/5 shadow-sm space-y-4 hover:border-primary/20 transition-all duration-500 group">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500 group-hover:rotate-[10deg] transition-all duration-500 relative">
@@ -1840,7 +1840,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
               </div>
 
               {/* CARD 2: VOICE & PERSONALITY */}
-              <div className="bg-white dark:bg-zinc-900 rounded-[16px] p-4 border border-slate-100 dark:border-white/5 shadow-sm space-y-4 hover:border-primary/20 transition-all duration-500 group">
+              <div className="bg-white dark:bg-[#1E2438] rounded-[16px] p-4 border border-slate-100 dark:border-white/5 shadow-sm space-y-4 hover:border-primary/20 transition-all duration-500 group">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center group-hover:bg-amber-500 group-hover:rotate-[-10deg] transition-all duration-500 relative">
@@ -1917,7 +1917,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
             </div>
 
             {/* ROW 2: VISUAL IDENTITY (FULL WIDTH) */}
-            <div className="bg-white dark:bg-zinc-900 rounded-[16px] p-4 border border-slate-100 dark:border-white/5 shadow-sm space-y-4 hover:border-primary/20 transition-all duration-500 group">
+            <div className="bg-white dark:bg-[#1E2438] rounded-[16px] p-4 border border-slate-100 dark:border-white/5 shadow-sm space-y-4 hover:border-primary/20 transition-all duration-500 group">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:scale-110 transition-all duration-500 relative">
@@ -1951,7 +1951,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
                         </motion.div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
-                          <div className="w-10 h-10 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center shadow-md group-hover/logo:scale-110 transition-all">
+                          <div className="w-10 h-10 rounded-lg bg-white dark:bg-[#161B2E] flex items-center justify-center shadow-md group-hover/logo:scale-110 transition-all">
                             <Upload className="w-4 h-4 text-slate-400 group-hover/logo:text-primary" />
                           </div>
                           <p className="text-[8px] font-black uppercase tracking-[2px] text-slate-400 group-hover/logo:text-primary">Deploy Logo</p>
@@ -2224,7 +2224,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
           {calendarEntries.length === 0 && (
             <div className="group relative">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-[24px] blur opacity-75"></div>
-              <div className="relative p-6 bg-white dark:bg-zinc-900 rounded-[24px] border border-primary/20 flex flex-col md:flex-row gap-5 items-center shadow-xl">
+              <div className="relative p-6 bg-white dark:bg-[#1E2438] rounded-[24px] border border-primary/20 flex flex-col md:flex-row gap-5 items-center shadow-xl">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
                   <Globe className="w-6 h-6 text-primary" />
                 </div>
@@ -2368,7 +2368,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
 
           if (calendarWorkspaces.length === 0) {
             return (
-              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-white/5 border-dashed opacity-50">
+              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-[#1E2438] rounded-[40px] border border-slate-100 dark:border-white/5 border-dashed opacity-50">
                 <p className="text-xs font-black text-slate-400 uppercase tracking-[4px]">
                   {!activeProfile && !workspace?.workspaceName ? 'Setup brand details first' : 'Pipeline Empty'}
                 </p>
@@ -2385,7 +2385,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
                   const entriesCount = isCurrent ? calendarEntries.length : (ws.calendarEntryCount || ws.onboarding?.calendarCount || 0);
 
                   return (
-                    <div key={ws._id} className={`bg-white dark:bg-zinc-900 rounded-[32px] border p-6 flex flex-col w-full shadow-[0_8px_30px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.1)] transition-all duration-500 group animate-in slide-in-from-left-4 ${isCurrent ? 'border-primary shadow-primary/10' : 'border-slate-100 dark:border-white/5'}`}>
+                    <div key={ws._id} className={`bg-white dark:bg-[#1E2438] rounded-[32px] border p-6 flex flex-col w-full shadow-[0_8px_30px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.1)] transition-all duration-500 group animate-in slide-in-from-left-4 ${isCurrent ? 'border-primary shadow-primary/10' : 'border-slate-100 dark:border-white/5'}`}>
                       <div className="flex items-start gap-4 mb-6">
                         <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-white/5 overflow-hidden border border-slate-100 dark:border-white/10 flex-shrink-0 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform duration-500">
                           {(() => {
@@ -2519,7 +2519,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
               <div className="flex-1 overflow-y-auto px-2 custom-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-12">
                   {calendarEntries.map((entry, idx) => (
-                    <div key={entry._id || idx} className="bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-100 dark:border-white/5 overflow-hidden group hover:shadow-xl transition-all hover:border-primary/20 flex flex-col shadow-sm animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${idx * 50}ms` }}>
+                    <div key={entry._id || idx} className="bg-white dark:bg-[#1E2438] rounded-[32px] border border-slate-100 dark:border-white/5 overflow-hidden group hover:shadow-xl transition-all hover:border-primary/20 flex flex-col shadow-sm animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${idx * 50}ms` }}>
                       <div className="p-8 flex-1 flex flex-col">
                         <div className="flex justify-between items-start mb-6">
                           <div className="flex flex-wrap gap-2">
@@ -2796,7 +2796,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
     return (
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-white/5 p-12 relative overflow-hidden shadow-sm">
+          <div className="lg:col-span-2 bg-white dark:bg-[#1E2438] rounded-[40px] border border-slate-100 dark:border-white/5 p-12 relative overflow-hidden shadow-sm">
             <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
               <BarChart3 className="w-64 h-64 text-primary" />
             </div>
@@ -2855,7 +2855,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
             </div>
           </div>
 
-          <div className="bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-white/5 p-8 flex flex-col shadow-sm relative overflow-hidden">
+          <div className="bg-white dark:bg-[#1E2438] rounded-[40px] border border-slate-100 dark:border-white/5 p-8 flex flex-col shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-10"><Sparkles className="w-12 h-12 text-primary" /></div>
             <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-2">Plan Intelligence</h3>
             <div className="ads-badge-small !bg-primary/10 !text-primary mb-8 w-fit">RULE-BASED RECOMMENDATIONS</div>
@@ -2925,7 +2925,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
             {reviewQueue.map(post => (
-              <div key={post._id} className="bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-white/5 overflow-hidden flex flex-col shadow-sm">
+              <div key={post._id} className="bg-white dark:bg-[#1E2438] rounded-[40px] border border-slate-100 dark:border-white/5 overflow-hidden flex flex-col shadow-sm">
                 <div className="aspect-video relative bg-slate-50 dark:bg-black/20">
                   <img src={post.primaryAssetId?.gcsUrl} className="w-full h-full object-cover" alt="Preview" />
                   <div className="absolute top-4 left-4 flex gap-2">
@@ -2986,7 +2986,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
           </div>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-white/5 overflow-hidden flex flex-col shadow-sm">
+        <div className="bg-white dark:bg-[#1E2438] rounded-[40px] border border-slate-100 dark:border-white/5 overflow-hidden flex flex-col shadow-sm">
           <div className="p-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
             <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">Approved & Scheduled Queue</h3>
             <span className="text-[10px] font-black text-slate-400">Showing {scheduleItems.length} tasks</span>
@@ -3003,7 +3003,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
                 {scheduleItems.map(item => (
                   <div key={item._id} className="p-6 rounded-[32px] bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex items-center justify-between hover:border-primary/40 transition-all group">
                     <div className="flex items-center gap-6">
-                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-200 dark:bg-zinc-800">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-200 dark:bg-[#161B2E]">
                         <img src={item.postId?.primaryAssetId?.gcsUrl} className="w-full h-full object-cover" alt="Thumb" />
                       </div>
                       <div>
@@ -3036,7 +3036,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
     return (
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-white/5 p-10 space-y-10 shadow-sm">
+          <div className="bg-white dark:bg-[#1E2438] rounded-[40px] border border-slate-100 dark:border-white/5 p-10 space-y-10 shadow-sm">
             <div>
               <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-1">Workspace Config</h3>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global preferences for AI orchestration</p>
@@ -3072,7 +3072,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
           </div>
 
           <div className="space-y-8">
-            <div className="bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-white/5 p-10 shadow-sm">
+            <div className="bg-white dark:bg-[#1E2438] rounded-[40px] border border-slate-100 dark:border-white/5 p-10 shadow-sm">
               <div className="flex items-center gap-3 mb-8">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20"><HelpCircle className="w-6 h-6 text-indigo-500" /></div>
                 <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">Platform Integration</h3>
@@ -3153,7 +3153,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
 
             {workspace && (
               <div className="flex items-center gap-6 p-4 bg-slate-50 dark:bg-white/5 rounded-[32px] border border-slate-100 dark:border-white/5">
-                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white dark:bg-zinc-800 border border-slate-200 dark:border-white/10 flex items-center justify-center p-2">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white dark:bg-[#161B2E] border border-slate-200 dark:border-white/10 flex items-center justify-center p-2">
                   {(activeProfile?.logoUrl || workspace?.brandProfile?.logoUrl || workspace?.onboarding?.profileImageUrl) ? (
                     <img
                       src={toProxyUrl(activeProfile?.logoUrl || workspace?.brandProfile?.logoUrl || workspace?.onboarding?.profileImageUrl)}
@@ -3383,7 +3383,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
                             {row.heading_hook || row.title || row.rawData?.Title}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-1.5 py-0.5 bg-white dark:bg-zinc-800 rounded border border-slate-200 dark:border-white/10">
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-1.5 py-0.5 bg-white dark:bg-[#161B2E] rounded border border-slate-200 dark:border-white/10">
                               {row.phase || row.rawData?.Phase || "Awareness"}
                             </span>
                             <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${(row.postType || row.format || row.rawData?.Format) === 'Video' ? 'bg-amber-100 dark:bg-amber-500/10 text-amber-600 border-amber-200/50' :
@@ -4162,7 +4162,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
       <Dialog open={showWizard} onClose={() => setShowWizard(false)} className="relative z-[150]">
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md" />
         <div className="fixed inset-0 flex items-center justify-center p-8">
-          <Dialog.Panel className="w-full max-w-xl bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-white/5 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+          <Dialog.Panel className="w-full max-w-xl bg-white dark:bg-[#1E2438] rounded-[40px] border border-slate-100 dark:border-white/5 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-10 border-b border-slate-100 dark:border-white/5 flex justify-between items-center">
               <div>
                 <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-1">Create My Content Plan</h3>
@@ -4294,7 +4294,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
                           ))}
                           {postHistory.actions.map(a => (
                             <div key={a._id} className="relative opacity-60">
-                              <div className="absolute -left-[37px] top-0 w-4 h-4 rounded-full bg-slate-200 dark:bg-zinc-800 border-4 border-white dark:border-zinc-950" />
+                              <div className="absolute -left-[37px] top-0 w-4 h-4 rounded-full bg-slate-200 dark:bg-[#161B2E] border-4 border-white dark:border-zinc-950" />
                               <div>
                                 <p className="text-[10px] font-black text-slate-500 dark:text-zinc-400 uppercase tracking-widest">{a.actionType.replace(/_/g, ' ')}</p>
                                 {a.actionNote && <p className="text-[9px] font-medium text-slate-400 italic mt-1">{a.actionNote}</p>}
@@ -4520,7 +4520,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
       <Dialog open={showOneOffModal} onClose={() => setShowOneOffModal(false)} className="relative z-[160]">
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md" />
         <div className="fixed inset-0 flex items-center justify-center p-8">
-          <Dialog.Panel className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-white/5 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+          <Dialog.Panel className="w-full max-w-lg bg-white dark:bg-[#1E2438] rounded-[40px] border border-slate-100 dark:border-white/5 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="p-10 border-b border-slate-100 dark:border-white/5 flex justify-between items-center bg-slate-50 dark:bg-white/[0.02]">
               <div>
                 <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-1">Branded Magic Create</h3>
@@ -4597,7 +4597,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="w-full max-w-3xl bg-white dark:bg-zinc-900 rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          className="w-full max-w-3xl bg-white dark:bg-[#1E2438] rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
           onClick={e => e.stopPropagation()}
         >
           {/* Top Section: User Profile */}
@@ -4629,13 +4629,13 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
                 </div>
               </div>
             </div>
-            <button onClick={() => setShowCompanyInfoPanel(false)} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-slate-200/50 dark:bg-zinc-800 hover:bg-slate-300 dark:hover:bg-zinc-700 flex items-center justify-center transition-all z-20">
+            <button onClick={() => setShowCompanyInfoPanel(false)} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-slate-200/50 dark:bg-[#161B2E] hover:bg-slate-300 dark:hover:bg-zinc-700 flex items-center justify-center transition-all z-20">
               <X className="w-5 h-5 text-slate-600 dark:text-slate-300" />
             </button>
           </div>
 
           {/* Body Section: Company Details */}
-          <div className="flex-1 overflow-y-auto p-8 bg-white dark:bg-zinc-900 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-8 bg-white dark:bg-[#1E2438] custom-scrollbar">
             <h3 className="text-xs font-black uppercase tracking-[5px] text-slate-400 mb-6 flex items-center gap-3">
               <Briefcase className="w-4 h-4 text-indigo-500" /> Company Details
             </h3>
@@ -5482,7 +5482,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
               >
                 <Dialog.Panel
                   ref={dashboardRef}
-                  className="relative transform overflow-hidden bg-background text-foreground shadow-2xl transition-all w-full h-[100dvh] flex"
+                  className="relative transform overflow-hidden bg-background dark:bg-[#161B2E] text-foreground shadow-2xl transition-all w-full h-[100dvh] flex"
                   style={{
                     '--background': '45 26% 91%',
                     '--primary': '216 39% 48%',
@@ -5577,7 +5577,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
                                 leaveFrom="transform opacity-100 scale-100"
                                 leaveTo="transform opacity-0 scale-95"
                               >
-                                <Menu.Items className="absolute left-0 mt-1 w-[270px] origin-top-left bg-white dark:bg-zinc-900 rounded-[24px] shadow-2xl ring-1 ring-black/5 dark:ring-white/5 focus:outline-none z-[130] p-3 border border-slate-100 dark:border-white/5 animate-in slide-in-from-top-2">
+                                <Menu.Items className="absolute left-0 mt-1 w-[270px] origin-top-left bg-white dark:bg-[#1E2438] rounded-[24px] shadow-2xl ring-1 ring-black/5 dark:ring-white/5 focus:outline-none z-[130] p-3 border border-slate-100 dark:border-white/5 animate-in slide-in-from-top-2">
                                   <div className="flex items-center gap-3 px-4 py-2.5 mb-1">
                                     <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
                                       {companyAvatarUrl ? (
@@ -5786,7 +5786,7 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
 
 
                       {activeJob && (
-                        <div className="fixed bottom-10 right-10 z-[120] w-80 bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-100 dark:border-white/5 shadow-2xl p-6 overflow-hidden animate-in slide-in-from-right-10 duration-500">
+                        <div className="fixed bottom-10 right-10 z-[120] w-80 bg-white dark:bg-[#1E2438] rounded-[32px] border border-slate-100 dark:border-white/5 shadow-2xl p-6 overflow-hidden animate-in slide-in-from-right-10 duration-500">
                           <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Sparkles className="w-20 h-20 text-primary" /></div>
                           <div className="relative z-10">
                             <div className="flex justify-between items-center mb-4">
