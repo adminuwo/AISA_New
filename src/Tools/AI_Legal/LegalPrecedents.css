@@ -1,12 +1,21 @@
 /* LegalPrecedents.css */
 
 :root {
-    --lp-bg: hsl(var(--background));
-    --lp-card: hsl(var(--card));
-    --lp-border: hsl(var(--border));
-    --lp-text-primary: hsl(var(--foreground));
-    --lp-text-secondary: hsl(var(--muted-foreground));
-    --lp-accent: hsl(var(--primary));
+    --lp-bg: #F8FAFC;
+    --lp-card: #FFFFFF;
+    --lp-border: #E2E8F0;
+    --lp-text-primary: #0F172A;
+    --lp-text-secondary: #64748B;
+    --lp-accent: #6366F1;
+}
+
+.dark {
+    --lp-bg: #0B1020;
+    --lp-card: #1A2540;
+    --lp-border: rgba(255, 255, 255, 0.06);
+    --lp-text-primary: #F8FAFC;
+    --lp-text-secondary: #94A3B8;
+    --lp-accent: #6366F1;
 }
 
 .precedent-module-container {
@@ -24,7 +33,7 @@
 .precedent-modal-overlay {
     backdrop-filter: blur(8px);
     transition: all 0.3s ease;
-    background-color: hsla(var(--background), 0.7) !important;
+    background-color: rgba(0, 0, 0, 0.6) !important;
 }
 
 .precedent-detail-modal {
@@ -156,9 +165,9 @@
 
 /* Button Hierarchy */
 .btn-primary-cta {
-    background: var(--lp-accent);
-    color: hsl(var(--primary-foreground));
-    box-shadow: 0 10px 15px -3px hsla(var(--primary), 0.3);
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    color: white;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.2);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

@@ -50,6 +50,7 @@ import { detectIntent, mapModeToToolState } from '../services/intentService';
 import LoginRequiredModal from '../Components/LoginRequiredModal';
 
 import FuturisticToolCards from '../landingpage/FuturisticToolCards';
+import ModernDashboard from '../landingpage/ModernDashboard';
 import AisaTypingIndicator from '../Components/AisaTypingIndicator';
 import GmailConnectedModal from '../Components/GmailConnectedModal';
 import AISnapshot from '../landingpage/AISnapshot';
@@ -62,14 +63,21 @@ import ActionCard from '../Components/ActionCard';
 import { useAILegalCRM } from '../Tools/AI_Legal/hooks/useAILegalCRM';
 import LegalWorkspaceHeader from '../Tools/AI_Legal/components/LegalWorkspaceHeader';
 import LegalWorkspaceWelcome from '../Tools/AI_Legal/components/LegalWorkspaceWelcome';
+import ContextualLegalPanel from '../Tools/AI_Legal/components/ContextualLegalPanel';
+import useCaseWorkspaceStore from '../userStore/caseWorkspaceStore';
+import { SelectionToolbarProvider } from '../Components/SelectionToolbar/SelectionToolbarProvider';
+import useChatGeneration from '../userStore/useChatGeneration';
+import { useChatMessages } from '../userStore/useChatMessages';
+import { useGenerationStore } from '../userStore/useGenerationStore';
+
 
 const transformLegalActions = (content) => {
   if (!content) return "";
-  
+
   // Pattern: 👉 **Title**: Description [Action: Button](action:id)
   // This regex handles various slight variations in spacing and bolding
   const actionRegex = /(?:👉\s*)?(?:\*\*)?([^*:]+)(?:\*\*)?[:\-]?\s*([^\[\n]+)\s*\[(Action:\s*[^\]]+)\]\(action:([^)]+)\)/g;
-  
+
   return content.replace(actionRegex, (match, title, desc, action, link) => {
     return `\n[ActionCard|${title.trim()}|${desc.trim()}|${action.trim()}](action:${link.trim()})\n`;
   });
@@ -103,6 +111,10 @@ const LEGAL_TOOL_WELCOME_MESSAGES = {
   legal_research_assistant: {
     title: "Research Assistant Activated 📚",
     desc: "Search and interpret laws, acts and citations."
+  },
+  legal_general_chat: {
+    title: "Legal Chat Activated ⚖️",
+    desc: "Professional legal guidance, consultation, and AI-assisted legal discussion."
   }
 };
 
@@ -217,12 +229,12 @@ const TOOL_PRICING = {
     models: [
       { id: 'gemini-3.1-flash-image-preview', name: 'AISA™ Gemini 3.1 Flash', price: 45, speed: 'Fast', description: 'Latest preview — fastest Gemini image generation' },
       { id: 'gemini-3-pro-image-preview', name: 'AISA™ Gemini 3 Pro', price: 75, speed: 'Pro', description: 'Pro-grade scene understanding & generation' },
-      { id: 'gemini-1.5-flash', name: 'AISA™ Gemini 1.5 Flash', price: 30, speed: 'Stable', description: 'Stable & reliable production image generation' }
+      { id: 'gemini-2.5-flash-image', name: 'AISA™ Gemini 2.5 Flash', price: 30, speed: 'Stable', description: 'Stable & reliable production image generation' }
     ],
     editModels: [
       { id: 'gemini-3.1-flash-image-preview', name: 'AISA™ Gemini 3.1 Flash', price: 45, speed: 'Fast', description: 'Latest preview model — fastest AI image editing' },
       { id: 'gemini-3-pro-image-preview', name: 'AISA™ Gemini 3 Pro', price: 75, speed: 'Pro', description: 'Pro-grade image editing with rich scene understanding' },
-      { id: 'gemini-1.5-flash', name: 'AISA™ Gemini 1.5 Flash', price: 30, speed: 'Stable', description: 'Stable & reliable — production-ready image edits' }
+      { id: 'gemini-2.5-flash-image', name: 'AISA™ Gemini 2.5 Flash', price: 30, speed: 'Stable', description: 'Stable & reliable — production-ready image edits' }
     ]
   },
   video: {
@@ -233,7 +245,7 @@ const TOOL_PRICING = {
   },
   document: {
     models: [
-      { id: 'gemini-1.5-flash', name: 'AISA™ Flash', price: 0, speed: 'Fast', description: 'Basic document analysis' },
+      { id: 'gemini-2.5-flash', name: 'AISA™ Flash', price: 0, speed: 'Fast', description: 'Basic document analysis' },
       { id: 'gemini-pro', name: 'AISA™ Pro', price: 20, speed: 'Medium', description: 'Advanced document processing' },
       { id: 'gpt4', name: 'AISA™ Premium', price: 30, speed: 'Medium', description: 'Premium document analysis' }
     ]
@@ -417,7 +429,7 @@ const getModeInfo = (mode) => {
     case MODES.FILE_ANALYSIS:
       return { label: "AI File Analysis", icon: Search, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20" };
     case MODES.LEGAL_TOOLKIT:
-      return { label: "AI Legal™", icon: Scale, color: "text-indigo-600", bg: "bg-indigo-600/10", border: "border-indigo-600/20" };
+      return { label: "AI Legal™", icon: Scale, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-600/10 dark:bg-indigo-400/10", border: "border-indigo-600/20 dark:border-indigo-400/20" };
     case MODES.CASHFLOW:
       return { label: "AI CashFlow", icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" };
     default:
@@ -425,7 +437,18 @@ const getModeInfo = (mode) => {
   }
 };
 
-// Global messaging lock to prevent duplicate sends during navigation re-mounts
+// ─── Per-chat sending locks (replaces the single isGlobalSending boolean) ───────
+// Using a Map lets MULTIPLE chats generate simultaneously without blocking each other.
+const _sendingLocks = new Map(); // chatId → { locked: boolean, lastSentTime: number }
+
+const getSessionLock = (chatId) => {
+  if (!_sendingLocks.has(chatId)) {
+    _sendingLocks.set(chatId, { locked: false, lastSentTime: 0 });
+  }
+  return _sendingLocks.get(chatId);
+};
+
+// legacy shim
 let isGlobalSending = false;
 let lastMessageSentTime = 0;
 
@@ -504,71 +527,61 @@ const Chat = () => {
     if (!imageUrl) return;
     const t = toast.loading('Attempting to copy...');
 
+    // Use our backend proxy to bypass CORS
+    const proxiedUrl = `${apis.imageProxy}?url=${encodeURIComponent(imageUrl)}`;
+
     try {
-      const makeImagePromise = async () => {
-        let blob;
+      const imagePromise = (async () => {
         try {
-          const response = await fetch(imageUrl);
-          blob = await response.blob();
-        } catch (e) {
-          const proxiedUrl = `${apis.imageProxy}?url=${encodeURIComponent(imageUrl)}`;
+          // Use proxied URL for canvas method
+          return await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Canvas failed')), 'image/png');
+              } catch (e) { reject(e); }
+            };
+            img.onerror = () => reject(new Error('Load failed'));
+            img.src = proxiedUrl;
+          });
+        } catch (err) {
+          // Fallback to direct fetch via proxy
           const response = await fetch(proxiedUrl);
-          blob = await response.blob();
+          const blob = await response.blob();
+          if (blob.type === 'image/png') return blob;
+
+          // If fetched but not PNG, we must use canvas (redundant but safe)
+          throw new Error('Conversion required but proxy-canvas failed');
         }
+      })();
 
-        if (blob.type === 'image/png') return blob;
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': imagePromise })
+      ]);
 
-        return await new Promise((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => {
-            try {
-              const canvas = document.createElement('canvas');
-              canvas.width = img.naturalWidth;
-              canvas.height = img.naturalHeight;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(img, 0, 0);
-              canvas.toBlob((b) => {
-                if (b) resolve(b);
-                else reject(new Error('Canvas toBlob failed'));
-              }, 'image/png');
-            } catch (err) {
-              reject(err);
-            }
-          };
-          img.onerror = () => reject(new Error('Image conversion failed'));
-          img.src = URL.createObjectURL(blob);
-        });
-      };
-
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': makeImagePromise() })
-        ]);
-        toast.dismiss(t);
-        toast.success('Image copied! ✨');
-      } catch (err) {
-        if (err.name === 'TypeError') {
-          const blob = await makeImagePromise();
-          await navigator.clipboard.write([
-            new ClipboardItem({ 'image/png': blob })
-          ]);
-          toast.dismiss(t);
-          toast.success('Image copied! ✨');
-        } else {
-          throw err;
-        }
-      }
-    } catch (err) {
-      console.error('Copy failure:', err);
       toast.dismiss(t);
-      if (!window.isSecureContext) {
-        toast.error((t) => (<span className="flex flex-col gap-1"><span className="font-bold text-xs text-amber-500">Insecure Connection (HTTP)</span><span className="text-[10px] opacity-80 leading-tight">Browsers block image copying on HTTP sites. Use <b>HTTPS</b> or <b>Right-Click &gt; Copy Image</b>.</span></span>), { duration: 6000 });
-      } else {
-        toast.error((t) => (<span className="flex flex-col gap-1"><span className="font-bold text-xs">Copy failed</span><span className="text-[10px] opacity-80 leading-tight">Browser security blocked the action. Please <b>right-click</b> and <b>"Copy Image"</b> instead.</span></span>), { duration: 4000 });
-      }
+      toast.success('Image copied! ✨');
+    } catch (err) {
+      console.error('Copy failure (even with proxy):', err);
+      toast.dismiss(t);
+      toast.error(
+        (t) => (
+          <span className="flex flex-col gap-1">
+            <span className="font-bold text-xs">Copy failed (System)</span>
+            <span className="text-[10px] opacity-80 leading-tight">Your browser security blocked the action even through the master proxy. Please **right-click** and **"Copy Image"** instead.</span>
+          </span>
+        ),
+        { duration: 4000 }
+      );
     }
   };
-  const { sessionId } = useParams();
+  const { sessionId, caseId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { personalizations, getSystemPromptExtensions, updatePersonalization } = usePersonalization();
@@ -577,7 +590,7 @@ const Chat = () => {
     (personalizations?.general?.theme !== 'Light' &&
       window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useChatMessages(sessionId || 'new');
   const [suggestions, setSuggestions] = useState([]);
   const [excelHTML, setExcelHTML] = useState(null);
   const [textPreview, setTextPreview] = useState(null);
@@ -587,10 +600,19 @@ const Chat = () => {
   const [isAutoPreviewDisabled, setIsAutoPreviewDisabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSessionLoading, setIsSessionLoading] = useState(false);
-  const [isHydrating, setIsHydrating] = useState(!!sessionId && sessionId !== 'new');
+  const [isHydrating, setIsHydrating] = useState((!!sessionId && sessionId !== 'new') || !!caseId);
   const [showHistory, setShowHistory] = useState(false);
   const messagesEndRef = useRef(null);
-  const [currentSessionId, setCurrentSessionId] = useState(sessionId || 'new');
+  const activeSessionId = sessionId || 'new';
+
+  // ─── Global Parallel Generation Store ─────────────────────────────────────
+  // This enables background generation to continue even if the user navigates
+  // to another chat. The sidebar reads `generatingChatIds` to show live icons.
+  const gen = useChatGeneration(activeSessionId);
+
+
+  const [isContextualPanelOpen, setIsContextualPanelOpen] = useState(false);
+  const { updateWorkspace, getWorkspace } = useCaseWorkspaceStore();
   const handleSendMessageRef = useRef(null);
   useEffect(() => {
     handleSendMessageRef.current = handleSendMessage;
@@ -626,6 +648,40 @@ const Chat = () => {
   const [waMsgContent, setWaMsgContent] = useState('');
   const [isMagicEditing, setIsMagicEditing] = useState(false);
   const [isMagicImageModalOpen, setIsMagicImageModalOpen] = useState(false);
+
+  // --- Global Generation Sync ---
+  // Keeps local Chat UI state in sync with the global generation store.
+  // This allows the typewriter to continue even after navigation.
+  useEffect(() => {
+    if (gen.isGenerating) {
+      if (!isLoading) setIsLoading(true);
+      if (gen.typingMessageId && gen.typingMessageId !== typingMessageId) {
+        setTypingMessageId(gen.typingMessageId);
+      }
+      if (gen.partialResponse && gen.typingMessageId) {
+        setMessages(prev => {
+          const hasMsg = prev.some(m => m.id === gen.typingMessageId);
+          if (!hasMsg) {
+            // Inject missing message (race condition safety)
+            return [...prev, {
+              id: gen.typingMessageId,
+              role: 'model',
+              content: gen.partialResponse,
+              timestamp: Date.now()
+            }];
+          }
+          return prev.map(m =>
+            m.id === gen.typingMessageId
+              ? { ...m, content: gen.partialResponse }
+              : m
+          );
+        });
+      }
+    } else {
+      if (isLoading) setIsLoading(false);
+      if (typingMessageId) setTypingMessageId(null);
+    }
+  }, [gen.isGenerating, gen.partialResponse, gen.typingMessageId, isLoading, typingMessageId]); // eslint-disable-line react-hooks/exhaustive-deps
   const [editRefImage, setEditRefImage] = useState(null);
   const [isMagicVideoModalOpen, setIsMagicVideoModalOpen] = useState(false);
   const [isSocialMediaDashboardOpen, setIsSocialMediaDashboardOpen] = useState(false);
@@ -700,6 +756,7 @@ const Chat = () => {
     image_to_video: "Describe how you want to animate this image...",
     ai_cashflow: "Enter a stock symbol or ask about financial trends...",
     aiad_agent: "Describe your brand or product for social media content...",
+    legal_general_chat: "Ask your legal question...",
     legal: "Describe your legal issue..."
   };
 
@@ -752,6 +809,14 @@ const Chat = () => {
     }
   }, [legalView]);
 
+  useEffect(() => {
+    if (currentCase) {
+      localStorage.setItem('aisa_current_case', JSON.stringify(currentCase));
+    } else {
+      localStorage.removeItem('aisa_current_case');
+    }
+  }, [currentCase]);
+
   const [allProjects, setAllProjects] = useRecoilState(activeProjectsData);
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -788,7 +853,7 @@ const Chat = () => {
   const [selectedLegalTool, setSelectedLegalTool] = useRecoilState(activeLegalToolData);
   const [videoAspectRatio, setVideoAspectRatio] = useState('');
   const [videoModelId, setVideoModelId] = useState('veo-3.1-fast-generate-001');
-  const [editModelId, setEditModelId] = useState('gemini-1.5-flash');
+  const [editModelId, setEditModelId] = useState('gemini-2.5-flash');
   const [videoResolution, setVideoResolution] = useState('1080p');
   const v = personalizations?.voice || { languageCode: 'en-US', voiceName: 'en-US-Chirp3-HD-Autonoe', pitch: 0, speed: 1.0 };
   const [audioLangCode, setAudioLangCode] = useState(v.languageCode);
@@ -803,12 +868,10 @@ const Chat = () => {
   const [isPlayingSample, setIsPlayingSample] = useState(false);
   const sampleAudioRef = useRef(null);
   const [imageAspectRatio, setImageAspectRatio] = useState('1:1');
-  const [imageModelId, setImageModelId] = useState('gemini-1.5-flash');
+  const [imageModelId, setImageModelId] = useState('gemini-2.5-flash');
   const [isMagicSettingsOpen, setIsMagicSettingsOpen] = useState(false);
   const abortControllerRef = useRef(null);
   const voiceUsedRef = useRef(false); // Track if voice input was used
-  const isRoutingRef = useRef(false); // Track if we are routing to a magic tool
-
 
   const [showGmailModal, setShowGmailModal] = useState(false);
 
@@ -856,7 +919,18 @@ const Chat = () => {
       const legalTool = PREMIUM_TOOLS.find(t => t.id === toolParam);
       activateToolWithTypingEffect(toolParam, legalTool?.name, true);
     }
-  }, [location.search, navigate, location.pathname]);
+
+    // Reset to normal chat if on new session with no specific tool/case/state
+    // This ensures landing on /dashboard/chat/new always shows the tool grid
+    // We only reset if NO tool is currently active to avoid clearing user intent
+    if (activeSessionId === 'new' && !params.get('caseId') && !params.get('tool') && !location.state?.fromTool && !activeTool && !activeLegalToolkit) {
+      if (currentMode === 'LEGAL_TOOLKIT') {
+        console.log("[Route] Resetting Legal Toolkit mode for new session");
+        setCurrentMode('NORMAL_CHAT');
+        setSelectedLegalTool(null);
+      }
+    }
+  }, [location.search, navigate, location.pathname, activeSessionId, location.state, currentMode, activeLegalToolkit, setSelectedLegalTool, setActiveTool, setCurrentMode, activeTool]);
 
 
   // Sync AI Ads Dashboard state to the URL so it persists on refresh
@@ -881,38 +955,90 @@ const Chat = () => {
   const isDetectionPausedRef = useRef(false); // Pause detection after explicit dismissal
   const [currentProjectId, setCurrentProjectId] = useRecoilState(activeProjectIdData);
 
-  // ─── Deep Link Case Handling ───
+  // ─── Deep Link Case Handling (MASTER PERSISTENCE) ───
+  const lastHydratedRef = useRef(null);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const caseIdInUrl = params.get('caseId');
+    const caseIdInUrl = params.get('caseId') || caseId;
 
-    if (caseIdInUrl) {
-      console.log(`[DeepLink] Case ID detected in URL: ${caseIdInUrl}`);
-      // Validate format
-      if (/^[a-f\d]{24}$/i.test(caseIdInUrl)) {
+    if (caseIdInUrl && /^[a-f\d]{24}$/i.test(caseIdInUrl)) {
+      // 1. Sync Project ID
+      if (currentProjectId !== caseIdInUrl) {
+        console.log(`[DeepLink] Case ID detected: ${caseIdInUrl}`);
         setCurrentProjectId(caseIdInUrl);
+        localStorage.setItem('aisa_active_project_id', caseIdInUrl);
       }
+
+      // 2. Hydrate Workspace Metadata (Tools/Views)
+      if (currentMode !== 'LEGAL_TOOLKIT') setCurrentMode('LEGAL_TOOLKIT');
+
+      const ws = getWorkspace(caseIdInUrl);
+      if (ws?.activeTool) {
+        if (selectedLegalTool?.id !== ws.activeTool.id) setSelectedLegalTool(ws.activeTool);
+        if (activeTool !== ws.activeTool.name) setActiveTool(ws.activeTool.name);
+      } else {
+        if (selectedLegalTool?.id !== 'legal_my_case') setSelectedLegalTool({ id: 'legal_my_case', name: 'My Case Assistant' });
+        if (activeTool !== 'legal') setActiveTool('legal');
+      }
+
+      if (legalView !== 'CHAT') setLegalView('CHAT');
+      if (activeLegalToolkit) setActiveLegalToolkit(false);
+
+      // 3. Hydrate Messages & Session Recovery
+      if (lastHydratedRef.current !== caseIdInUrl) {
+        lastHydratedRef.current = caseIdInUrl;
+
+        const restoreSession = async () => {
+          // Hydrate messages from store first (instant UI)
+          if (ws?.messages && ws.messages.length > 0 && messages.length === 0) {
+            console.log(`[Persistence] Restoring ${ws.messages.length} messages from workspace store.`);
+            setMessages(ws.messages);
+          }
+
+          // If no sessionId in URL, find the last one for this case
+          if (!sessionId) {
+            try {
+              const caseSessions = await chatStorageService.getSessions(caseIdInUrl);
+              if (Array.isArray(caseSessions) && caseSessions.length > 0) {
+                const lastSid = caseSessions[0].sessionId;
+                console.log(`[Persistence] Redirecting to last case session: ${lastSid}`);
+                navigate(`/dashboard/chat/${lastSid}?caseId=${caseIdInUrl}`, { replace: true });
+              }
+            } catch (err) {
+              console.error("[Persistence] Failed to fetch case sessions:", err);
+            }
+          }
+        };
+        restoreSession();
+      }
+    } else if (!caseIdInUrl) {
+      lastHydratedRef.current = null;
     }
-  }, [location.search, setCurrentProjectId]);
+  }, [location.search, caseId, sessionId, currentProjectId, setCurrentProjectId, setCurrentMode, setMessages, setLegalView, setActiveLegalToolkit]);
 
   // Listen for 'forceGlobal' navigation state to reset case context
   useEffect(() => {
     if (location.state?.forceGlobal) {
       console.log("[Navigation] Force Global Dashboard requested. Resetting context.");
       setCurrentProjectId('default');
+      localStorage.setItem('aisa_active_project_id', 'default');
       setCurrentCase(null);
       setCurrentMode('NORMAL_CHAT');
       setSelectedLegalTool(null);
+      setActiveTool(null);
+      setActiveLegalToolkit(false);
+      setIsContextualPanelOpen(false);
       setMessages([]);
       setLegalView('CHAT');
       // Clear the state so it doesn't re-fire on other renders
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, location.pathname, navigate, setCurrentProjectId, setCurrentMode, setSelectedLegalTool, setMessages, setLegalView]);
+  }, [location.state, location.pathname, navigate, setCurrentProjectId, setCurrentMode, setSelectedLegalTool, setMessages, setLegalView, setActiveTool, setActiveLegalToolkit, setCurrentCase, setIsContextualPanelOpen]);
 
 
   const [intentSuggestion, setIntentSuggestion] = useState(null);
   const [isIntentLoading, setIsIntentLoading] = useState(false);
+  const [dashboardCategory, setDashboardCategory] = useState('create');
   const [expandedMessageIds, setExpandedMessageIds] = useState(new Set());
 
   const toggleExpandMessage = (id) => {
@@ -960,7 +1086,8 @@ const Chat = () => {
     legalView,
     setLegalView,
     activeTool,
-    setActiveTool
+    setActiveTool,
+    setDashboardCategory
   });
 
   // ─── Mobile Scroll Reset for Legal Views ──────────────────────────────────
@@ -995,10 +1122,11 @@ const Chat = () => {
   useEffect(() => {
     if (selectedLegalTool) {
       localStorage.setItem('aisa_active_legal_tool_data', JSON.stringify(selectedLegalTool));
+      if (currentProjectId) updateWorkspace(currentProjectId, { activeTool: selectedLegalTool });
     } else {
       localStorage.removeItem('aisa_active_legal_tool_data');
     }
-  }, [selectedLegalTool]);
+  }, [selectedLegalTool, currentProjectId]);
 
   useEffect(() => {
     localStorage.setItem('aisa_cashflow_mode', JSON.stringify(isCashFlowMode));
@@ -1012,6 +1140,7 @@ const Chat = () => {
   useEffect(() => {
     if (currentCase) {
       localStorage.setItem('aisa_current_case', JSON.stringify(currentCase));
+      if (currentCase._id) updateWorkspace(currentCase._id, { updatedAt: Date.now() });
     } else {
       localStorage.removeItem('aisa_current_case');
     }
@@ -1039,7 +1168,13 @@ const Chat = () => {
     } else {
       localStorage.removeItem('aisa_active_project_id');
     }
-  }, [currentProjectId]);
+  }, [currentProjectId]); // Main persistence
+
+  useEffect(() => {
+    if (legalView) {
+      localStorage.setItem('aisa_legal_view', legalView);
+    }
+  }, [legalView]);
 
   const [deleteConfig, setDeleteConfig] = useState({
     isOpen: false,
@@ -1128,7 +1263,7 @@ const Chat = () => {
     return () => clearTimeout(debounceTimer);
   }, [inputValue, filePreviews.length]);
 
-  const handleAcceptSuggestion = (suggestion) => {
+  const handleAcceptSuggestion = (suggestion, forceOpenToolkit = true) => {
     const user = getUserData();
     if (!user?.token) {
       window.dispatchEvent(new CustomEvent('login_required', { detail: { toolName: suggestion.intent.replace('_', ' ') } }));
@@ -1160,7 +1295,7 @@ const Chat = () => {
     if (toolUpdates.activeCodeWriter) setIsCodeWriter(true);
 
     if (toolUpdates.activeLegalToolkit) {
-      setActiveLegalToolkit(true);
+      setActiveLegalToolkit(forceOpenToolkit);
       // Auto-select tool if intent matches a specific legal tool
       if (suggestion.intent && suggestion.intent.startsWith('legal_')) {
         const toolId = suggestion.intent;
@@ -1464,10 +1599,11 @@ const Chat = () => {
       const base64Content = reader.result; // Full Data URL for display
       const base64Data = base64Content.split(',')[1]; // Raw base64 for backend
 
-      let activeSessionId = currentSessionId;
+      // Use the global activeSessionId
+      const targetSid = activeSessionId;
       if (activeSessionId === 'new') {
         activeSessionId = await chatStorageService.createSession(currentProjectId);
-        setCurrentSessionId(activeSessionId);
+
         isNavigatingRef.current = true;
         navigate(`/dashboard/chat/${activeSessionId}`, { replace: true });
       }
@@ -1844,7 +1980,7 @@ const Chat = () => {
     }
   };
 
-  const handleGenerateVideo = async (overridePrompt, activeSessionId = currentSessionId) => {
+  const handleGenerateVideo = async (overridePrompt, activeSessionId) => {
     if (!checkLimitLocally('video')) {
       return;
     }
@@ -1877,7 +2013,7 @@ const Chat = () => {
               type: fp.type
             }))
           };
-          setMessages(prev => prev.filter(m => !m.isSystemLog).concat(newUserMsg));
+          setMessages(prev => prev.filter(m => !m.isSystemLog).concat(newUserMsg), activeSessionId);
 
           // Clear Inputs
           setInputValue('');
@@ -1902,7 +2038,7 @@ const Chat = () => {
             timestamp: new Date(),
             projectId: currentProjectId
           };
-          setMessages(prev => [...prev, readingMsg]);
+          setMessages(prev => [...prev, readingMsg], activeSessionId);
 
           if (activeSessionId && activeSessionId !== 'new') {
             chatStorageService.saveMessage(activeSessionId, readingMsg, null, currentProjectId).catch(err => console.error("Error saving reading bubble:", err));
@@ -1951,7 +2087,7 @@ const Chat = () => {
         mode: MODES.VIDEO_GENERATION
       };
 
-      setMessages(prev => prev.filter(m => !m.isSystemLog).concat([userMsg, newMessage]));
+      setMessages(prev => prev.filter(m => !m.isSystemLog).concat([userMsg, newMessage]), activeSessionId);
       if (inputRef.current) inputRef.current.value = '';
       setInputValue('');
       handleRemoveFile();
@@ -1981,7 +2117,7 @@ const Chat = () => {
             mode: MODES.VIDEO_GENERATION
           };
 
-          setMessages(prev => prev.map(msg => msg.id === tempId ? videoMessage : msg));
+          setMessages(prev => prev.map(msg => msg.id === tempId ? videoMessage : msg), activeSessionId);
           toast.success('Video generated successfully!');
           refreshSubscription();
 
@@ -2036,12 +2172,11 @@ const Chat = () => {
       console.error('Video generation error:', error);
       toast.error('Error initiating video generation');
     } finally {
-      setTypingMessageId(null);
       setIsLoading(false);
     }
   };
 
-  const handleGenerateImage = async (overridePrompt, activeSessionId = currentSessionId) => {
+  const handleGenerateImage = async (overridePrompt, activeSessionId) => {
     if (!checkLimitLocally('image')) {
       return;
     }
@@ -2085,7 +2220,7 @@ const Chat = () => {
         mode: MODES.IMAGE_GENERATION
       };
 
-      setMessages(prev => prev.filter(m => !m.isSystemLog).concat([userMsg, newMessage]));
+      setMessages(prev => prev.filter(m => !m.isSystemLog).concat([userMsg, newMessage]), activeSessionId);
       if (inputRef.current) inputRef.current.value = '';
       setInputValue('');
       handleRemoveFile();
@@ -2120,7 +2255,7 @@ const Chat = () => {
           };
 
           // 1. Show the image IMMEDIATELY
-          setMessages(prev => prev.map(msg => msg.id === tempId ? imageMessage : msg));
+          setMessages(prev => prev.map(msg => msg.id === tempId ? imageMessage : msg), activeSessionId);
           scrollToBottom(true);
 
           // 2. Fetch related prompts in background if not provided by the API
@@ -2129,7 +2264,7 @@ const Chat = () => {
               if (smartPrompts && smartPrompts.length > 0) {
                 setMessages(prev => prev.map(msg =>
                   msg.id === tempId ? { ...msg, suggestions: smartPrompts } : msg
-                ));
+                ), activeSessionId);
                 // Update persistent storage with the new suggestions
                 if (activeSessionId && activeSessionId !== 'new') {
                   chatStorageService.saveMessage(activeSessionId, { ...imageMessage, suggestions: smartPrompts }, null, currentProjectId);
@@ -2149,19 +2284,18 @@ const Chat = () => {
       } catch (error) {
         console.error("Image Gen Error Details:", error);
         const errorMsg = error.response?.data?.message || error.message || 'Failed to generate image';
-        setMessages(prev => prev.map(msg => msg.id === tempId ? { ...msg, content: `❌ ${errorMsg}` } : msg)); // Use content
+        setMessages(prev => prev.map(msg => msg.id === tempId ? { ...msg, content: `❌ ${errorMsg}` } : msg), activeSessionId); // Use content
         toast.error(errorMsg);
       }
     } catch (error) {
       console.error('Image generation error:', error);
       toast.error('Error initiating image generation');
     } finally {
-      setTypingMessageId(null);
       setIsLoading(false);
     }
   };
 
-  const handleEditImage = async (overridePrompt, activeSessionId = currentSessionId) => {
+  const handleEditImage = async (overridePrompt, activeSessionId) => {
     if (!checkLimitLocally('image')) {
       return;
     }
@@ -2232,7 +2366,7 @@ const Chat = () => {
         mode: MODES.IMAGE_EDIT
       };
 
-      setMessages(prev => prev.filter(m => !m.isSystemLog).concat([userMsg, newMessage]));
+      setMessages(prev => prev.filter(m => !m.isSystemLog).concat([userMsg, newMessage]), activeSessionId);
       if (inputRef.current) inputRef.current.value = '';
       setInputValue('');
 
@@ -2316,7 +2450,7 @@ const Chat = () => {
           };
 
           // 1. Show edited image IMMEDIATELY
-          setMessages(prev => prev.map(msg => msg.id === tempId ? editMessage : msg));
+          setMessages(prev => prev.map(msg => msg.id === tempId ? editMessage : msg), activeSessionId);
           scrollToBottom(true);
 
           // 2. Fetch related prompts in background
@@ -2325,7 +2459,7 @@ const Chat = () => {
               if (smartPrompts && smartPrompts.length > 0) {
                 setMessages(prev => prev.map(msg =>
                   msg.id === tempId ? { ...msg, suggestions: smartPrompts } : msg
-                ));
+                ), activeSessionId);
                 if (activeSessionId && activeSessionId !== 'new') {
                   chatStorageService.saveMessage(activeSessionId, { ...editMessage, suggestions: smartPrompts }, null, currentProjectId);
                 }
@@ -2352,7 +2486,6 @@ const Chat = () => {
       console.error('Image editing error:', error);
       toast.error('Error initiating image editing');
     } finally {
-      setTypingMessageId(null);
       setIsLoading(false);
     }
   };
@@ -2433,12 +2566,11 @@ const Chat = () => {
       console.error('Deep search error:', error);
       toast.error('Error initiating deep search');
     } finally {
-      setTypingMessageId(null);
       setIsLoading(false);
     }
   };
 
-  const handleStockAnalysis = async (stock, activeSessionId = currentSessionId) => {
+  const handleStockAnalysis = async (stock, activeSessionId) => {
     try {
       if (!stock) {
         toast.error('Please select a stock first');
@@ -2470,7 +2602,7 @@ const Chat = () => {
         projectId: currentProjectId
       };
 
-      setMessages(prev => [...prev, userMsg, readingMsg]);
+      setMessages(prev => [...prev, userMsg, readingMsg], activeSessionId);
       setInputValue('');
       setStockSearchResults([]);
       setSelectedStock(null);
@@ -2502,7 +2634,7 @@ const Chat = () => {
           projectId: currentProjectId
         };
 
-        setMessages(prev => prev.map(m => m.id === tempId ? finalMsg : m));
+        setMessages(prev => prev.map(m => m.id === tempId ? finalMsg : m), activeSessionId);
         toast.success(`Research Report for ${summary.symbol} complete!`);
 
         // Save AI response
@@ -2516,7 +2648,7 @@ const Chat = () => {
       } catch (err) {
         console.error("Stock analysis request failed:", err);
         const errorMsg = err.response?.data?.error || "Failed to complete financial analysis";
-        setMessages(prev => prev.map(m => m.id === tempId ? { ...m, isGenerating: false, content: `❌ ${errorMsg}` } : m));
+        setMessages(prev => prev.map(m => m.id === tempId ? { ...m, isGenerating: false, content: `❌ ${errorMsg}` } : m), activeSessionId);
         toast.error(errorMsg);
       }
 
@@ -2524,7 +2656,6 @@ const Chat = () => {
       console.error("handleStockAnalysis error:", err);
       toast.error("Error initiating analysis");
     } finally {
-      setTypingMessageId(null);
       setIsLoading(false);
     }
   };
@@ -3203,7 +3334,8 @@ const Chat = () => {
   };
 
 
-  useEffect(() => {    const loadSessions = async () => {
+  useEffect(() => {
+    const loadSessions = async () => {
       const data = await chatStorageService.getSessions(currentProjectId);
       setSessions(data);
 
@@ -3226,40 +3358,57 @@ const Chat = () => {
       }
     };
     loadSessions();
-  }, [messages, setSessions, currentProjectId]);
+  }, [setSessions, currentProjectId]);
 
   const isNavigatingRef = useRef(false);
   const lastLoadedSessionRef = useRef(null);
+  const mountedSessionIdRef = useRef(sessionId);
+
+  useEffect(() => {
+    mountedSessionIdRef.current = sessionId;
+  }, [sessionId]);
 
   useEffect(() => {
     const initChat = async () => {
-      if (isNavigatingRef.current) {
+      setIsSessionLoading(true);
+
+      // ─── Creation Navigation Guard ───
+      // If we just created a 'new' session, we already have its state in local messages.
+      // We only skip history loading IF the sessionId matches the one we just created.
+      if (isNavigatingRef.current === sessionId) {
+        console.log(`[Hydration] Skipping redundant reload for fresh session: ${sessionId}`);
         isNavigatingRef.current = false;
         setIsHydrating(false);
+        setIsSessionLoading(false);
         return;
       }
+      // Safety reset for stale navigation flags
+      isNavigatingRef.current = false;
 
       const currentSession = sessionId;
-      
-      if (currentSession && currentSession !== 'new' && lastLoadedSessionRef.current === currentSession && messages.length > 0) {
+
+      if (currentSession && currentSession !== 'new' && lastLoadedSessionRef.current === currentSession) {
         setIsHydrating(false);
         setIsSessionLoading(false);
         return;
       }
 
-      setIsSessionLoading(true);
-      
       try {
         if (sessionId && sessionId !== 'new') {
           if (lastLoadedSessionRef.current && lastLoadedSessionRef.current !== sessionId) {
-            setMessages([]); 
+            setMessages([]);
           }
-          
+
           const sessionData = await chatStorageService.getHistory(sessionId);
           if (currentSession !== sessionId) return;
 
           const historyMessages = Array.isArray(sessionData) ? sessionData : (sessionData.messages || []);
           const sessionMeta = Array.isArray(sessionData) ? {} : sessionData;
+
+          // If this session belongs to a case, sync with workspace store
+          if (sessionMeta.projectId && /^[a-f\d]{24}$/i.test(sessionMeta.projectId)) {
+            updateWorkspace(sessionMeta.projectId, { messages: historyMessages });
+          }
 
           // 1. Restore Project Context
           if (sessionMeta.projectId && sessionMeta.projectId !== currentProjectId) {
@@ -3271,23 +3420,23 @@ const Chat = () => {
           if (sessionMeta.detectedMode) {
             console.log(`[Hydration] Restoring Mode: ${sessionMeta.detectedMode}`);
             setCurrentMode(sessionMeta.detectedMode);
-            
+
             if (sessionMeta.detectedMode === 'LEGAL_TOOLKIT') {
-               setActiveLegalToolkit(true);
-               // If there's a specific tool saved, restore it
-               if (sessionMeta.activeTool) {
-                 const tool = PREMIUM_TOOLS.find(t => t.id === sessionMeta.activeTool);
-                 if (tool) {
-                   console.log(`[Hydration] Restoring Legal Tool: ${tool.name}`);
-                   setSelectedLegalTool(tool);
-                   setActiveTool(tool.name);
-                 }
-               }
+              setActiveLegalToolkit(false); // DO NOT auto-open on hydration
+              // If there's a specific tool saved, restore it
+              if (sessionMeta.activeTool) {
+                const tool = PREMIUM_TOOLS.find(t => t.id === sessionMeta.activeTool);
+                if (tool) {
+                  console.log(`[Hydration] Restoring Legal Tool: ${tool.name}`);
+                  setSelectedLegalTool(tool);
+                  setActiveTool(tool.name);
+                }
+              }
             }
           } else if (sessionMeta.projectId && currentCase?.isLegalCase) {
-             // Fallback for older sessions without detectedMode
-             setCurrentMode('LEGAL_TOOLKIT');
-             setActiveLegalToolkit(true);
+            // Fallback for older sessions without detectedMode
+            setCurrentMode('LEGAL_TOOLKIT');
+            setActiveLegalToolkit(false); // DO NOT auto-open on hydration fallback
           }
 
           const processedHistory = historyMessages.map(msg => {
@@ -3305,10 +3454,31 @@ const Chat = () => {
             return msg;
           });
 
-          if (processedHistory.length > 0 || lastLoadedSessionRef.current !== sessionId) {
-            setMessages(processedHistory);
+          // ─── Live Generation Re-attachment ───
+          // Atomically merge history with any ongoing background stream
+          let finalMessages = processedHistory;
+          const liveGen = useGenerationStore?.getState?.()?.generations?.[sessionId];
+
+          if (liveGen?.isGenerating && liveGen.typingMessageId) {
+            const hasTyping = finalMessages.some(m => m.id === liveGen.typingMessageId);
+            if (!hasTyping) {
+              finalMessages = [...finalMessages, {
+                id: liveGen.typingMessageId,
+                role: 'model',
+                content: liveGen.partialResponse || '',
+                timestamp: Date.now()
+              }];
+            } else if (liveGen.partialResponse) {
+              // Sync content if already in history
+              finalMessages = finalMessages.map(m =>
+                m.id === liveGen.typingMessageId ? { ...m, content: liveGen.partialResponse } : m
+              );
+            }
+            setIsLoading(true);
+            setTypingMessageId(liveGen.typingMessageId);
           }
-          
+
+          setMessages(finalMessages);
           lastLoadedSessionRef.current = sessionId;
 
           const params = new URLSearchParams(location.search);
@@ -3316,15 +3486,30 @@ const Chat = () => {
           if (toolParam?.startsWith('legal_')) {
             const legalTool = PREMIUM_TOOLS.find(t => t.id === toolParam);
             if (legalTool && selectedLegalTool?.id !== toolParam) {
-              activateToolWithTypingEffect(toolParam, legalTool?.name, false); 
+              activateToolWithTypingEffect(toolParam, legalTool?.name, false);
             }
           }
         } else {
-          setCurrentSessionId('new');
           lastLoadedSessionRef.current = 'new';
-          setMessages([]); 
-          
-          if (!currentProjectId || currentProjectId === 'default' || currentProjectId === 'all') {
+
+          // Only clear messages if we are NOT in the middle of a redirect to a case session
+          const isCaseRoute = location.pathname.startsWith('/dashboard/case/');
+          if (!isCaseRoute) {
+            setMessages([]);
+          }
+
+          const params = new URLSearchParams(location.search);
+          const toolParam = params.get('tool');
+
+          if (toolParam?.startsWith('legal_')) {
+            const legalTool = PREMIUM_TOOLS.find(t => t.id === toolParam);
+            if (legalTool) {
+              setCurrentMode('LEGAL_TOOLKIT');
+              setSelectedLegalTool(legalTool);
+              setActiveTool(legalTool.name);
+              setLegalView('CHAT');
+            }
+          } else if (!currentProjectId || currentProjectId === 'default' || currentProjectId === 'all') {
             setCurrentCase(null);
             if (currentMode !== 'LEGAL_TOOLKIT') {
               setCurrentMode('NORMAL_CHAT');
@@ -3362,6 +3547,15 @@ const Chat = () => {
             } catch (e) { console.warn("Memory load failed", e); }
           }
         }
+
+        // Final sync for case workspace if applicable
+        if (caseId) {
+          const ws = getWorkspace(caseId);
+          if (ws?.activeTool && selectedLegalTool?.id !== ws.activeTool.id) {
+            setSelectedLegalTool(ws.activeTool);
+            setActiveTool(ws.activeTool.name);
+          }
+        }
       } catch (err) {
         console.error("Chat initialization failed:", err);
       } finally {
@@ -3373,7 +3567,7 @@ const Chat = () => {
     initChat();
   }, [sessionId, location.key, currentProjectId]);
 
-    const chatContainerRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const shouldAutoScrollRef = useRef(true);
   const isStreamingRef = useRef(false); // true while AI is typing word-by-word
 
@@ -3393,6 +3587,12 @@ const Chat = () => {
         setIsHeaderVisible(true);
       }
       lastScrollTopRef.current = scrollTop <= 0 ? 0 : scrollTop;
+
+      // Update workspace scroll position for persistence
+      if (caseId || currentProjectId) {
+        const id = caseId || currentProjectId;
+        updateWorkspace(id, { uiState: { scrollPosition: scrollTop } });
+      }
 
       // Increased threshold (250px) to be less sensitive to minor scroll movements or large images
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 350;
@@ -3421,18 +3621,27 @@ const Chat = () => {
   useEffect(() => {
     // Do NOT auto-scroll while AI is streaming text word-by-word
     if (isStreamingRef.current) return;
+
+    // If we just loaded a case workspace, restore its scroll position
+    if (caseId && chatContainerRef.current) {
+      const ws = getWorkspace(caseId);
+      if (ws?.uiState?.scrollPosition) {
+        chatContainerRef.current.scrollTop = ws.uiState.scrollPosition;
+        return;
+      }
+    }
+
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages, isLoading, caseId]);
 
   const handleNewChat = async () => {
-    // Proactive Guest Limit Check for new session creation
     const token = getUserData()?.token;
     if (!token && sessions.length >= 5) {
-      window.dispatchEvent(new CustomEvent('login_required', { 
-        detail: { 
-          toolName: 'AISA™ Unlimited Chat',
+      window.dispatchEvent(new CustomEvent('login_required', {
+        detail: {
+          toolName: 'AISA' + '™' + ' Unlimited Chat',
           customMessage: "You've reached the guest limit of 5 sessions. Please sign in to create more chat sessions!"
-        } 
+        }
       }));
       return;
     }
@@ -3440,12 +3649,10 @@ const Chat = () => {
     setCurrentProjectId('default');
     setCurrentMode('NORMAL_CHAT');
     setSelectedLegalTool(null);
-    setMessages([]); // Clear messages immediately for instant transition
+    setMessages([]);
     navigate('/dashboard/chat/new', { state: { forceGlobal: true } });
     setShowHistory(false);
   };
-
-
 
   const handleDriveClick = () => {
     setIsAttachMenuOpen(false);
@@ -3470,10 +3677,14 @@ const Chat = () => {
   const activateToolWithTypingEffect = (toolKey, toolName, shouldToast = true) => {
     // 1. Set Primary Modes
     setCurrentMode('LEGAL_TOOLKIT');
+    localStorage.setItem('aisa_active_mode', 'LEGAL_TOOLKIT');
+    localStorage.setItem('aisa_legal_view', 'CHAT');
     setActiveLegalToolkit(false); // Close the toolkit modal immediately
 
     const TOOL_NAMES = {
       legal_my_case: "My Case Assistant",
+      legal_general_chat: "GENERAL CHAT",
+      legal_free_chat: "General Legal Chat",
       legal_precedents: "Legal Precedents",
       legal_case_law_research: "Legal Precedents",
       legal_draft_maker: "Draft Maker",
@@ -3509,30 +3720,25 @@ const Chat = () => {
     // 5. Professional Activation Feedback (Toast)
     if (shouldToast) {
       toast.dismiss(); // Clear any previous tool activation toasts
-      const feedbackMsg = toolKey === 'legal_precedents' || toolKey === 'legal_case_law_research'
-        ? "Fetching relevant case laws..."
-        : "Initializing legal workflow...";
 
       toast.success(
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <Scale size={14} className="text-indigo-600" />
-          <span className="font-black text-[13px] text-slate-900">⚖️ {finalToolName} Activated</span>
-        </div>
-        <p className="text-[11px] text-slate-500 font-medium ml-6">{feedbackMsg}</p>
-      </div>,
-      {
-        duration: 2000,
-        style: {
-          background: '#FFFFFF',
-          color: '#1E293B',
-          borderRadius: '20px',
-          padding: '12px 20px',
-          border: '1px solid rgba(79, 70, 229, 0.1)',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        <div className="flex items-center gap-2.5">
+          <Zap size={14} className="text-indigo-600 animate-pulse" fill="currentColor" />
+          <span className="font-black text-[12px] uppercase tracking-wide">{finalToolName} Activated</span>
+        </div>,
+        {
+          duration: 1500, // Compact 1.5s duration
+          style: {
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+            color: '#1E293B',
+            borderRadius: '16px',
+            padding: '10px 16px',
+            border: '1px solid rgba(79, 70, 229, 0.2)',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+          }
         }
-      }
-    );
+      );
     }
   };
 
@@ -3572,23 +3778,26 @@ const Chat = () => {
 
 
   const handleSendMessage = async (e, overrideContent, toolOverride = null) => {
-    isRoutingRef.current = false; // Reset for this call
     if (e) e.preventDefault();
 
-    // GLOBAL LOCK & DEBOUNCE (Combined with isSendingRef for maximum protection)
+    // Prioritize the sessionId from URL params to avoid state-sync race conditions
+    let activeSessionId = sessionId || 'new';
     const now = Date.now();
-    if (isGlobalSending || (now - lastMessageSentTime < 800) || isSendingRef.current) {
-      console.warn("[AI Ads] Message sending blocked by global lock, debounce, or active send.");
+    const chatLock = getSessionLock(activeSessionId);
+
+    // PER-CHAT LOCK & DEBOUNCE
+    // Bypass lock for 'new' sessions to avoid cross-chat blocking during creation
+    if (activeSessionId !== 'new' && (chatLock.locked || (now - chatLock.lastSentTime < 800))) {
+      console.warn(`[AISA] Message blocked: chat ${activeSessionId} is already sending.`);
       return;
     }
-    if (isLoading) return;
 
     // Mark as sending IMMEDIATELY to block any simultaneous calls (form submit + Enter key)
-    isSendingRef.current = true;
+    chatLock.locked = true;
 
     const contentToSend = typeof overrideContent === 'string' ? overrideContent : (longTextPreview || inputValue.trim());
     if (!contentToSend && filePreviews.length === 0) {
-      isSendingRef.current = false;
+      chatLock.locked = false;
       return;
     }
 
@@ -3599,23 +3808,24 @@ const Chat = () => {
     if (currentMode === 'LEGAL_TOOLKIT' && currentCase) {
       if (contentToSend === "⚖️ Open Case Intelligence") {
         setIsCasePanelOpen(true);
-        isSendingRef.current = false;
+        chatLock.locked = false;
         return;
       }
       if (contentToSend === "🔍 Auto-Analyze Case") {
         setIsCasePanelOpen(true);
         // We can't easily trigger the button inside the component from here, 
         // but opening the panel is the first step.
-        isSendingRef.current = false;
+        chatLock.locked = false;
         return;
       }
     }
 
     // LOCK IMMEDIATELY
-    isGlobalSending = true;
+    chatLock.locked = true;
+    chatLock.lastSentTime = now;
     lastMessageSentTime = now;
-    setIsLoading(true);
-    isSendingRef.current = true;
+    setIsLoading(true); // Still used for local UI transitions (Thinking dots)
+    // isSendingRef.current = true; // Use chatLock instead
 
     // --- Proactive Magic Tool Activation Check Removed ---
     // Messages now flow to the backend normally.
@@ -3629,8 +3839,7 @@ const Chat = () => {
     else if (isCodeWriter || toolOverride === 'code_writer') featureToTrack = 'codeWriter';
 
     if (!checkLimitLocally(featureToTrack)) {
-      isSendingRef.current = false;
-      isGlobalSending = false;
+      chatLock.locked = false;
       setIsLoading(false);
       return;
     }
@@ -3645,17 +3854,15 @@ const Chat = () => {
         !isDocumentConvert && !isVoiceMode;
 
       if (isCurrentModeChat) {
-        isRoutingRef.current = true; // Signal that we are routing to prevent UI flicker
         console.log(`[IntentRouting] High confidence intent (${intentSuggestion.intent}) detected. Routing to pipeline.`);
         const activeSuggestion = intentSuggestion;
         setIntentSuggestion(null); // Clear state immediately
 
-        handleAcceptSuggestion(activeSuggestion);
+        handleAcceptSuggestion(activeSuggestion, false);
         // After switching mode, we recursively call handleSendMessage with the tool override
         setTimeout(() => {
-          isSendingRef.current = false;
-          isGlobalSending = false;
-          // Note: We DON'T setIsLoading(false) here to avoid the flicker
+          chatLock.locked = false;
+          setIsLoading(false);
           handleSendMessage(e, contentToSend, activeSuggestion.intent);
         }, 50);
         return;
@@ -3679,10 +3886,9 @@ const Chat = () => {
 
       // Special case for Audio Convert Mode: Handle files directly if present
       if (isAudioConvertMode && selectedFiles.length > 0) {
-        let activeSessionId = currentSessionId;
         if (activeSessionId === 'new') {
           activeSessionId = await chatStorageService.createSession();
-          setCurrentSessionId(activeSessionId);
+
           isNavigatingRef.current = true;
           navigate(`/dashboard/chat/${activeSessionId}`, { replace: true });
         }
@@ -3695,10 +3901,9 @@ const Chat = () => {
 
       // Special case for Audio Convert Mode: Handle text conversion
       if (isAudioConvertMode && contentToSend) {
-        let activeSessionId = currentSessionId;
         if (activeSessionId === 'new') {
           activeSessionId = await chatStorageService.createSession();
-          setCurrentSessionId(activeSessionId);
+
           isNavigatingRef.current = true;
           navigate(`/dashboard/chat/${activeSessionId}`, { replace: true });
         }
@@ -3712,7 +3917,6 @@ const Chat = () => {
       setSuggestions([]);
       transcriptRef.current = '';
 
-      let activeSessionId = currentSessionId;
       let isFirstMessage = false;
 
       // --- GUEST LIMIT PROACTIVE CHECK ---
@@ -3720,30 +3924,28 @@ const Chat = () => {
       if (!token) {
         // 1. Session Limit (5 sessions)
         if (activeSessionId === 'new' && sessions.length >= 5) {
-          window.dispatchEvent(new CustomEvent('login_required', { 
-            detail: { 
+          window.dispatchEvent(new CustomEvent('login_required', {
+            detail: {
               toolName: 'AISA™ Unlimited Chat',
               customMessage: "You've reached the guest limit of 5 sessions. Please sign in to create more chat sessions!"
-            } 
+            }
           }));
-          isSendingRef.current = false;
           setIsLoading(false);
-          isGlobalSending = false;
+          chatLock.locked = false;
           return;
         }
 
         // 2. Chat Count Limit (10 user messages per session)
         const userMsgCount = messages.filter(m => m.role === 'user').length;
         if (activeSessionId !== 'new' && userMsgCount >= 10) {
-          window.dispatchEvent(new CustomEvent('login_required', { 
-            detail: { 
+          window.dispatchEvent(new CustomEvent('login_required', {
+            detail: {
               toolName: 'AISA™ Unlimited Chat',
               customMessage: "You've reached the guest limit of 10 chats per session. Please sign in to continue this conversation!"
-            } 
+            }
           }));
-          isSendingRef.current = false;
           setIsLoading(false);
-          isGlobalSending = false;
+          chatLock.locked = false;
           return;
         }
       }
@@ -3758,9 +3960,13 @@ const Chat = () => {
       if (activeSessionId === 'new') {
         try {
           activeSessionId = await chatStorageService.createSession();
-          setCurrentSessionId(activeSessionId);
+
+          // Transition global generation state from 'new' to real ID
+          useGenerationStore.getState().transitionChatId('new', activeSessionId);
+
+
           isFirstMessage = true;
-          isNavigatingRef.current = true;
+          isNavigatingRef.current = activeSessionId; // Store the ID we are navigating TO
           navigate(`/dashboard/chat/${activeSessionId}`, { replace: true });
         } catch (err) {
           console.error("Failed to create session:", err);
@@ -3772,10 +3978,10 @@ const Chat = () => {
       // Handle AI Legal Mode (Specific Tool Execution)
       const isLegalOverride = toolOverride && toolOverride.startsWith('legal_');
       if ((currentMode === 'LEGAL_TOOLKIT' && selectedLegalTool) || isLegalOverride) {
-        let activeToolId = isLegalOverride ? toolOverride : selectedLegalTool.id;
+        let activeToolId = isLegalOverride ? toolOverride : selectedLegalTool?.id;
         let activeToolName = isLegalOverride ?
           (toolOverride.replace('legal_', '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')) :
-          selectedLegalTool.name;
+          selectedLegalTool?.name;
 
         // Smart Tool Routing: If in general case assistant but requesting a specific draft/notice
         if (activeToolId === 'legal_my_case') {
@@ -3790,6 +3996,8 @@ const Chat = () => {
         }
 
         setLoadingText(`${activeToolName}... ⚖️`);
+        // Start generation tracking so the "AISA is thinking..." indicator shows
+        gen.start({ loadingText: `${activeToolName}... ⚖️` }, activeSessionId);
         try {
           const userMsgId = Date.now().toString();
           const newUserMsg = {
@@ -3809,7 +4017,16 @@ const Chat = () => {
                   fp.type.includes('word') || fp.type.includes('document') ? 'docx' : 'file'
             }))
           };
-          setMessages(prev => prev.filter(m => !m.isSystemLog).concat(newUserMsg));
+
+          setMessages(prev => {
+            if (activeSessionId !== mountedSessionIdRef.current && activeSessionId !== 'new') {
+              // If we are in the middle of a transition, allow it if it matches the target activeSessionId
+            }
+            const next = prev.filter(m => !m.isSystemLog).concat(newUserMsg);
+            if (currentProjectId) updateWorkspace(currentProjectId, { messages: next });
+            return next;
+          }, activeSessionId);
+
           setTimeout(() => scrollToBottom(true, 'smooth'), 50);
           setInputValue('');
           handleRemoveFile();
@@ -3841,7 +4058,7 @@ const Chat = () => {
             };
 
             if (res.data.toolUsed) setActiveTool(res.data.toolUsed);
-            setMessages(prev => [...prev, aiMsg]);
+            setMessages(prev => [...prev, aiMsg], activeSessionId);
             setTypingMessageId(aiMsgId);
 
             // ⚖️ CHUNK-BY-CHUNK STREAMING LOGIC FOR LEGAL TOOLS
@@ -3852,10 +4069,11 @@ const Chat = () => {
             isStreamingRef.current = true;
 
             for (let i = 0; i < chunks.length; i++) {
-              if (!isSendingRef.current) break;
+              if (!chatLock.locked) break;
 
               displayedContent += chunks[i];
-              setMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, content: displayedContent } : m));
+              // Update global store only - the Sync useEffect will handle local UI
+              gen.setPartialResponse(displayedContent, aiMsgId, activeSessionId);
 
               // Delay: simulate real-time typing (NOT instant) per chunk
               const delay = Math.min(400, Math.max(80, chunks[i].length * 3));
@@ -3865,13 +4083,17 @@ const Chat = () => {
             isStreamingRef.current = false;
             setTypingMessageId(null);
 
-            if (!isSendingRef.current) {
+            if (!chatLock.locked) {
               setIsLoading(false);
               return;
             }
 
             const finalAiMsg = { ...aiMsg, content: fullReply };
-            setMessages(prev => prev.map(m => m.id === aiMsgId ? finalAiMsg : m));
+            setMessages(prev => {
+              const next = prev.map(m => m.id === aiMsgId ? finalAiMsg : m);
+              if (currentProjectId) updateWorkspace(currentProjectId, { messages: next });
+              return next;
+            }, activeSessionId);
 
             await chatStorageService.saveMessage(activeSessionId, newUserMsg, null, currentProjectId);
             await chatStorageService.saveMessage(activeSessionId, finalAiMsg, null, currentProjectId);
@@ -3879,13 +4101,16 @@ const Chat = () => {
           } else {
             throw new Error(res.data.error || 'Execution failed');
           }
+          gen.complete(activeSessionId);
+          setIsLoading(false);
+          chatLock.locked = false;
           return;
         } catch (err) {
           console.error('[LegalToolkit Error]:', err);
           toast.error(err.message || 'Failed to execute legal tool');
+          gen.complete(activeSessionId);
           setIsLoading(false);
-          isSendingRef.current = false;
-          isGlobalSending = false;
+          chatLock.locked = false;
           return;
         }
       }
@@ -3912,9 +4137,8 @@ const Chat = () => {
       if (isCashFlowMode || toolOverride === 'cashflow') {
         if (!selectedStock) {
           toast.error("Please select a stock from the search results first.");
-          isSendingRef.current = false;
           setIsLoading(false);
-          isGlobalSending = false;
+          chatLock.locked = false;
           return;
         }
         await handleStockAnalysis(selectedStock, activeSessionId);
@@ -3939,7 +4163,7 @@ const Chat = () => {
                   fp.type.includes('word') || fp.type.includes('document') ? 'docx' : 'file'
             }))
           };
-          setMessages(prev => prev.filter(m => !m.isSystemLog).concat(newUserMsg));
+          setMessages(prev => prev.filter(m => !m.isSystemLog).concat(newUserMsg), activeSessionId);
 
           // 2. Clear inputs
           setInputValue('');
@@ -3999,7 +4223,7 @@ const Chat = () => {
       };
 
       const updatedMessages = messages.filter(m => !m.isSystemLog).concat(userMsg);
-      setMessages(updatedMessages);
+      setMessages(updatedMessages, activeSessionId);
       // Double-attempt auto-scroll for user message to ensure it handles layout changes correctly
       setTimeout(() => scrollToBottom(true, 'smooth'), 50);
       setTimeout(() => scrollToBottom(true, 'smooth'), 400);
@@ -4092,8 +4316,14 @@ const Chat = () => {
         // Send to AI for response
         const caps = getAgentCapabilities(activeAgent.agentName, activeAgent.category);
 
-        // Create abort controller for this request
-        abortControllerRef.current = new AbortController();
+        // Create abort controller via global generation store so background
+        // generation continues when user navigates to another chat.
+        // Pass activeSessionId explicitly to handle "new" -> real ID transition.
+        const _genController = gen.start({
+          loadingText,
+          typingMessageId: null,
+        }, activeSessionId);
+        abortControllerRef.current = _genController;
 
         // ---------------------------------------------------------
         //  CONSTRUCT SYSTEM INSTRUCTION BASED ON PROFILE SETTINGS
@@ -4340,7 +4570,8 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
           SYSTEM_INSTRUCTION + getSystemPromptExtensions(),
           finalAttachments,
           personalizations?.general?.language || 'English',
-          abortControllerRef.current.signal,
+          // Use global store signal so abort works across navigations
+          gen.getAbortSignal() ?? abortControllerRef.current?.signal,
           detectedMode,
           activeSessionId,
           currentProjectId,
@@ -4385,23 +4616,26 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
         if (aiResponseData && aiResponseData.error === "LIMIT_REACHED") {
           setIsLimitReached(true);
           // Trigger LoginRequiredModal with custom message
-          window.dispatchEvent(new CustomEvent('login_required', { 
-            detail: { 
+          window.dispatchEvent(new CustomEvent('login_required', {
+            detail: {
               toolName: 'AISA™ Unlimited Chat',
               customMessage: "You've reached the guest limit of 5 sessions and 10 chats per session. Sign in to unlock unlimited chat, image generation, and more!"
-            } 
+            }
           }));
           setIsLoading(false);
-          isSendingRef.current = false;
           return;
         }
 
         // Out of credits — popup already shown by geminiService, just stop gracefully
         if (aiResponseData && (aiResponseData.error === "OUT_OF_CREDITS" || aiResponseData.error === "PREMIUM_ONLY")) {
           setIsLoading(false);
-          isSendingRef.current = false;
           // Remove the placeholder loading message if added
-          setMessages(prev => prev.filter(m => !m.isProcessing && !m.isLoading));
+          setMessages(prev => {
+            if (activeSessionId !== mountedSessionIdRef.current && activeSessionId !== 'new') {
+              // Allow transition
+            }
+            return prev.filter(m => !m.isProcessing && !m.isLoading);
+          }, activeSessionId);
           return;
         }
 
@@ -4487,8 +4721,9 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
           };
 
           // Add the empty message structure to UI
-          setMessages((prev) => [...prev, modelMsg]);
-          setTypingMessageId(msgId); // Mark this message as typing
+          setMessages((prev) => [...prev, modelMsg], activeSessionId);
+          setTypingMessageId(msgId); // Mark this message as typing (local)
+          // Synchronized via the typewriter loop below
 
           // Typewriter effect simulation
           const words = partContent.split(' ');
@@ -4501,15 +4736,15 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
           isStreamingRef.current = true;
 
           for (let j = 0; j < words.length; j++) {
-            // Check if generation was stopped by user
-            if (!isSendingRef.current) break;
+            // Check if generation was stopped by user (local ref OR global abort)
+            const globalAborted = gen.getAbortSignal()?.aborted;
+            if (!chatLock.locked || globalAborted) break;
 
             displayedContent += (j === 0 ? '' : ' ') + words[j];
 
-            // Update UI with the current chunk
-            setMessages((prev) =>
-              prev.map(m => m.id === msgId ? { ...m, content: displayedContent } : m)
-            );
+            // UI is updated via the Global Generation Sync effect in real-time
+            // Also sync partial content to global store so it persists when navigating away
+            gen.setPartialResponse(displayedContent, msgId, activeSessionId);
 
             // Wait before next word
             await new Promise(resolve => setTimeout(resolve, delay));
@@ -4518,9 +4753,12 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
           // Streaming done — unlock auto-scroll
           isStreamingRef.current = false;
 
-          if (!isSendingRef.current) {
+          if (!chatLock.locked) {
+            setTypingMessageId(null);
             return; // Exit function if stopped
           }
+
+          setTypingMessageId(null); // Clear typing status
 
           // Add conversion data and media if available
           const finalModelMsg = { ...modelMsg, content: partContent };
@@ -4590,7 +4828,8 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
 
           // CRITICAL: Update the state with the final message including conversion data
           setMessages((prev) =>
-            prev.map(m => m.id === msgId ? finalModelMsg : m)
+            prev.map(m => m.id === msgId ? finalModelMsg : m),
+            activeSessionId
           );
           scrollToBottom(); // Single scroll after full generation
 
@@ -4608,25 +4847,22 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
       // Handle abort errors silently (user stopped generation)
       if (error.name === 'AbortError' || error.name === 'CanceledError') {
         console.log('Generation stopped by user');
+        gen.complete(); // Mark as completed (not error) in global store
         // Keep partial response, don't show error
         return;
       }
 
       console.error("Chat Error:", error);
+      gen.fail(error); // Propagate error to global store
       toast.error(`Error: ${error.message || "Failed to send message"}`);
     } finally {
-      // ALWAYS reset one-time tool flags to prevent them from sticking
-      setIsDocumentConvert(false);
-      setIsAudioConvertMode(false);
-      setIsFileAnalysis(false);
+      setIsLoading(false);
 
-      if (!isRoutingRef.current) {
-        setTypingMessageId(null);
-        setIsLoading(false);
-        isSendingRef.current = false;
-        isGlobalSending = false; // RELEASE GLOBAL LOCK
-        abortControllerRef.current = null; // Clean up abort controller
-      }
+      const chatLock = getSessionLock(activeSessionId);
+      chatLock.locked = false;
+
+      abortControllerRef.current = null; // Clean up abort controller
+      gen.complete(activeSessionId); // Ensure global store is always cleaned up
     }
   };
 
@@ -4640,7 +4876,7 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
         await chatStorageService.deleteSession(id);
         const data = await chatStorageService.getSessions(currentProjectId);
         setSessions(data);
-        if (currentSessionId === id) {
+        if (activeSessionId === id) {
           navigate('/dashboard/chat/new');
         }
         toast.success("Chat history deleted");
@@ -5699,8 +5935,7 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
       } catch (e) {
         console.error("Audio edit error:", e);
       } finally {
-      setTypingMessageId(null);
-      setIsLoading(false);
+        setIsLoading(false);
       }
       return;
     }
@@ -5784,7 +6019,6 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
       const historyData = await chatStorageService.getHistory(sessionId);
       setMessages(historyData.messages || (Array.isArray(historyData) ? historyData : []));
     } finally {
-      setTypingMessageId(null);
       setIsLoading(false);
     }
   };
@@ -5859,7 +6093,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
     try {
       for (const id of idsToDelete) {
         if (id) {
-          await chatStorageService.deleteMessage(currentSessionId, id);
+          await chatStorageService.deleteMessage(activeSessionId, id);
         }
       }
       toast.success("Message restored to input", { icon: '↩️' });
@@ -5867,6 +6101,38 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
       console.error("Undo error:", error);
     }
   };
+
+  const handleSelectionAiAction = (action, text) => {
+    let prompt = "";
+    switch (action) {
+      case 'explain': prompt = `Explain this in detail: "${text}"`; break;
+      case 'summarize': prompt = `Summarize this text: "${text}"`; break;
+      case 'rewrite': prompt = `Rewrite this professionally: "${text}"`; break;
+      case 'ask': prompt = `I have a question about this: "${text}"\n\n[Your question here]`; break;
+      default: prompt = text;
+    }
+
+    setInputValue(prompt);
+
+    // Focus and scroll to input
+    setTimeout(() => {
+      const input = document.getElementById('chat-input');
+      if (input) {
+        input.focus();
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+
+    toast.success(`${action.charAt(0).toUpperCase() + action.slice(1)} action prepared!`, {
+      icon: '✨',
+      style: {
+        borderRadius: '12px',
+        background: '#333',
+        color: '#fff',
+      }
+    });
+  };
+
 
   const handleMessageUndo = async (msg) => {
     const msgIndex = messages.findIndex(m => m.id === msg.id);
@@ -5895,7 +6161,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
     try {
       for (const id of msgsToDelete) {
         if (id) {
-          await chatStorageService.deleteMessage(currentSessionId, id);
+          await chatStorageService.deleteMessage(activeSessionId, id);
         }
       }
       toast.success("Resumed from this message", { icon: '↩️' });
@@ -5967,9 +6233,9 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
 
   if (isHydrating) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen w-screen bg-[#0b0c15] text-white">
+      <div className="flex flex-col items-center justify-center h-full w-full bg-white dark:bg-[#0b0c15] text-slate-900 dark:text-white transition-all duration-500">
         <Loader />
-        <p className="mt-4 text-sm font-bold opacity-50 uppercase tracking-widest animate-pulse">Restoring Session...</p>
+        <p className="mt-4 text-[10px] font-black opacity-40 uppercase tracking-[0.3em] animate-pulse">Restoring Session</p>
       </div>
     );
   }
@@ -6130,12 +6396,16 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
       {/* SideBar is managed by NavigationProvider / DashboardLayout */}
 
       {/* Main Area */}
+      {/* Main Area Selection Toolbar (Non-wrapping to prevent re-render selection loss) */}
+      <SelectionToolbarProvider onAiAction={handleSelectionAiAction} />
+
       <div
         className="flex-1 flex flex-col relative bg-transparent w-full min-w-0 pt-0"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+
         {isDragging && (
           <div className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-sm border-2 border-dashed border-primary flex flex-col items-center justify-center pointer-events-none">
             <Cloud className="w-16 h-16 text-primary mb-4 animate-bounce" />
@@ -6160,9 +6430,9 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
         <div
           ref={chatContainerRef}
           onScroll={handleScroll}
-          className={`relative flex-1 aisa-scalable-text chatgpt-container scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent ${((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT')
-            ? 'z-20 h-full w-full overflow-hidden flex flex-col bg-slate-50 min-h-0'
-            : `overflow-y-auto ${((currentMode === 'LEGAL_TOOLKIT' && (selectedLegalTool?.id === 'legal_my_case' || selectedLegalTool?.id === 'legal_precedents')) || location.pathname === '/dashboard/cases') ? 'pt-4' : 'pt-[76px]'} lg:pt-6 pb-64 md:pb-72`
+          className={`relative flex-1 aisa-scalable-text chatgpt-container z-20 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent ${((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT')
+            ? 'z-[30] h-full w-full overflow-hidden flex flex-col bg-slate-50 min-h-0'
+            : `overflow-y-auto ${currentMode === 'LEGAL_TOOLKIT' || location.pathname === '/dashboard/cases' ? 'pt-4' : 'pt-[76px]'} lg:pt-6 pb-64 md:pb-72`
             }`}
           style={{
             overflowY: ((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT') ? 'hidden' : 'auto',
@@ -6219,7 +6489,28 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                 transition={{ duration: 0.2 }}
                 className="flex-1 flex flex-col w-full select-text"
               >
-                {currentMode === 'LEGAL_TOOLKIT' && selectedLegalTool?.id === 'legal_my_case' && (
+                {/* 🚀 MINI STICKY CASE BREADCRUMB (Lightweight & Non-obstructive) */}
+                <AnimatePresence>
+                  {!isHeaderVisible && currentMode === 'LEGAL_TOOLKIT' && currentCase && (
+                    <motion.div
+                      initial={{ y: -20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -20, opacity: 0 }}
+                      className="fixed top-4 left-1/2 -translate-x-1/2 z-[50] flex items-center gap-2 px-4 py-1.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-slate-200 dark:border-zinc-800 rounded-full shadow-lg pointer-events-none sm:pointer-events-auto"
+                    >
+                      <Briefcase size={12} className="text-indigo-600" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white truncate max-w-[150px]">
+                        {currentCase.name}
+                      </span>
+                      <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
+                      <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-widest">
+                        {activeTool || 'AI Legal'}
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {currentMode === 'LEGAL_TOOLKIT' && currentProjectId && (
                   <LegalWorkspaceHeader
                     currentCase={currentCase}
                     isRenamingCase={isRenamingCase}
@@ -6229,6 +6520,8 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                     setIsRenamingCase={setIsRenamingCase}
                     handleDeleteCase={handleDeleteCase}
                     handleBackToDashboard={handleBackToDashboard}
+                    selectedLegalTool={selectedLegalTool}
+                    activeTool={activeTool}
                   />
                 )}
                 {isSessionLoading ? (
@@ -6267,9 +6560,16 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                       return (
                         <div
                           key={msg.id}
+                          data-message-id={msg.id}
                           className={`chatgpt-message-row group ${msg.role === 'user' ? 'user-row mb-0 sm:mb-6' : 'ai-row mb-0 sm:mb-8'} ${idx === 0 ? 'mt-1 lg:mt-2' : ''}`}
-                          onClick={() => {
-                            if (window.getSelection().toString()) return;
+                          onClick={(e) => {
+                            // Don't toggle if text was selected
+                            const selectionText = window.getSelection().toString();
+                            if (selectionText && selectionText.length > 0) return;
+
+                            // Prevent toggle if clicking near the toolbar or interacting with it
+                            if (e.target.closest('.selection-toolbar-container')) return;
+
                             setActiveMessageId(activeMessageId === msg.id ? null : msg.id);
                           }}
                         >
@@ -6463,7 +6763,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                 </div>
                               ) : (
                                 (msg.content || (msg.id === typingMessageId)) && (
-                                  <div id={`msg-text-${msg.id}`} className={`chat-bubble-text ${msg.role === 'model' ? 'prose prose-sm max-w-none' : ''}`}>
+                                  <div id={`msg-text-${msg.id}`} className={`chat-bubble-text break-words overflow-wrap-anywhere ${msg.role === 'model' ? 'prose prose-sm max-w-none' : ''}`}>
 
 
 
@@ -6478,28 +6778,56 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                         <Skeleton />
                                       ) : (
                                         <ReactMarkdown
-                                        className="select-text"
-                                        remarkPlugins={[remarkGfm]}
-                                        urlTransform={(value) => value}
-                                        components={{
-                                          a: ({ href, children }) => {
-                                            const text = children?.toString() || "";
-                                            if (href && href.startsWith('action:')) {
-                                              const isLocked = text.includes('🔒') || text.includes('Unlock');
+                                          className="select-text"
+                                          remarkPlugins={[remarkGfm]}
+                                          urlTransform={(value) => value}
+                                          components={{
+                                            a: ({ href, children }) => {
+                                              const text = children?.toString() || "";
+                                              if (href && href.startsWith('action:')) {
+                                                const isLocked = text.includes('🔒') || text.includes('Unlock');
 
-                                              if (text.startsWith('ActionCard|')) {
-                                                const parts = text.split('|');
-                                                const title = parts[1] || "";
-                                                const desc = parts[2] || "";
-                                                const actionLabel = (parts[3] || "Open").replace(/^Action:\s*/i, '');
+                                                if (text.startsWith('ActionCard|')) {
+                                                  const parts = text.split('|');
+                                                  const title = parts[1] || "";
+                                                  const desc = parts[2] || "";
+                                                  const actionLabel = (parts[3] || "Open").replace(/^Action:\s*/i, '');
+
+                                                  return (
+                                                    <ActionCard
+                                                      title={title}
+                                                      desc={desc}
+                                                      action={actionLabel}
+                                                      link={href}
+                                                      isLocked={isLocked}
+                                                      onClick={(e) => {
+                                                        e.preventDefault();
+                                                        const toolKey = href.replace('action:', '');
+                                                        setCurrentMode('LEGAL_TOOLKIT');
+
+                                                        const TOOL_NAMES = {
+                                                          legal_draft_maker: "Draft Maker",
+                                                          legal_case_predictor: "Case Predictor",
+                                                          legal_argument_builder: "Argument Builder",
+                                                          legal_evidence_checker: "Evidence Analyst",
+                                                          legal_contract_analyzer: "Contract Analyzer",
+                                                          legal_strategy_engine: "Strategy Engine"
+                                                        };
+                                                        const toolName = TOOL_NAMES[toolKey] || toolKey;
+
+                                                        if (isLocked) {
+                                                          window.dispatchEvent(new CustomEvent('premium_required', { detail: { toolName } }));
+                                                          return;
+                                                        }
+
+                                                        activateToolWithTypingEffect(toolKey, toolName);
+                                                      }}
+                                                    />
+                                                  );
+                                                }
 
                                                 return (
-                                                  <ActionCard
-                                                    title={title}
-                                                    desc={desc}
-                                                    action={actionLabel}
-                                                    link={href}
-                                                    isLocked={isLocked}
+                                                  <button
                                                     onClick={(e) => {
                                                       e.preventDefault();
                                                       const toolKey = href.replace('action:', '');
@@ -6515,6 +6843,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                                       };
                                                       const toolName = TOOL_NAMES[toolKey] || toolKey;
 
+                                                      // Open the premium upsell if locked
                                                       if (isLocked) {
                                                         window.dispatchEvent(new CustomEvent('premium_required', { detail: { toolName } }));
                                                         return;
@@ -6522,196 +6851,152 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
 
                                                       activateToolWithTypingEffect(toolKey, toolName);
                                                     }}
-                                                  />
+                                                    className={`inline-flex mt-2 items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold shadow-sm transition-all hover:-translate-y-0.5 active:translate-y-0 ${isLocked ? 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20' : 'bg-gradient-to-r from-primary/10 to-primary-dark/10 border border-primary/20 text-primary hover:bg-primary/20 hover:border-primary/40'}`}
+                                                  >
+                                                    {children}
+                                                    <ChevronRight className="w-4 h-4 ml-1 opacity-70" />
+                                                  </button>
                                                 );
                                               }
-
+                                              const isInternal = href && href.startsWith('/');
                                               return (
-                                                <button
+                                                <a
+                                                  href={href}
                                                   onClick={(e) => {
-                                                    e.preventDefault();
-                                                    const toolKey = href.replace('action:', '');
-                                                    setCurrentMode('LEGAL_TOOLKIT');
-
-                                                    const TOOL_NAMES = {
-                                                      legal_draft_maker: "Draft Maker",
-                                                      legal_case_predictor: "Case Predictor",
-                                                      legal_argument_builder: "Argument Builder",
-                                                      legal_evidence_checker: "Evidence Analyst",
-                                                      legal_contract_analyzer: "Contract Analyzer",
-                                                      legal_strategy_engine: "Strategy Engine"
-                                                    };
-                                                    const toolName = TOOL_NAMES[toolKey] || toolKey;
-
-                                                    // Open the premium upsell if locked
-                                                    if (isLocked) {
-                                                      window.dispatchEvent(new CustomEvent('premium_required', { detail: { toolName } }));
-                                                      return;
+                                                    if (isInternal) {
+                                                      e.preventDefault();
+                                                      navigate(href);
                                                     }
-
-                                                    activateToolWithTypingEffect(toolKey, toolName);
                                                   }}
-                                                  className={`inline-flex mt-2 items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold shadow-sm transition-all hover:-translate-y-0.5 active:translate-y-0 ${isLocked ? 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20' : 'bg-gradient-to-r from-primary/10 to-primary-dark/10 border border-primary/20 text-primary hover:bg-primary/20 hover:border-primary/40'}`}
+                                                  className="text-primary hover:underline font-bold cursor-pointer"
+                                                  target={isInternal ? "_self" : "_blank"}
+                                                  rel={isInternal ? "" : "noopener noreferrer"}
                                                 >
                                                   {children}
-                                                  <ChevronRight className="w-4 h-4 ml-1 opacity-70" />
-                                                </button>
+                                                </a>
                                               );
-                                            }
-                                            const isInternal = href && href.startsWith('/');
-                                            return (
-                                              <a
-                                                href={href}
-                                                onClick={(e) => {
-                                                  if (isInternal) {
-                                                    e.preventDefault();
-                                                    navigate(href);
-                                                  }
-                                                }}
-                                                className="text-primary hover:underline font-bold cursor-pointer"
-                                                target={isInternal ? "_self" : "_blank"}
-                                                rel={isInternal ? "" : "noopener noreferrer"}
-                                              >
-                                                {children}
-                                              </a>
-                                            );
-                                          },
-                                          p: ({ children }) => <p>{children}</p>,
-                                          ul: ({ children }) => <ul className="list-disc pl-5 space-y-1.5">{children}</ul>,
-                                          ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1.5">{children}</ol>,
-                                          li: ({ children }) => <li>{children}</li>,
-                                          h1: ({ children }) => <h1 className="font-bold tracking-tight">{children}</h1>,
-                                          h2: ({ children }) => <h2 className="font-bold tracking-tight">{children}</h2>,
-                                          h3: ({ children }) => <h3 className="font-bold tracking-tight">{children}</h3>,
-                                          strong: ({ children }) => <strong>{children}</strong>,
-                                          table: ({ children }) => (
-                                            <div className="overflow-x-auto my-4 rounded-xl border border-border/50 shadow-lg bg-surface/30 backdrop-blur-sm">
-                                              <table className="w-full border-collapse text-sm">{children}</table>
-                                            </div>
-                                          ),
-                                          thead: ({ children }) => <thead className="bg-primary/10 border-b border-border/50">{children}</thead>,
-                                          tbody: ({ children }) => <tbody className="divide-y divide-border/30">{children}</tbody>,
-                                          tr: ({ children }) => <tr className="transition-colors hover:bg-white/3">{children}</tr>,
-                                          th: ({ children }) => <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-primary">{children}</th>,
-                                          td: ({ children }) => <td className="px-4 py-3 text-sm text-maintext leading-relaxed">{children}</td>,
-                                          mark: ({ children }) => <mark className="bg-[#5555ff] text-white px-1 py-0.5 rounded-sm">{children}</mark>,
-                                          code: ({ node, inline, className, children, ...props }) => {
-                                            const match = /language-(\w+)/.exec(className || '');
-                                            const lang = match ? match[1] : '';
-                                            const codeValue = String(children).replace(/\n$/, '');
-                                            const isUser = msg.role === 'user';
+                                            },
+                                            p: ({ children }) => <p>{children}</p>,
+                                            ul: ({ children }) => <ul className="list-disc pl-5 space-y-1.5">{children}</ul>,
+                                            ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1.5">{children}</ol>,
+                                            li: ({ children }) => <li>{children}</li>,
+                                            h1: ({ children }) => <h1 className="font-bold tracking-tight">{children}</h1>,
+                                            h2: ({ children }) => <h2 className="font-bold tracking-tight">{children}</h2>,
+                                            h3: ({ children }) => <h3 className="font-bold tracking-tight">{children}</h3>,
+                                            strong: ({ children }) => <strong>{children}</strong>,
+                                            table: ({ children }) => (
+                                              <div className="overflow-x-auto my-4 rounded-xl border border-border/50 shadow-lg bg-surface/30 backdrop-blur-sm">
+                                                <table className="w-full border-collapse text-sm">{children}</table>
+                                              </div>
+                                            ),
+                                            thead: ({ children }) => <thead className="bg-primary/10 border-b border-border/50">{children}</thead>,
+                                            tbody: ({ children }) => <tbody className="divide-y divide-border/30">{children}</tbody>,
+                                            tr: ({ children }) => <tr className="transition-colors hover:bg-white/3">{children}</tr>,
+                                            th: ({ children }) => <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-primary">{children}</th>,
+                                            td: ({ children }) => <td className="px-4 py-3 text-sm text-maintext leading-relaxed">{children}</td>,
+                                            mark: ({ children }) => <mark className="bg-[#5555ff] text-white px-1 py-0.5 rounded-sm">{children}</mark>,
+                                            code: ({ node, inline, className, children, ...props }) => {
+                                              const match = /language-(\w+)/.exec(className || '');
+                                              const lang = match ? match[1] : '';
+                                              const codeValue = String(children).replace(/\n$/, '');
+                                              const isUser = msg.role === 'user';
 
-                                            if (!inline) {
-                                              return (
-                                                <div className={`rounded-xl overflow-hidden my-3 border ${isUser ? 'border-white/10 bg-black/20' : 'border-[#1a1a1a] bg-[#0d0d0d]'} shadow-2xl w-full max-w-full group/code`}>
-                                                  {!isUser && (
-                                                    <div className="flex items-center justify-between px-4 py-2.5 bg-[#2d2d2d]/80 backdrop-blur-sm border-b border-zinc-800">
-                                                      <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-[#9ca3af]">{lang || 'plain text'}</span>
-                                                      </div>
-                                                      <button
-                                                        onClick={() => {
-                                                          try {
-                                                            if (navigator.clipboard && window.isSecureContext) {
-                                                              navigator.clipboard.writeText(codeValue);
-                                                            } else {
-                                                              const textArea = document.createElement("textarea");
-                                                              textArea.value = codeValue;
-                                                              document.body.appendChild(textArea);
-                                                              textArea.select();
-                                                              document.execCommand('copy');
-                                                              document.body.removeChild(textArea);
-                                                            }
+                                              if (!inline) {
+                                                return (
+                                                  <div className={`rounded-xl overflow-hidden my-3 border ${isUser ? 'border-white/10 bg-black/20' : 'border-[#1a1a1a] bg-[#0d0d0d]'} shadow-2xl w-full max-w-full group/code`}>
+                                                    {!isUser && (
+                                                      <div className="flex items-center justify-between px-4 py-2.5 bg-[#2d2d2d]/80 backdrop-blur-sm border-b border-zinc-800">
+                                                        <div className="flex items-center gap-2">
+                                                          <span className="text-[10px] font-black uppercase tracking-widest text-[#9ca3af]">{lang || 'plain text'}</span>
+                                                        </div>
+                                                        <button
+                                                          onClick={() => {
+                                                            navigator.clipboard.writeText(codeValue);
                                                             toast.success("Code copied!");
-                                                          } catch (err) {
-                                                            toast.error("Failed to copy code");
+                                                          }}
+                                                          className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 hover:text-white transition-all bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-white/5 active:scale-95"
+                                                        >
+                                                          <Copy className="w-3.5 h-3.5" />
+                                                          Copy
+                                                        </button>
+                                                      </div>
+                                                    )}
+                                                    <div className={`${isUser ? 'max-h-[500px]' : 'max-h-[600px]'} overflow-auto custom-scrollbar-thin ${isUser ? 'bg-transparent' : 'bg-[#0d0d0d]'}`}>
+                                                      <SyntaxHighlighter
+                                                        language={lang || 'text'}
+                                                        style={highlighterTheme}
+                                                        PreTag="div"
+                                                        customStyle={{
+                                                          margin: 0,
+                                                          padding: isUser ? '16px' : '20px',
+                                                          fontSize: isUser ? '13px' : '14px',
+                                                          lineHeight: '1.7',
+                                                          background: 'transparent',
+                                                          borderRadius: 0,
+                                                          border: 'none',
+                                                          color: '#e5e7eb', // Ensure visibility for plain text
+                                                          fontFamily: '"Fira Code", "JetBrains Mono", source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace'
+                                                        }}
+                                                        codeTagProps={{
+                                                          style: {
+                                                            fontFamily: 'inherit',
+                                                            background: 'transparent',
+                                                            color: 'inherit'
                                                           }
                                                         }}
-                                                        className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 hover:text-white transition-all bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-white/5 active:scale-95"
+                                                        {...props}
                                                       >
-                                                        <Copy className="w-3.5 h-3.5" />
-                                                        Copy
-                                                      </button>
+                                                        {codeValue}
+                                                      </SyntaxHighlighter>
                                                     </div>
-                                                  )}
-                                                  <div className={`${isUser ? 'max-h-[500px]' : 'max-h-[600px]'} overflow-auto custom-scrollbar-thin ${isUser ? 'bg-transparent' : 'bg-[#0d0d0d]'}`}>
-                                                    <SyntaxHighlighter
-                                                      language={lang || 'text'}
-                                                      style={highlighterTheme}
-                                                      PreTag="div"
-                                                      customStyle={{
-                                                        margin: 0,
-                                                        padding: isUser ? '16px' : '20px',
-                                                        fontSize: isUser ? '13px' : '14px',
-                                                        lineHeight: '1.7',
-                                                        background: 'transparent',
-                                                        borderRadius: 0,
-                                                        border: 'none',
-                                                        overflowX: 'auto',
-                                                        overflowY: 'auto',
-                                                        color: '#e5e7eb', // Ensure visibility for plain text
-                                                        fontFamily: '"Fira Code", "JetBrains Mono", source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace'
-                                                      }}
-                                                      codeTagProps={{
-                                                        style: {
-                                                          fontFamily: 'inherit',
-                                                          background: 'transparent',
-                                                          color: 'inherit'
-                                                        }
-                                                      }}
-                                                      {...props}
-                                                    >
-                                                      {codeValue}
-                                                    </SyntaxHighlighter>
                                                   </div>
-                                                </div>
+                                                );
+                                              }
+                                              return (
+                                                <code className="bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-md font-mono text-primary font-bold mx-0.5 text-xs translate-y-[-1px] inline-block" {...props}>
+                                                  {children}
+                                                </code>
                                               );
-                                            }
-                                            return (
-                                              <code className="bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-md font-mono text-primary font-bold mx-0.5 text-xs translate-y-[-1px] inline-block" {...props}>
-                                                {children}
-                                              </code>
-                                            );
-                                          },
-                                          img: ({ node, ...props }) => {
-                                            const isDownloading = isDownloadingUrl === props.src;
-                                            return (
-                                              <div className="relative my-4 group/img-container max-w-full">
-                                                <div className="relative group/image overflow-hidden aspect-auto max-w-[500px] cursor-zoom-in w-fit" onClick={() => setViewingDoc({ url: props.src, type: 'image', name: 'AI Image' })}>
-                                                  {msg.role === 'model' && (
-                                                    <div className="absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/60 to-transparent z-10 flex justify-between items-center opacity-100 sm:opacity-0 sm:group-hover/img-container:opacity-100 transition-opacity">
-                                                      <div className="flex items-center gap-2">
-                                                        <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                                                        <span className="text-[10px] font-bold text-white uppercase tracking-widest">AISA™ Generated Asset</span>
+                                            },
+                                            img: ({ node, ...props }) => {
+                                              const isDownloading = isDownloadingUrl === props.src;
+                                              return (
+                                                <div className="relative my-4 group/img-container max-w-full">
+                                                  <div className="relative group/image overflow-hidden aspect-auto max-w-[500px] cursor-zoom-in w-fit" onClick={() => setViewingDoc({ url: props.src, type: 'image', name: 'AI Image' })}>
+                                                    {msg.role === 'model' && (
+                                                      <div className="absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/60 to-transparent z-10 flex justify-between items-center opacity-100 sm:opacity-0 sm:group-hover/img-container:opacity-100 transition-opacity">
+                                                        <div className="flex items-center gap-2">
+                                                          <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                                                          <span className="text-[10px] font-bold text-white uppercase tracking-widest">AISA™ Generated Asset</span>
+                                                        </div>
                                                       </div>
-                                                    </div>
-                                                  )}
-                                                  <ImageViewer
-                                                    src={props.src}
-                                                    alt={props.alt || "AI Image"}
-                                                  />
-                                                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover/img-container:opacity-100 transition-opacity pointer-events-none" />
-                                                </div>
-                                                <button
-                                                  onClick={() => handleDownload(props.src, `AISA_gen_${Date.now()}.png`)}
-                                                  disabled={isDownloading}
-                                                  className="absolute bottom-4 right-4 z-20 flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl border border-white/20 text-white shadow-lg transition-all active:scale-95 disabled:opacity-50"
-                                                >
-                                                  <div className="flex items-center gap-2">
-                                                    {isDownloading ? (
-                                                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                    ) : (
-                                                      <Download className="w-4 h-4" />
                                                     )}
-                                                    <span className="text-[10px] font-bold uppercase">
-                                                      {isDownloading ? 'Downloading...' : 'Download'}
-                                                    </span>
+                                                    <ImageViewer
+                                                      src={props.src}
+                                                      alt={props.alt || "AI Image"}
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover/img-container:opacity-100 transition-opacity pointer-events-none" />
                                                   </div>
-                                                </button>
-                                              </div>
-                                            )
-                                          },
-                                        }}
+                                                  <button
+                                                    onClick={() => handleDownload(props.src, `AISA_gen_${Date.now()}.png`)}
+                                                    disabled={isDownloading}
+                                                    className="absolute bottom-4 right-4 z-20 flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl border border-white/20 text-white shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                                                  >
+                                                    <div className="flex items-center gap-2">
+                                                      {isDownloading ? (
+                                                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                      ) : (
+                                                        <Download className="w-4 h-4" />
+                                                      )}
+                                                      <span className="text-[10px] font-bold uppercase">
+                                                        {isDownloading ? 'Downloading...' : 'Download'}
+                                                      </span>
+                                                    </div>
+                                                  </button>
+                                                </div>
+                                              )
+                                            },
+                                          }}
                                         >
                                           {transformLegalActions(msg.content || msg.text || "")}
                                         </ReactMarkdown>
@@ -7112,8 +7397,8 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                           })()}
                                           {!isMediaFeature && (
                                             <button
-                                              onClick={() => handleCopyMessage(msg.content)}
-                                              className="text-subtext hover:text-maintext transition-colors p-1.5 hover:bg-surface-hover rounded-lg"
+                                              onClick={() => handleCopyMessage(msg.content || msg.text)}
+                                              className="p-1.5 text-subtext hover:text-maintext hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
                                               title="Copy"
                                             >
                                               <Copy className="w-3.5 h-3.5" />
@@ -7189,7 +7474,6 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                   </div>
                                 )}
 
-
                               {/* Integrated Smart Suggestions (Only for the latest AI response) */}
                               {idx === messages.length - 1 && (msg.role === 'model' || msg.role === 'assistant') &&
                                 suggestions.length > 0 && !isLoading && !typingMessageId && (
@@ -7206,46 +7490,8 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                   </div>
                                 )}
 
-
-
-                              {/* Timestamp & User Actions */}
-                              <div className="mt-4 flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                {msg.role === 'user' && (
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => handleMessageDelete(msg.id)}
-                                      className="p-1.5 text-subtext hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                                      title="Delete"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      onClick={() => handleMessageUndo(msg)}
-                                      className="p-1.5 text-subtext hover:text-primary hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
-                                      title="Undo/Restore to Input"
-                                    >
-                                      <Undo2 className="w-3.5 h-3.5" />
-                                    </button>
-                                    {!msg.attachment && (
-                                      <button
-                                        onClick={() => startEditing(msg)}
-                                        className="p-1.5 text-subtext hover:text-primary hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
-                                        title="Edit"
-                                      >
-                                        <Edit2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={() => handleCopyMessage(msg.content || msg.text)}
-                                      className="p-1.5 text-subtext hover:text-maintext hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
-                                      title="Copy"
-                                    >
-                                      <Copy className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                )}
-
-                                <span className="text-[10px] text-subtext font-medium">
+                              <div className="mt-1 text-right sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium">
                                   {new Date(msg.timestamp).toLocaleTimeString([], {
                                     hour: '2-digit',
                                     minute: '2-digit',
@@ -7260,7 +7506,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                   </>
 
                 )}
-                {isLoading && !typingMessageId && (
+                {gen.isGenerating && !gen.typingMessageId && (
                   <div className="chatgpt-message-row ai-row group mb-6 sm:mb-8">
                     <div className="chatgpt-message-content select-text">
                       <div className="chatgpt-avatar-container w-8 h-8 rounded-full flex items-center justify-center shrink-0">
@@ -7278,15 +7524,15 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                   </div>
                 )}
 
-                {messages.length === 0 && currentCase && selectedLegalTool?.id === 'legal_my_case' && location.pathname !== '/dashboard/cases' && (
+                {messages.length === 0 && !isSessionLoading && !isHydrating && currentCase && selectedLegalTool?.id === 'legal_my_case' && location.pathname !== '/dashboard/cases' && (
                   <LegalWorkspaceWelcome currentCase={currentCase} />
                 )}
 
                 <AnimatePresence>
-                  {messages.length === 0 && !inputValue && !isSessionLoading && currentMode === 'LEGAL_TOOLKIT' && selectedLegalTool && LEGAL_TOOL_WELCOME_MESSAGES[selectedLegalTool.id] && (
-                    <ToolActivationMessage 
-                      title={LEGAL_TOOL_WELCOME_MESSAGES[selectedLegalTool.id].title}
-                      desc={LEGAL_TOOL_WELCOME_MESSAGES[selectedLegalTool.id].desc}
+                  {messages.length === 0 && !inputValue && !isSessionLoading && !isHydrating && (currentMode === 'LEGAL_TOOLKIT' || new URLSearchParams(window.location.search).get('tool')?.startsWith('legal_')) && (selectedLegalTool || PREMIUM_TOOLS.find(t => t.id === new URLSearchParams(window.location.search).get('tool'))) && LEGAL_TOOL_WELCOME_MESSAGES[selectedLegalTool?.id || new URLSearchParams(window.location.search).get('tool')] && (
+                    <ToolActivationMessage
+                      title={LEGAL_TOOL_WELCOME_MESSAGES[selectedLegalTool?.id || new URLSearchParams(window.location.search).get('tool')]?.title}
+                      desc={LEGAL_TOOL_WELCOME_MESSAGES[selectedLegalTool?.id || new URLSearchParams(window.location.search).get('tool')]?.desc}
                     />
                   )}
                 </AnimatePresence>
@@ -7299,155 +7545,143 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
 
         {/* Welcome Screen - Integrated Hub */}
         <AnimatePresence>
-          {messages.length === 0 && !isSessionLoading &&
+          {messages.length === 0 && !isSessionLoading && !isHydrating &&
             !currentCase &&
             (!currentProjectId || currentProjectId === 'default' || currentProjectId === 'all') &&
-            currentMode !== 'LEGAL_TOOLKIT' && (
+            currentMode !== 'LEGAL_TOOLKIT' && !activeLegalToolkit && !selectedLegalTool && !activeTool && !new URLSearchParams(window.location.search).get('tool') && (
               <motion.div
                 key="welcome-screen"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-                className="absolute inset-0 z-10 pointer-events-auto flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden pb-32 md:pb-48 scrollbar-hide"
+                className="absolute inset-0 z-[100] pointer-events-none flex flex-col items-center justify-start overflow-y-auto overflow-x-hidden pb-32 md:pb-48 scrollbar-hide pt-4 sm:pt-6"
               >
-                <div className="relative z-10 flex flex-col items-center w-full max-w-7xl mx-auto px-4 sm:px-6 h-max mt-8 sm:mt-0">
-                  <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="mb-4 sm:mb-6"
-                  >
-                    <img
-                      src={logo}
-                      alt="AISA"
-                      className="w-16 h-12 sm:w-20 sm:h-16 mx-auto object-cover object-top drop-shadow-[0_0_30px_rgba(var(--color-primary-rgb),0.4)] transition-all duration-700 hover:scale-110"
-                    />
-                  </motion.div>
-                  <section className="w-full px-0 mt-0">
-                    <FuturisticToolCards
-                      isAdmin={isAdminUser}
-                      activeToolId={
-                        isImageGeneration ? 'image' :
-                          isVideoGeneration ? 'video' :
-                            isDeepSearch ? 'deep_search' :
-                              isWebSearch ? 'web_search' :
-                                isCodeWriter ? 'code' :
-                                  isAudioConvertMode ? 'audio' :
-                                    isFileAnalysis ? 'document' :
-                                      isMagicEditing ? 'edit_image' :
-                                        isMagicVideoModalOpen ? 'image_to_video' :
-                                          isStockModalOpen ? 'ai_cashflow' :
-                                            isSocialMediaDashboardOpen ? 'aiad_agent' :
-                                              (activeLegalToolkit || currentMode === 'LEGAL_TOOLKIT') ? 'legal' : null
+                <div className="relative z-10 flex flex-col items-center w-full max-w-7xl mx-auto px-4 sm:px-6 h-max mt-8 sm:mt-0 pointer-events-auto">
+                  <ModernDashboard 
+                    userName={user?.name || user?.email?.split('@')[0]}
+                    activeCategory={dashboardCategory}
+                    onCategoryChange={setDashboardCategory}
+                    activeToolId={
+                      isImageGeneration ? 'image' :
+                        isVideoGeneration ? 'video' :
+                          isDeepSearch ? 'deep_search' :
+                            isWebSearch ? 'web_search' :
+                              isCodeWriter ? 'code' :
+                                isAudioConvertMode ? 'audio' :
+                                  isFileAnalysis ? 'document' :
+                                    isMagicEditing ? 'edit_image' :
+                                      isMagicVideoModalOpen ? 'image_to_video' :
+                                        isStockModalOpen ? 'ai_cashflow' :
+                                          isSocialMediaDashboardOpen ? 'aiad_agent' :
+                                            (activeLegalToolkit || currentMode === 'LEGAL_TOOLKIT' || new URLSearchParams(window.location.search).get('tool')?.startsWith('legal_')) ? 'legal' : null
+                    }
+                    onToolSelect={(id) => {
+                      setIsImageGeneration(false);
+                      setIsVideoGeneration(false);
+                      setIsAudioConvertMode(false);
+                      setIsCodeWriter(false);
+                      setIsDeepSearch(false);
+                      setIsWebSearch(false);
+                      setIsFileAnalysis(false);
+                      setIsMagicEditing(false);
+                      setIsMagicImageModalOpen(false);
+                      setIsMagicVideoModalOpen(false);
+                      setIsCashFlowMode(false);
+                      setActiveTool(null);
+
+                      // Clear ALL legal states regardless of selection to prevent race conditions
+                      // We only re-enable specific legal states below if id === 'legal'
+                      if (id !== 'legal') {
+                        setActiveLegalToolkit(false);
+                        setCurrentMode(null);
+                        setSelectedLegalTool(null);
                       }
-                      onToolSelect={(id) => {
-                        setIsImageGeneration(false);
-                        setIsVideoGeneration(false);
-                        setIsAudioConvertMode(false);
-                        setIsCodeWriter(false);
-                        setIsDeepSearch(false);
-                        setIsWebSearch(false);
+
+                      if (id === 'image') {
+                        if (!checkPremiumTool('Image Generation')) return;
+                        setIsImageGeneration(true);
+                        setActiveTool('image');
+                        if (inputRef.current) { inputRef.current.value = "Generate an image of "; inputRef.current.focus(); }
+                        toast.success("Image Mode Active");
+                      } else if (id === 'video') {
+                        if (!checkPremiumTool('Generate Video')) return;
+                        setIsVideoGeneration(true);
+                        setActiveTool('video');
+                        if (inputRef.current) { inputRef.current.value = "Generate a video of "; inputRef.current.focus(); }
+                        toast.success("Video Mode Active");
+                      } else if (id === 'audio') {
+                        if (!checkPremiumTool('Convert to Audio')) return;
+                        setIsAudioConvertMode(true);
+                        setActiveTool('audio');
+                        if (inputRef.current) { inputRef.current.value = "Convert this text to audio: "; inputRef.current.focus(); }
+                        toast.success("Audio Mode Active");
+                      } else if (id === 'code') {
+                        if (!checkPremiumTool('Code Writer')) return;
+                        setIsCodeWriter(true);
+                        setActiveTool('code');
+                        if (inputRef.current) { inputRef.current.value = "Write a function to "; inputRef.current.focus(); }
+                        toast.success("Code Mode Active");
+                      } else if (id === 'deep_search') {
+                        if (!checkPremiumTool('Deep Search')) return;
+                        setIsDeepSearch(true);
+                        setActiveTool('deep_search');
+                        if (inputRef.current) { inputRef.current.value = "Research in-depth about "; inputRef.current.focus(); }
+                        toast.success("Deep Intelligence Active");
+                      } else if (id === 'web_search') {
+                        if (!checkPremiumTool('Web Search')) return;
+                        setIsWebSearch(true);
+                        setActiveTool('web_search');
+                        if (inputRef.current) { inputRef.current.value = "Search for live updates on "; inputRef.current.focus(); }
+                        toast.success("Real-Time Search Active");
+                      } else if (id === 'document') {
+                        if (!checkPremiumTool('Document Converter')) return;
+                        setIsDocumentConvert(true);
                         setIsFileAnalysis(false);
-                        setIsMagicEditing(false);
-                        setIsMagicImageModalOpen(false);
-                        setIsMagicVideoModalOpen(false);
+                        setActiveTool('document');
+                        uploadInputRef.current?.click();
+                        toast.success("Upload document for conversion");
+                      } else if (id === 'edit_image') {
+                        if (!checkPremiumTool('Edit Image')) return;
+                        setIsMagicEditing(true);
+                        setActiveTool('edit_image');
+                        if (!editRefImage && messages.length > 0) {
+                          const lastImg = [...messages].reverse().find(m => m.imageUrl);
+                          if (lastImg) setEditRefImage({ url: lastImg.imageUrl, name: 'Last Generated', type: 'image' });
+                        }
+                        toast.success("Image Editing Mode Active");
+                      } else if (id === 'image_to_video') {
+                        if (!checkPremiumTool('Image to Video')) return;
+                        setIsMagicVideoModalOpen(true);
+                        setActiveTool('image_to_video');
+                        toast.success("Image to Video Mode Active");
+                      } else if (id === 'ai_cashflow') {
+                        if (!checkPremiumTool('AI CashFlow')) return;
+                        setIsCashFlowMode(true);
+                        setIsStockModalOpen(true);
+                        setActiveTool('ai_cashflow');
+                        toast.success("AI CashFlow Active 📈");
+                      } else if (id === 'aiad_agent') {
+                        if (!checkPremiumTool('AI Ad Agent')) return;
+                        setIsSocialMediaDashboardOpen(true);
+                        setActiveTool('aiad_agent');
+                        toast.success("AI ADS™ Active");
+                      } else if (id === 'legal') {
+                        if (!checkPremiumTool('AI Legal')) return;
+
+                        // ENSURE FRESH START: Clear any active sub-tools or modes
+                        setCurrentMode(MODES.NORMAL_CHAT);
+                        setSelectedLegalTool(null);
+                        setLegalView('DASHBOARD'); // Force dashboard view for the toolkit card
+
                         setIsCashFlowMode(false);
-                        setActiveTool(null);
+                        setIsStockModalOpen(false);
+                        setActiveLegalToolkit(true);
+                        setActiveTool('legal');
 
-                        // Clear ALL legal states regardless of selection to prevent race conditions
-                        // We only re-enable specific legal states below if id === 'legal'
-                        if (id !== 'legal') {
-                          setActiveLegalToolkit(false);
-                          setCurrentMode(null);
-                          setSelectedLegalTool(null);
-                        }
-
-                        if (id === 'image') {
-                          if (!checkPremiumTool('Image Generation')) return;
-                          setIsImageGeneration(true);
-                          setActiveTool('image');
-                          if (inputRef.current) { inputRef.current.value = "Generate an image of "; inputRef.current.focus(); }
-                          toast.success("Image Mode Active");
-                        } else if (id === 'video') {
-                          if (!checkPremiumTool('Generate Video')) return;
-                          setIsVideoGeneration(true);
-                          setActiveTool('video');
-                          if (inputRef.current) { inputRef.current.value = "Generate a video of "; inputRef.current.focus(); }
-                          toast.success("Video Mode Active");
-                        } else if (id === 'audio') {
-                          if (!checkPremiumTool('Convert to Audio')) return;
-                          setIsAudioConvertMode(true);
-                          setActiveTool('audio');
-                          if (inputRef.current) { inputRef.current.value = "Convert this text to audio: "; inputRef.current.focus(); }
-                          toast.success("Audio Mode Active");
-                        } else if (id === 'code') {
-                          if (!checkPremiumTool('Code Writer')) return;
-                          setIsCodeWriter(true);
-                          setActiveTool('code');
-                          if (inputRef.current) { inputRef.current.value = "Write a function to "; inputRef.current.focus(); }
-                          toast.success("Code Mode Active");
-                        } else if (id === 'deep_search') {
-                          if (!checkPremiumTool('Deep Search')) return;
-                          setIsDeepSearch(true);
-                          setActiveTool('deep_search');
-                          if (inputRef.current) { inputRef.current.value = "Research in-depth about "; inputRef.current.focus(); }
-                          toast.success("Deep Intelligence Active");
-                        } else if (id === 'web_search') {
-                          if (!checkPremiumTool('Web Search')) return;
-                          setIsWebSearch(true);
-                          setActiveTool('web_search');
-                          if (inputRef.current) { inputRef.current.value = "Search for live updates on "; inputRef.current.focus(); }
-                          toast.success("Real-Time Search Active");
-                        } else if (id === 'document') {
-                          if (!checkPremiumTool('Document Converter')) return;
-                          setIsDocumentConvert(true);
-                          setIsFileAnalysis(false);
-                          setActiveTool('document');
-                          uploadInputRef.current?.click();
-                          toast.success("Upload document for conversion");
-                        } else if (id === 'edit_image') {
-                          if (!checkPremiumTool('Edit Image')) return;
-                          setIsMagicEditing(true);
-                          setActiveTool('edit_image');
-                          if (!editRefImage && messages.length > 0) {
-                            const lastImg = [...messages].reverse().find(m => m.imageUrl);
-                            if (lastImg) setEditRefImage({ url: lastImg.imageUrl, name: 'Last Generated', type: 'image' });
-                          }
-                          toast.success("Image Editing Mode Active");
-                        } else if (id === 'image_to_video') {
-                          if (!checkPremiumTool('Image to Video')) return;
-                          setIsMagicVideoModalOpen(true);
-                          setActiveTool('image_to_video');
-                          toast.success("Image to Video Mode Active");
-                        } else if (id === 'ai_cashflow') {
-                          if (!checkPremiumTool('AI CashFlow')) return;
-                          setIsCashFlowMode(true);
-                          setIsStockModalOpen(true);
-                          setActiveTool('ai_cashflow');
-                          toast.success("AI CashFlow Active 📈");
-                        } else if (id === 'aiad_agent') {
-                          if (!checkPremiumTool('AI Ad Agent')) return;
-                          setIsSocialMediaDashboardOpen(true);
-                          setActiveTool('aiad_agent');
-                          toast.success("AI ADS™ Active");
-                        } else if (id === 'legal') {
-                          if (!checkPremiumTool('AI Legal')) return;
-
-                          // ENSURE FRESH START: Clear any active sub-tools or modes
-                          setCurrentMode(MODES.NORMAL_CHAT);
-                          setSelectedLegalTool(null);
-                          setLegalView('DASHBOARD'); // Force dashboard view for the toolkit card
-
-                          setIsCashFlowMode(false);
-                          setIsStockModalOpen(false);
-                          setActiveLegalToolkit(true);
-                          setActiveTool('legal');
-
-                          toast.success("AI Legal™ Activated");
-                        }
-                      }}
-                    />
-                  </section>
+                        toast.success("AI Legal™ Activated");
+                      }
+                    }}
+                  />
                 </div>
               </motion.div>
             )}
@@ -7455,7 +7689,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
 
         {/* Unified Chat Input Container */}
         {legalView !== 'DASHBOARD' && legalView !== 'PRECEDENTS' && (
-          <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
+          <div className="absolute bottom-0 left-0 right-0 z-[1001] pointer-events-none">
             {/* Gradient Mask to hide text scrolling behind/below input - Removed to eliminate white shade */}
 
             <div className="relative z-20 bg-background" style={{ padding: '0.5rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px)) 1rem' }}>
@@ -7464,7 +7698,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
 
                 <form
                   onSubmit={handleSendMessage}
-                  className="relative w-full flex flex-col transition-all duration-300 p-1 z-50 aisa-chat-input-wrapper bg-white dark:bg-[#121212] border border-slate-200/60 dark:border-zinc-800 rounded-[28px] sm:rounded-[32px] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] dark:shadow-none overflow-visible"
+                  className="relative w-full flex flex-col transition-all duration-300 p-1 z-[1002] aisa-chat-input-wrapper bg-white dark:bg-[#121212] border border-slate-200/60 dark:border-zinc-800 rounded-[28px] sm:rounded-[32px] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] dark:shadow-none overflow-visible"
                 >
                   {/* Internal File Preview Area */}
                   {(filePreviews.length > 0 || longTextPreview) && (
@@ -7561,7 +7795,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
 
                     {/* AI CashFlow Search Results Dropdown */}
                     {isCashFlowMode && Array.isArray(stockSearchResults) && stockSearchResults.length > 0 && (
-                      <div className="absolute bottom-full left-0 right-0 mb-3 px-2 z-[110] pointer-events-auto max-h-[300px] overflow-y-auto custom-scrollbar">
+                      <div className="absolute bottom-full left-0 right-0 mb-3 px-2 z-[1020] pointer-events-auto max-h-[300px] overflow-y-auto custom-scrollbar">
                         <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
                           {stockSearchResults.map((stock) => (
                             <button
@@ -7587,18 +7821,34 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                       </div>
                     )}
 
+                    {/* Menu Backdrop Layer */}
+                    <AnimatePresence>
+                      {(isAttachMenuOpen || isToolsMenuOpen) && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="fixed inset-0 z-[1010] bg-black/5 dark:bg-black/20 backdrop-blur-[1px] pointer-events-auto"
+                          onClick={() => {
+                            setIsAttachMenuOpen(false);
+                            setIsToolsMenuOpen(false);
+                          }}
+                        />
+                      )}
+                    </AnimatePresence>
+
                     {/* Left Actions Group */}
                     <AnimatePresence>
                       {isAttachMenuOpen && (
                         <motion.div
-                          initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                          initial={{ opacity: 0, scale: 0.95, y: 15 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                          transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
                           ref={menuRef}
-                          className={`absolute bottom-full left-0 ${(isWebSearch || isDeepSearch || isImageGeneration || isVideoGeneration || isVoiceMode || isAudioConvertMode || isDocumentConvert || isCodeWriter || isMagicEditing || isFileAnalysis || isCashFlowMode || currentMode === 'LEGAL_TOOLKIT') ? 'mb-[60px]' : 'mb-4'} w-[min(85vw,220px)] bg-surface/95 dark:bg-[#1a1a1a]/95 border border-border/50 rounded-2xl shadow-2xl overflow-hidden z-[110] backdrop-blur-xl ring-1 ring-black/5`}
+                          className={`fixed sm:absolute bottom-[max(80px,calc(env(safe-area-inset-bottom)+80px))] sm:bottom-full left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 ${(isWebSearch || isDeepSearch || isImageGeneration || isVideoGeneration || isVoiceMode || isAudioConvertMode || isDocumentConvert || isCodeWriter || isMagicEditing || isFileAnalysis || isCashFlowMode || currentMode === 'LEGAL_TOOLKIT') ? 'sm:mb-[68px]' : 'sm:mb-6'} w-[calc(100%-32px)] sm:w-[220px] bg-white/95 dark:bg-[#1c1c1e]/95 border border-slate-200/50 dark:border-white/10 rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden z-[1020] backdrop-blur-xl ring-1 ring-black/[0.05]`}
                         >
-                          <div className="p-2 space-y-1">
+                          <div className="p-2.5 space-y-1">
                             {getAgentCapabilities(activeAgent.agentName, activeAgent.category).canCamera && (
                               <button
                                 type="button"
@@ -7606,23 +7856,23 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                   cameraInputRef.current?.click();
                                   setIsAttachMenuOpen(false);
                                 }}
-                                className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-primary/10 rounded-xl transition-all group cursor-pointer"
+                                className="w-full text-left px-3.5 py-2.5 flex items-center gap-3.5 hover:bg-primary/10 rounded-xl transition-all group cursor-pointer"
                               >
-                                <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/20 transition-colors shrink-0">
-                                  <Camera className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" />
+                                <div className="w-9 h-9 rounded-full bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors shrink-0">
+                                  <Camera className="w-4.5 h-4.5 text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors" />
                                 </div>
-                                <span className="text-[13px] font-semibold text-maintext group-hover:text-primary transition-colors">Camera & Scan</span>
+                                <span className="text-[14px] font-bold text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">Camera & Scan</span>
                               </button>
                             )}
                             <label
                               htmlFor="file-upload"
                               onClick={() => setIsAttachMenuOpen(false)}
-                              className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-primary/10 rounded-xl transition-all group cursor-pointer"
+                              className="w-full text-left px-3.5 py-2.5 flex items-center gap-3.5 hover:bg-primary/10 rounded-xl transition-all group cursor-pointer"
                             >
-                              <div className="w-8 h-8 rounded-full bg-surface border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/20 transition-colors shrink-0">
-                                <Paperclip className="w-4 h-4 text-subtext group-hover:text-primary transition-colors" />
+                              <div className="w-9 h-9 rounded-full bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/10 transition-colors shrink-0">
+                                <Paperclip className="w-4.5 h-4.5 text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors" />
                               </div>
-                              <span className="text-[13px] font-semibold text-maintext group-hover:text-primary transition-colors">Upload files</span>
+                              <span className="text-[14px] font-bold text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">Upload files</span>
                             </label>
                           </div>
                         </motion.div>
@@ -7632,25 +7882,29 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                     <AnimatePresence>
                       {isToolsMenuOpen && (
                         <motion.div
-                          initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                          initial={{ opacity: 0, scale: 0.95, y: 15 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                          transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
                           ref={toolsMenuRef}
-                          className={`absolute bottom-full left-0 ${(isWebSearch || isDeepSearch || isImageGeneration || isVideoGeneration || isVoiceMode || isAudioConvertMode || isDocumentConvert || isCodeWriter || isMagicEditing || isFileAnalysis || isCashFlowMode || currentMode === 'LEGAL_TOOLKIT') ? 'mb-[60px]' : 'mb-[16px]'} w-[min(94vw,310px)] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[36px] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.2)] overflow-hidden z-[110] ring-1 ring-black/5`}
+                          className={`fixed sm:absolute bottom-[max(80px,calc(env(safe-area-inset-bottom)+80px))] sm:bottom-full left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 ${(isWebSearch || isDeepSearch || isImageGeneration || isVideoGeneration || isVoiceMode || isAudioConvertMode || isDocumentConvert || isCodeWriter || isMagicEditing || isFileAnalysis || isCashFlowMode || currentMode === 'LEGAL_TOOLKIT') ? 'sm:mb-[68px]' : 'sm:mb-6'} w-[calc(100%-24px)] sm:w-[320px] bg-white dark:bg-[#1c1c1e] border border-slate-200/50 dark:border-white/10 rounded-[32px] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.3)] dark:shadow-[0_30px_60px_-12px_rgba(0,0,0,0.6)] overflow-hidden z-[1020] ring-1 ring-black/[0.05] backdrop-blur-xl`}
                           style={{ maxHeight: 'calc(100vh - 180px)' }}
                         >
-                          <div className="px-6 py-5 bg-slate-50 dark:bg-zinc-800/80 border-b border-slate-100 dark:border-zinc-800 shrink-0">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden border border-white/20">
-                                <img src={logo} alt="AISA" className="w-7 h-5 object-cover object-top" />
+                          <div className="px-6 py-5 bg-slate-50/50 dark:bg-white/5 border-b border-slate-200/50 dark:border-white/5 shrink-0">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20 shadow-inner">
+                                <img src={logo} alt="AISA" className="w-8 h-5.5 object-cover object-top" />
                               </div>
-                              <h3 className="text-[16px] font-black text-slate-800 dark:text-white uppercase tracking-tight">
-                                AISA ™ Magic Tools
-                              </h3>
+                              <div>
+                                <h3 className="text-[17px] font-black text-slate-800 dark:text-white uppercase tracking-tight leading-none">
+                                  AISA ™ Magic Tools
+                                </h3>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-widest">Advanced Suite</p>
+                              </div>
                             </div>
                           </div>
-                          <div className="p-1.5 pb-12 space-y-1 overflow-y-auto scrollbar-hide scroll-smooth will-change-transform" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+                          <div className="p-2 pb-12 space-y-1.5 overflow-y-auto scrollbar-hide scroll-smooth will-change-transform" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+                            {/* Tools are rendered below */}
 
                             <button
                               type="button"
@@ -8075,7 +8329,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                             setIsAttachMenuOpen(!isAttachMenuOpen);
                             setIsToolsMenuOpen(false);
                           }}
-                          className="w-[30px] h-[30px] sm:w-[34px] sm:h-[34px] rounded-full flex items-center justify-center bg-slate-50 dark:bg-zinc-800 text-slate-500 hover:text-primary transition-all border border-slate-200/50 dark:border-zinc-700/50 shadow-sm"
+                          className="w-[30px] h-[30px] sm:w-[34px] sm:h-[34px] rounded-full flex items-center justify-center bg-slate-50 dark:bg-zinc-800 text-slate-500 hover:text-primary transition-all border border-slate-200/50 dark:border-zinc-700/50 shadow-sm relative z-[1003]"
                           title="Attachments"
                         >
                           <Plus className={`w-5 h-5 transition-transform duration-300 ${isAttachMenuOpen ? 'rotate-45' : ''}`} />
@@ -8092,7 +8346,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                             setIsToolsMenuOpen(!isToolsMenuOpen);
                             setIsAttachMenuOpen(false);
                           }}
-                          className="w-[32px] h-[32px] rounded-full flex items-center justify-center bg-slate-50 dark:bg-zinc-800 text-slate-500 hover:text-primary transition-all border border-slate-200/50 dark:border-zinc-700/50 shadow-sm"
+                          className="w-[32px] h-[32px] rounded-full flex items-center justify-center bg-slate-50 dark:bg-zinc-800 text-slate-500 hover:text-primary transition-all border border-slate-200/50 dark:border-zinc-700/50 shadow-sm relative z-[1003]"
                           title="AISA ™ Magic Tools"
                         >
                           <Brain className="w-5 h-5" />
@@ -8105,334 +8359,343 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                         {(isWebSearch || isDeepSearch || isImageGeneration || isVideoGeneration || isVoiceMode || isAudioConvertMode || isDocumentConvert || isCodeWriter || isMagicEditing || isFileAnalysis || isCashFlowMode || currentMode === 'LEGAL_TOOLKIT') && (
                           <div className="absolute bottom-full left-0 mb-3.5 flex flex-row items-center justify-start pointer-events-none z-[100] w-full">
                             <div className="flex gap-2.5 overflow-x-auto no-scrollbar pointer-events-auto px-2 sm:px-3 py-1 max-w-full">
-                            {isCashFlowMode && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0 }}
-                                onClick={() => setIsStockModalOpen(true)}
-                                className="flex flex-row items-center gap-1.5 sm:gap-2 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold border border-transparent backdrop-blur-md whitespace-nowrap shrink-0 cursor-pointer hover:bg-primary/20 transition-all"
-                              >
-                                <TrendingUp size={12} strokeWidth={3} /> <span className="hidden sm:inline">AI CashFlow</span>
-                                <button
+                              {isCashFlowMode && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 5 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0 }}
+                                  onClick={() => setIsStockModalOpen(true)}
+                                  className="flex flex-row items-center gap-1.5 sm:gap-2 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold border border-transparent backdrop-blur-md whitespace-nowrap shrink-0 cursor-pointer hover:bg-primary/20 transition-all"
+                                >
+                                  <TrendingUp size={12} strokeWidth={3} /> <span className="hidden sm:inline">AI CashFlow</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setIsCashFlowMode(false);
+                                      setActiveTool(null);
+                                    }}
+                                    className="ml-1 hover:text-primary/80 p-0.5"
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                </motion.div>
+                              )}
+                              {isWebSearch && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  className="flex flex-row items-center gap-3 px-3.5 py-1.5 bg-primary/20 dark:bg-primary/25 text-primary rounded-full text-xs font-bold border border-primary/40 backdrop-blur-3xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/30 group shadow-[0_8px_32px_-4px_rgba(var(--primary-rgb),0.3)] relative overflow-hidden ring-1 ring-white/10"
+                                >
+                                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
+                                  <div className="flex flex-row items-center gap-2 relative z-10">
+                                    <div className="w-5 h-5 rounded-lg bg-primary dark:bg-primary flex flex-row items-center justify-center shadow-lg shadow-primary/40 text-white">
+                                      <Globe size={14} strokeWidth={3} />
+                                    </div>
+                                    <span className="uppercase tracking-widest text-[9px] font-black">Web Search</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setIsWebSearch(false); setActiveTool(null); }}
+                                    className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white text-primary dark:text-primary transition-all hover:rotate-90 relative z-10"
+                                  >
+                                    <X size={14} strokeWidth={3} />
+                                  </button>
+                                </motion.div>
+                              )}
+                              {isDeepSearch && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  className="flex flex-row items-center gap-3 px-3.5 py-1.5 bg-primary/20 dark:bg-primary/25 text-primary rounded-full text-xs font-bold border border-primary/40 backdrop-blur-3xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/30 group shadow-[0_8px_32px_-4px_rgba(var(--primary-rgb),0.3)] relative overflow-hidden ring-1 ring-white/10"
+                                >
+                                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
+                                  <div className="flex flex-row items-center gap-2 relative z-10">
+                                    <div className="w-5 h-5 rounded-lg bg-primary dark:bg-primary flex items-center justify-center shadow-lg shadow-primary/40 text-white">
+                                      <Search size={14} strokeWidth={3} />
+                                    </div>
+                                    <span className="uppercase tracking-widest text-[9px] font-black">Deep Search</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setIsDeepSearch(false); setActiveTool(null); }}
+                                    className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white text-primary dark:text-primary transition-all hover:rotate-90 relative z-10"
+                                  >
+                                    <X size={14} strokeWidth={3} />
+                                  </button>
+                                </motion.div>
+                              )}
+                              {isImageGeneration && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  className="flex flex-row items-center gap-3 px-3.5 py-1.5 bg-primary/20 dark:bg-primary/25 text-primary rounded-full text-xs font-bold border border-primary/40 backdrop-blur-3xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/30 group shadow-[0_8px_32px_-4px_rgba(var(--primary-rgb),0.3)] relative overflow-hidden ring-1 ring-white/10"
+                                >
+                                  {/* Glossy Reflection Effect */}
+                                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
+
+                                  <div className="flex flex-row items-center gap-2 relative z-10">
+                                    <div className="w-5 h-5 rounded-lg bg-primary dark:bg-primary flex items-center justify-center shadow-lg shadow-primary/40 text-white">
+                                      <ImageIcon size={14} strokeWidth={3} />
+                                    </div>
+                                    <span className="uppercase tracking-widest text-[9px] font-black">Image Gen</span>
+                                  </div>
+
+                                  <div className="w-[1px] h-3 bg-primary/40 mx-0.5 relative z-10" />
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsMagicSettingsOpen(!isMagicSettingsOpen)}
+                                    className="flex flex-row items-center gap-1.5 hover:text-primary dark:hover:text-primary transition-all px-1.5 py-0.5 rounded-md hover:bg-white/10 relative z-10"
+                                  >
+                                    <span className="text-[10px] font-extrabold opacity-90">{imageAspectRatio}</span>
+                                    <span className="text-[10px] font-black truncate max-w-[60px] sm:max-w-[100px] tracking-tight">
+                                      {TOOL_PRICING.image.models.find(m => m.id === imageModelId)?.name.replace('AISA ', '') || 'Model'}
+
+                                    </span>
+                                    <ChevronDown size={11} className={`transition-transform duration-300 ${isMagicSettingsOpen ? 'rotate-180' : ''}`} />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => { setIsImageGeneration(false); setActiveTool(null); }}
+                                    className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white text-primary dark:text-primary transition-all hover:rotate-90 relative z-10"
+                                  >
+                                    <X size={14} strokeWidth={3} />
+                                  </button>
+                                </motion.div>
+                              )}
+                              {isVideoGeneration && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  className="flex flex-row items-center gap-3 px-3.5 py-1.5 bg-primary/20 dark:bg-primary/25 text-primary rounded-full text-xs font-bold border border-primary/40 backdrop-blur-3xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/30 group shadow-[0_8px_32px_-4px_rgba(var(--primary-rgb),0.3)] relative overflow-hidden ring-1 ring-white/10"
+                                >
+                                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
+
+                                  <div className="flex flex-row items-center gap-2 relative z-10">
+                                    <div className="w-5 h-5 rounded-lg bg-primary dark:bg-primary flex items-center justify-center shadow-lg shadow-primary/40 text-white">
+                                      <Video size={14} strokeWidth={3} />
+                                    </div>
+                                    <span className="uppercase tracking-widest text-[9px] font-black">Video Gen</span>
+                                  </div>
+
+                                  <div className="w-[1px] h-3 bg-primary/40 mx-0.5 relative z-10" />
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsMagicSettingsOpen(!isMagicSettingsOpen)}
+                                    className="flex flex-row items-center gap-1.5 hover:text-primary dark:hover:text-primary transition-all px-1.5 py-0.5 rounded-md hover:bg-white/10 relative z-10"
+                                  >
+                                    <span className="text-[10px] font-extrabold opacity-90">{videoAspectRatio || 'D'}</span>
+                                    <span className="text-[10px] font-black tracking-tight ml-1">{videoResolution}</span>
+                                    <ChevronDown size={11} className={`transition-transform duration-300 ${isMagicSettingsOpen ? 'rotate-180' : ''}`} />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => { setIsVideoGeneration(false); setActiveTool(null); }}
+                                    className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white text-primary dark:text-primary transition-all hover:rotate-90 relative z-10"
+                                  >
+                                    <X size={14} strokeWidth={3} />
+                                  </button>
+                                </motion.div>
+                              )}
+                              {isVoiceMode && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                                  className="flex flex-row items-center gap-2.5 px-3 py-1.5 bg-primary/10 dark:bg-primary/20 text-primary rounded-full text-xs font-bold border border-primary/30 backdrop-blur-xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/15 group shadow-lg shadow-primary/10"
+                                >
+                                  <div className="flex flex-row items-center gap-2">
+                                    <div className="w-5 h-5 rounded-lg bg-primary/20 flex items-center justify-center">
+                                      <Volume2 size={14} strokeWidth={2.5} />
+                                    </div>
+                                    <span className="uppercase tracking-wide text-[10px] font-black">Voice Mode</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setIsVoiceMode(false); setActiveTool(null); }}
+                                    className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-primary/20 text-primary dark:text-primary transition-all hover:rotate-90"
+                                  >
+                                    <X size={14} strokeWidth={3} />
+                                  </button>
+                                </motion.div>
+                              )}
+                              {isAudioConvertMode && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                                  className="flex flex-row items-center gap-2.5 px-3 py-1.5 bg-primary/10 dark:bg-primary/20 text-primary rounded-full text-xs font-bold border border-primary/30 backdrop-blur-xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/15 group shadow-lg shadow-primary/10"
+                                >
+                                  <div className="flex flex-row items-center gap-2">
+                                    <div className="w-5 h-5 rounded-lg bg-primary/20 flex items-center justify-center">
+                                      <Headphones size={14} strokeWidth={2.5} />
+                                    </div>
+                                    <span className="uppercase tracking-wide text-[10px] font-black">Audio Convert</span>
+                                  </div>
+                                  <button type="button" onClick={() => setIsVoiceSettingsOpen(true)} className="ml-1 w-5 h-5 rounded-lg flex items-center justify-center hover:bg-primary/20 text-subtext hover:text-primary transition-colors" title="Voice Settings">
+                                    <Sliders size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setIsAudioConvertMode(false); setActiveTool(null); }}
+                                    className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-primary/20 text-primary transition-all hover:rotate-90"
+                                  >
+                                    <X size={14} strokeWidth={3} />
+                                  </button>
+                                </motion.div>
+                              )}
+                              {isDocumentConvert && (
+                                <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold border border-transparent backdrop-blur-md whitespace-nowrap shrink-0">
+                                  <FileText size={12} strokeWidth={3} /> <span>Doc Convert</span>
+                                  <button onClick={() => { setIsDocumentConvert(false); setActiveTool(null); }} className="ml-1 hover:text-primary/80"><X size={12} /></button>
+                                </motion.div>
+                              )}
+                              {isCodeWriter && (
+                                <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold border border-transparent backdrop-blur-md whitespace-nowrap shrink-0">
+                                  <Code size={12} strokeWidth={3} /> <span>Code Writer</span>
+                                  <button onClick={() => { setIsCodeWriter(false); setActiveTool(null); }} className="ml-1 hover:text-primary/80"><X size={12} /></button>
+                                </motion.div>
+                              )}
+
+                              {currentMode === 'LEGAL_TOOLKIT' && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                                  className="flex flex-row items-center gap-1.5 sm:gap-2.5 px-2 py-1 sm:px-3 sm:py-1.5 bg-primary/10 dark:bg-primary/20 text-primary rounded-full text-[9px] sm:text-xs font-bold border border-primary/30 backdrop-blur-xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/15 group shadow-lg shadow-primary/10"
+                                >
+                                  <div className="flex flex-row items-center gap-1.5 sm:gap-2">
+                                    <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                                      <LegalLogo size={12} showText={false} color="white" />
+                                    </div>
+                                    <span
+                                      className="uppercase tracking-wide text-[8px] sm:text-[10px] font-black truncate max-w-[80px] sm:max-w-[120px] cursor-pointer hover:text-primary transition-colors"
+                                      onClick={() => {
+                                        if (caseId || currentProjectId) {
+                                          setIsContextualPanelOpen(true);
+                                        } else {
+                                          setActiveLegalToolkit(true);
+                                        }
+                                      }}
+                                      title="Open AI Legal™"
+                                    >
+                                      {currentCase ? 'MY CASE' : 'AI LEGAL'}
+                                      {((selectedLegalTool && selectedLegalTool?.id !== 'legal_my_case') || activeTool) && (
+                                        <span className="opacity-70 ml-1.5 font-bold border-l border-primary/30 pl-1.5">
+                                          {selectedLegalTool?.id !== 'legal_my_case' && selectedLegalTool ? selectedLegalTool?.name : activeTool}
+                                        </span>
+                                      )}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveLegalToolkit(false);
+                                      setCurrentMode('NORMAL_CHAT');
+                                      setSelectedLegalTool(null);
+                                      setActiveTool(null);
+                                    }}
+                                    className="ml-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center hover:bg-primary/20 text-primary dark:text-primary transition-all hover:rotate-90"
+                                  >
+                                    <X size={12} strokeWidth={3} />
+                                  </button>
+                                </motion.div>
+                              )}
+
+                              {currentCase && currentCase.isLegalCase && selectedLegalTool?.id === 'legal_my_case' && (
+                                <motion.div
+                                  initial={{ opacity: 0, x: 20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setIsCashFlowMode(false);
-                                    setActiveTool(null);
+                                    console.log("[Chat] Opening Case Intelligence Panel");
+                                    setIsCasePanelOpen(true);
+                                    if (legalView !== 'CHAT') setLegalView('CHAT');
                                   }}
-                                  className="ml-1 hover:text-primary/80 p-0.5"
+                                  className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 py-1 sm:px-4 sm:py-1.5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-full text-[9px] sm:text-xs font-bold shadow-lg shadow-primary/30 cursor-pointer hover:scale-105 active:scale-95 transition-all whitespace-nowrap shrink-0 group"
                                 >
-                                  <X size={12} />
-                                </button>
-                              </motion.div>
-                            )}
-                            {isWebSearch && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className="flex flex-row items-center gap-3 px-3.5 py-1.5 bg-primary/20 dark:bg-primary/25 text-primary rounded-full text-xs font-bold border border-primary/40 backdrop-blur-3xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/30 group shadow-[0_8px_32px_-4px_rgba(var(--primary-rgb),0.3)] relative overflow-hidden ring-1 ring-white/10"
-                              >
-                                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
-                                <div className="flex flex-row items-center gap-2 relative z-10">
-                                  <div className="w-5 h-5 rounded-lg bg-primary dark:bg-primary flex flex-row items-center justify-center shadow-lg shadow-primary/40 text-white">
-                                    <Globe size={14} strokeWidth={3} />
+                                  <Briefcase size={12} className="sm:w-[14px] sm:h-[14px] group-hover:rotate-12 transition-transform" />
+                                  <div className="flex flex-col items-start leading-none gap-0.5">
+                                    <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest opacity-80">ACTIVE CASE</span>
+                                    <span className="text-[9px] sm:text-[10px] font-bold truncate max-w-[60px] sm:max-w-[100px]">{currentCase?.clientName || 'Untitled Case'}</span>
                                   </div>
-                                  <span className="uppercase tracking-widest text-[9px] font-black">Web Search</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => { setIsWebSearch(false); setActiveTool(null); }}
-                                  className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white text-primary dark:text-primary transition-all hover:rotate-90 relative z-10"
+                                  <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-green-400 animate-pulse ml-0.5 sm:ml-1" />
+                                  <LayoutDashboard size={12} className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </motion.div>
+                              )}
+                              {isMagicEditing && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  className="flex flex-row items-center gap-3 px-3.5 py-1.5 bg-primary/20 dark:bg-primary/25 text-primary rounded-full text-xs font-bold border border-primary/40 backdrop-blur-3xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/30 group shadow-[0_8px_32px_-4px_rgba(var(--primary-rgb),0.3)] relative overflow-hidden ring-1 ring-white/10"
                                 >
-                                  <X size={14} strokeWidth={3} />
-                                </button>
-                              </motion.div>
-                            )}
-                            {isDeepSearch && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className="flex flex-row items-center gap-3 px-3.5 py-1.5 bg-primary/20 dark:bg-primary/25 text-primary rounded-full text-xs font-bold border border-primary/40 backdrop-blur-3xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/30 group shadow-[0_8px_32px_-4px_rgba(var(--primary-rgb),0.3)] relative overflow-hidden ring-1 ring-white/10"
-                              >
-                                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
-                                <div className="flex flex-row items-center gap-2 relative z-10">
-                                  <div className="w-5 h-5 rounded-lg bg-primary dark:bg-primary flex items-center justify-center shadow-lg shadow-primary/40 text-white">
-                                    <Search size={14} strokeWidth={3} />
+                                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
+
+                                  <div className="flex flex-row items-center gap-2 relative z-10">
+                                    <div className="w-5 h-5 rounded-lg bg-primary dark:bg-primary flex items-center justify-center shadow-lg shadow-primary/40 text-white">
+                                      <Wand2 size={14} strokeWidth={3} />
+                                    </div>
+                                    <span className="uppercase tracking-widest text-[9px] font-black hidden xs:inline">{t('imageEdit')}</span>
                                   </div>
-                                  <span className="uppercase tracking-widest text-[9px] font-black">Deep Search</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => { setIsDeepSearch(false); setActiveTool(null); }}
-                                  className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white text-primary dark:text-primary transition-all hover:rotate-90 relative z-10"
-                                >
-                                  <X size={14} strokeWidth={3} />
-                                </button>
-                              </motion.div>
-                            )}
-                            {isImageGeneration && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className="flex flex-row items-center gap-3 px-3.5 py-1.5 bg-primary/20 dark:bg-primary/25 text-primary rounded-full text-xs font-bold border border-primary/40 backdrop-blur-3xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/30 group shadow-[0_8px_32px_-4px_rgba(var(--primary-rgb),0.3)] relative overflow-hidden ring-1 ring-white/10"
-                              >
-                                {/* Glossy Reflection Effect */}
-                                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
 
-                                <div className="flex flex-row items-center gap-2 relative z-10">
-                                  <div className="w-5 h-5 rounded-lg bg-primary dark:bg-primary flex items-center justify-center shadow-lg shadow-primary/40 text-white">
-                                    <ImageIcon size={14} strokeWidth={3} />
-                                  </div>
-                                  <span className="uppercase tracking-widest text-[9px] font-black">Image Gen</span>
-                                </div>
+                                  <div className="w-[1px] h-3 bg-primary/40 mx-0.5 relative z-10" />
 
-                                <div className="w-[1px] h-3 bg-primary/40 mx-0.5 relative z-10" />
-
-                                <button
-                                  type="button"
-                                  onClick={() => setIsMagicSettingsOpen(!isMagicSettingsOpen)}
-                                  className="flex flex-row items-center gap-1.5 hover:text-primary dark:hover:text-primary transition-all px-1.5 py-0.5 rounded-md hover:bg-white/10 relative z-10"
-                                >
-                                  <span className="text-[10px] font-extrabold opacity-90">{imageAspectRatio}</span>
-                                  <span className="text-[10px] font-black truncate max-w-[60px] sm:max-w-[100px] tracking-tight">
-                                    {TOOL_PRICING.image.models.find(m => m.id === imageModelId)?.name.replace('AISA ', '') || 'Model'}
-
-                                  </span>
-                                  <ChevronDown size={11} className={`transition-transform duration-300 ${isMagicSettingsOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => { setIsImageGeneration(false); setActiveTool(null); }}
-                                  className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white text-primary dark:text-primary transition-all hover:rotate-90 relative z-10"
-                                >
-                                  <X size={14} strokeWidth={3} />
-                                </button>
-                              </motion.div>
-                            )}
-                            {isVideoGeneration && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className="flex flex-row items-center gap-3 px-3.5 py-1.5 bg-primary/20 dark:bg-primary/25 text-primary rounded-full text-xs font-bold border border-primary/40 backdrop-blur-3xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/30 group shadow-[0_8px_32px_-4px_rgba(var(--primary-rgb),0.3)] relative overflow-hidden ring-1 ring-white/10"
-                              >
-                                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
-
-                                <div className="flex flex-row items-center gap-2 relative z-10">
-                                  <div className="w-5 h-5 rounded-lg bg-primary dark:bg-primary flex items-center justify-center shadow-lg shadow-primary/40 text-white">
-                                    <Video size={14} strokeWidth={3} />
-                                  </div>
-                                  <span className="uppercase tracking-widest text-[9px] font-black">Video Gen</span>
-                                </div>
-
-                                <div className="w-[1px] h-3 bg-primary/40 mx-0.5 relative z-10" />
-
-                                <button
-                                  type="button"
-                                  onClick={() => setIsMagicSettingsOpen(!isMagicSettingsOpen)}
-                                  className="flex flex-row items-center gap-1.5 hover:text-primary dark:hover:text-primary transition-all px-1.5 py-0.5 rounded-md hover:bg-white/10 relative z-10"
-                                >
-                                  <span className="text-[10px] font-extrabold opacity-90">{videoAspectRatio || 'D'}</span>
-                                  <span className="text-[10px] font-black tracking-tight ml-1">{videoResolution}</span>
-                                  <ChevronDown size={11} className={`transition-transform duration-300 ${isMagicSettingsOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => { setIsVideoGeneration(false); setActiveTool(null); }}
-                                  className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white text-primary dark:text-primary transition-all hover:rotate-90 relative z-10"
-                                >
-                                  <X size={14} strokeWidth={3} />
-                                </button>
-                              </motion.div>
-                            )}
-                            {isVoiceMode && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                className="flex flex-row items-center gap-2.5 px-3 py-1.5 bg-primary/10 dark:bg-primary/20 text-primary rounded-full text-xs font-bold border border-primary/30 backdrop-blur-xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/15 group shadow-lg shadow-primary/10"
-                              >
-                                <div className="flex flex-row items-center gap-2">
-                                  <div className="w-5 h-5 rounded-lg bg-primary/20 flex items-center justify-center">
-                                    <Volume2 size={14} strokeWidth={2.5} />
-                                  </div>
-                                  <span className="uppercase tracking-wide text-[10px] font-black">Voice Mode</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => { setIsVoiceMode(false); setActiveTool(null); }}
-                                  className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-primary/20 text-primary dark:text-primary transition-all hover:rotate-90"
-                                >
-                                  <X size={14} strokeWidth={3} />
-                                </button>
-                              </motion.div>
-                            )}
-                            {isAudioConvertMode && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                className="flex flex-row items-center gap-2.5 px-3 py-1.5 bg-primary/10 dark:bg-primary/20 text-primary rounded-full text-xs font-bold border border-primary/30 backdrop-blur-xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/15 group shadow-lg shadow-primary/10"
-                              >
-                                <div className="flex flex-row items-center gap-2">
-                                  <div className="w-5 h-5 rounded-lg bg-primary/20 flex items-center justify-center">
-                                    <Headphones size={14} strokeWidth={2.5} />
-                                  </div>
-                                  <span className="uppercase tracking-wide text-[10px] font-black">Audio Convert</span>
-                                </div>
-                                <button type="button" onClick={() => setIsVoiceSettingsOpen(true)} className="ml-1 w-5 h-5 rounded-lg flex items-center justify-center hover:bg-primary/20 text-subtext hover:text-primary transition-colors" title="Voice Settings">
-                                  <Sliders size={13} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => { setIsAudioConvertMode(false); setActiveTool(null); }}
-                                  className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-primary/20 text-primary transition-all hover:rotate-90"
-                                >
-                                  <X size={14} strokeWidth={3} />
-                                </button>
-                              </motion.div>
-                            )}
-                            {isDocumentConvert && (
-                              <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold border border-transparent backdrop-blur-md whitespace-nowrap shrink-0">
-                                <FileText size={12} strokeWidth={3} /> <span>Doc Convert</span>
-                                <button onClick={() => { setIsDocumentConvert(false); setActiveTool(null); }} className="ml-1 hover:text-primary/80"><X size={12} /></button>
-                              </motion.div>
-                            )}
-                            {isCodeWriter && (
-                              <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold border border-transparent backdrop-blur-md whitespace-nowrap shrink-0">
-                                <Code size={12} strokeWidth={3} /> <span>Code Writer</span>
-                                <button onClick={() => { setIsCodeWriter(false); setActiveTool(null); }} className="ml-1 hover:text-primary/80"><X size={12} /></button>
-                              </motion.div>
-                            )}
-
-                            {currentMode === 'LEGAL_TOOLKIT' && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                className="flex flex-row items-center gap-1.5 sm:gap-2.5 px-2 py-1 sm:px-3 sm:py-1.5 bg-primary/10 dark:bg-primary/20 text-primary rounded-full text-[9px] sm:text-xs font-bold border border-primary/30 backdrop-blur-xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/15 group shadow-lg shadow-primary/10"
-                              >
-                                <div className="flex flex-row items-center gap-1.5 sm:gap-2">
-                                  <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-                                    <LegalLogo size={12} showText={false} color="white" />
-                                  </div>
-                                  <span
-                                    className="uppercase tracking-wide text-[8px] sm:text-[10px] font-black truncate max-w-[80px] sm:max-w-[120px] cursor-pointer hover:text-primary transition-colors"
-                                    onClick={() => setActiveLegalToolkit(true)}
-                                    title="Open AI Legal™"
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsMagicSettingsOpen(!isMagicSettingsOpen)}
+                                    className="flex flex-row items-center gap-1.5 hover:text-primary dark:hover:text-primary transition-all px-1.5 py-0.5 rounded-md hover:bg-white/10 relative z-10"
                                   >
-                                    {currentCase ? 'My Case' : 'AI Legal'}
-                                    {((selectedLegalTool && selectedLegalTool?.id !== 'legal_my_case') || activeTool) && (
-                                      <span className="opacity-70 ml-1.5 font-bold border-l border-primary/30 pl-1.5">
-                                        {selectedLegalTool?.id !== 'legal_my_case' && selectedLegalTool ? selectedLegalTool.name : activeTool}
-                                      </span>
-                                    )}
-                                  </span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveLegalToolkit(false);
-                                    setCurrentMode('NORMAL_CHAT');
-                                    setSelectedLegalTool(null);
-                                    setActiveTool(null);
-                                  }}
-                                  className="ml-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center hover:bg-primary/20 text-primary dark:text-primary transition-all hover:rotate-90"
+                                    <span className="text-[10px] font-extrabold opacity-90">{imageAspectRatio}</span>
+                                    <span className="text-[10px] font-black truncate max-w-[60px] sm:max-w-[100px] tracking-tight">
+                                      {TOOL_PRICING.image.models.find(m => m.id === imageModelId)?.name.replace('AISA ', '') || 'Model'}
+                                    </span>
+                                    <ChevronDown size={11} className={`transition-transform duration-300 ${isMagicSettingsOpen ? 'rotate-180' : ''}`} />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => { setIsMagicEditing(false); setActiveTool(null); }}
+                                    className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white text-primary dark:text-primary transition-all hover:rotate-90 relative z-10"
+                                  >
+                                    <X size={14} strokeWidth={3} />
+                                  </button>
+                                </motion.div>
+                              )}
+                              {isFileAnalysis && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                                  className="flex flex-row items-center gap-2.5 px-3 py-1.5 bg-primary/10 dark:bg-primary/20 text-primary rounded-full text-xs font-bold border border-primary/30 backdrop-blur-xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/15 group shadow-lg shadow-primary/10"
                                 >
-                                  <X size={12} strokeWidth={3} />
-                                </button>
-                              </motion.div>
-                            )}
-
-                            {currentCase && currentCase.isLegalCase && selectedLegalTool?.id === 'legal_my_case' && (
-                              <motion.div
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                onClick={() => {
-                                  setIsCasePanelOpen(true);
-                                  if (legalView !== 'CHAT') setLegalView('CHAT');
-                                }}
-                                className="flex items-center gap-1.5 sm:gap-2.5 px-2.5 py-1 sm:px-4 sm:py-1.5 bg-gradient-to-r from-primary to-primary-dark text-white rounded-full text-[9px] sm:text-xs font-bold shadow-lg shadow-primary/30 cursor-pointer hover:scale-105 active:scale-95 transition-all whitespace-nowrap shrink-0 group"
-                              >
-                                <Briefcase size={12} className="sm:w-[14px] sm:h-[14px] group-hover:rotate-12 transition-transform" />
-                                <div className="flex flex-col items-start leading-none gap-0.5">
-                                  <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-widest opacity-80">ACTIVE CASE</span>
-                                  <span className="text-[9px] sm:text-[10px] font-bold truncate max-w-[60px] sm:max-w-[100px]">{currentCase?.clientName || 'Untitled Case'}</span>
-                                </div>
-                                <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-green-400 animate-pulse ml-0.5 sm:ml-1" />
-                                <LayoutDashboard size={12} className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-                              </motion.div>
-                            )}
-                            {isMagicEditing && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className="flex flex-row items-center gap-3 px-3.5 py-1.5 bg-primary/20 dark:bg-primary/25 text-primary rounded-full text-xs font-bold border border-primary/40 backdrop-blur-3xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/30 group shadow-[0_8px_32px_-4px_rgba(var(--primary-rgb),0.3)] relative overflow-hidden ring-1 ring-white/10"
-                              >
-                                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-50" />
-
-                                <div className="flex flex-row items-center gap-2 relative z-10">
-                                  <div className="w-5 h-5 rounded-lg bg-primary dark:bg-primary flex items-center justify-center shadow-lg shadow-primary/40 text-white">
-                                    <Wand2 size={14} strokeWidth={3} />
+                                  <div className="flex flex-row items-center gap-2">
+                                    <div className="w-5 h-5 rounded-lg bg-primary/20 flex items-center justify-center">
+                                      <FileText size={14} strokeWidth={2.5} />
+                                    </div>
+                                    <span className="uppercase tracking-wide text-[10px] font-black">{t('analyzeDocument')}</span>
                                   </div>
-                                  <span className="uppercase tracking-widest text-[9px] font-black hidden xs:inline">{t('imageEdit')}</span>
-                                </div>
-
-                                <div className="w-[1px] h-3 bg-primary/40 mx-0.5 relative z-10" />
-
-                                <button
-                                  type="button"
-                                  onClick={() => setIsMagicSettingsOpen(!isMagicSettingsOpen)}
-                                  className="flex flex-row items-center gap-1.5 hover:text-primary dark:hover:text-primary transition-all px-1.5 py-0.5 rounded-md hover:bg-white/10 relative z-10"
-                                >
-                                  <span className="text-[10px] font-extrabold opacity-90">{imageAspectRatio}</span>
-                                  <span className="text-[10px] font-black truncate max-w-[60px] sm:max-w-[100px] tracking-tight">
-                                    {TOOL_PRICING.image.models.find(m => m.id === imageModelId)?.name.replace('AISA ', '') || 'Model'}
-                                  </span>
-                                  <ChevronDown size={11} className={`transition-transform duration-300 ${isMagicSettingsOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => { setIsMagicEditing(false); setActiveTool(null); }}
-                                  className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white text-primary dark:text-primary transition-all hover:rotate-90 relative z-10"
-                                >
-                                  <X size={14} strokeWidth={3} />
-                                </button>
-                              </motion.div>
-                            )}
-                            {isFileAnalysis && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                className="flex flex-row items-center gap-2.5 px-3 py-1.5 bg-primary/10 dark:bg-primary/20 text-primary rounded-full text-xs font-bold border border-primary/30 backdrop-blur-xl whitespace-nowrap shrink-0 transition-all hover:bg-primary/15 group shadow-lg shadow-primary/10"
-                              >
-                                <div className="flex flex-row items-center gap-2">
-                                  <div className="w-5 h-5 rounded-lg bg-primary/20 flex items-center justify-center">
-                                    <FileText size={14} strokeWidth={2.5} />
-                                  </div>
-                                  <span className="uppercase tracking-wide text-[10px] font-black">{t('analyzeDocument')}</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => { setIsFileAnalysis(false); setActiveTool(null); }}
-                                  className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-primary/20 text-primary dark:text-primary transition-all hover:rotate-90"
-                                >
-                                  <X size={14} strokeWidth={3} />
-                                </button>
-                              </motion.div>
-                            )}
+                                  <button
+                                    type="button"
+                                    onClick={() => { setIsFileAnalysis(false); setActiveTool(null); }}
+                                    className="ml-1 w-5 h-5 rounded-full flex items-center justify-center hover:bg-primary/20 text-primary dark:text-primary transition-all hover:rotate-90"
+                                  >
+                                    <X size={14} strokeWidth={3} />
+                                  </button>
+                                </motion.div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                       </AnimatePresence>
 
 
 
                       <textarea
+                        id="chat-input"
                         ref={inputRef}
                         value={inputValue}
-                        disabled={isLoading || isLimitReached}
+                        disabled={gen.isGenerating || isLimitReached}
                         onChange={(e) => {
                           const val = e.target.value;
                           if (!val) setIsAutoPreviewDisabled(false);
@@ -8464,7 +8727,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                           if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
                             e.preventDefault();
                             e.stopPropagation();
-                            if (isGlobalSending || isLoading) return;
+                            if (gen.isGenerating) return;
                             if (inputValue.trim() || selectedFiles.length > 0 || longTextPreview) {
                               handleSendMessage(e);
                             }
@@ -8508,13 +8771,16 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                         </>
                       )}
 
-                      {isLoading ? (
+                      {gen.isGenerating ? (
                         <button
                           type="button"
                           onClick={() => {
+                            // Abort via global store (handles multi-chat abort safely)
+                            gen.abort();
                             if (abortControllerRef.current) abortControllerRef.current.abort();
                             setIsLoading(false);
-                            isSendingRef.current = false;
+                            const chatLock = getSessionLock(activeSessionId);
+                            chatLock.locked = false;
                           }}
                           className="w-[36px] h-[36px] rounded-full text-white flex items-center justify-center shadow-lg hover:scale-105 transition-all"
                           style={{ backgroundColor: 'var(--color-primary)' }}
@@ -8527,7 +8793,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                           </AnimatePresence>
                           <motion.button
                             type="submit"
-                            disabled={!inputValue.trim() && filePreviews.length === 0 && !longTextPreview}
+                            disabled={gen.isGenerating || (!inputValue.trim() && filePreviews.length === 0 && !longTextPreview)}
                             onMouseEnter={() => setIsSendHovered(true)}
                             onMouseLeave={() => setIsSendHovered(false)}
                             whileHover={{ scale: 1.1 }}
@@ -9214,16 +9480,25 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
           onClose={() => {
             setActiveLegalToolkit(false);
             // RESET ALL: Ensure we go back to the main dashboard definitively
-            setCurrentMode(MODES.NORMAL_CHAT);
-            setLegalView('CHAT');
-            setSelectedLegalTool(null);
-            setActiveTool(null);
-            localStorage.setItem('aisa_legal_view', 'CHAT');
+            if (!caseId) {
+              setCurrentMode(MODES.NORMAL_CHAT);
+              setLegalView('CHAT');
+              setSelectedLegalTool(null);
+              setActiveTool(null);
+              localStorage.setItem('aisa_legal_view', 'CHAT');
+            }
           }}
           isAdmin={isAdminUser}
           unlockedTools={unlockedTools}
           onSelect={(tool, isUnlocked) => {
-            if (tool.id === 'legal_free_chat') {
+            if (tool.id === 'legal_general_chat' || tool.id === 'legal_free_chat') {
+              const toolId = 'legal_general_chat';
+              manualToolSelectionRef.current = toolId;
+              activateToolWithTypingEffect(toolId, tool.name, true);
+              navigate(`${location.pathname}?tool=${toolId}`, { replace: true });
+              return;
+            }
+            if (tool.id === 'legal_free_chat_removed_old') {
               setSelectedLegalTool(tool);
               setCurrentMode('LEGAL_TOOLKIT');
               setLegalView('CHAT');
@@ -9232,7 +9507,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                 setMessages(prev => prev.filter(m => !m.isSystemLog).concat({
                   id: Date.now().toString(),
                   role: 'model',
-                  content: `**Legal Chat Activated** for ${currentCase.name} ⚖️`,
+                  content: `**Legal Chat Activated** for ${currentCase?.name} ⚖️`,
                   isSystemLog: true,
                   timestamp: Date.now(),
                 }));
@@ -9294,7 +9569,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
               role: 'model',
               isSystemLog: true,
               content: currentCase
-                ? `**${tool.name} Activated** for ${currentCase.name} ⚖️`
+                ? `**${tool.name} Activated** for ${currentCase?.name} ⚖️`
                 : `**${tool.name} Activated** ⚖️`,
               timestamp: Date.now(),
             }));
@@ -9320,7 +9595,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
         onClose={() => setIsShareModalOpen(false)}
         shareId={currentShareId}
         sessionTitle={messages[0]?.content || "Shared Chat"}
-        sessionId={currentSessionId}
+        sessionId={activeSessionId}
       />
       {/* My Case Intelligence Dashboard Panel */}
       <CaseIntelligencePanel
@@ -9332,6 +9607,16 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
           setCurrentCase(updated);
           // Sync with the legalCases list if needed
           setAllProjects(prev => prev.map(c => c._id === updated._id ? updated : c));
+        }}
+      />
+
+      <ContextualLegalPanel
+        isOpen={isContextualPanelOpen}
+        onClose={() => setIsContextualPanelOpen(false)}
+        activeToolId={selectedLegalTool?.id}
+        onSelectTool={(toolId, toolName) => {
+          setIsContextualPanelOpen(false);
+          activateToolWithTypingEffect(toolId, toolName);
         }}
       />
     </div>

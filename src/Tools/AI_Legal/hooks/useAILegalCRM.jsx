@@ -27,7 +27,8 @@ export const useAILegalCRM = ({
   legalView,
   setLegalView,
   activeTool,
-  setActiveTool
+  setActiveTool,
+  setDashboardCategory
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -81,7 +82,7 @@ export const useAILegalCRM = ({
     setSelectedLegalTool({ id: 'legal_my_case', name: 'My Case Assistant' });
     setCurrentCase(null);
     setCurrentProjectId(null);
-    setMessages([]);
+    // setMessages([]); // REMOVED for master fix: Keep messages in state until new session loads
     navigate('/dashboard/cases', { replace: true });
   };
 
@@ -111,7 +112,10 @@ export const useAILegalCRM = ({
       // If no case is selected, go back to NORMAL CHAT
       setCurrentMode('NORMAL_CHAT');
       setSelectedLegalTool(null);
-      setMessages([]);
+      setActiveTool(null);
+      setActiveLegalToolkit(false);
+      // setMessages([]); // REMOVED for master fix
+      if (setDashboardCategory) setDashboardCategory('business');
       navigate('/dashboard/chat/new', { replace: true });
     }
   };
@@ -120,10 +124,13 @@ export const useAILegalCRM = ({
     // Always return directly to the main dashboard (AI tools home screen)
     setCurrentMode('NORMAL_CHAT');
     setSelectedLegalTool(null);
+    setActiveTool(null);
+    setActiveLegalToolkit(false);
     setCurrentCase(null);
     setCurrentProjectId(null);
-    setMessages([]);
+    setMessages([]); // OK to clear when exiting AI Legal Toolkit entirely
     setLegalView('CHAT');
+    if (setDashboardCategory) setDashboardCategory('business');
     navigate('/dashboard/chat/new', { replace: true });
   };
 
@@ -230,23 +237,13 @@ export const useAILegalCRM = ({
       setSelectedLegalTool({ id: 'legal_my_case', name: 'My Case Assistant' });
       setLegalView('CHAT');
       setActiveTool('legal');
-      setIsCasePanelOpen(false);
+      setIsCasePanelOpen(false); // Only open when user explicitly clicks the active case pill
     }
-    setMessages([]);
+    // setMessages([]); // REMOVED for master fix: Let initChat handle clearing if session changes
 
-    try {
-      const caseSessions = await chatStorageService.getSessions(c._id);
-      if (Array.isArray(caseSessions) && caseSessions.length > 0) {
-        const lastSession = caseSessions[0];
-        navigate(`/dashboard/chat/${lastSession.sessionId}`, { replace: true });
-      } else if (!isNew) {
-        navigate('/dashboard/chat/new', { replace: true });
-      } else {
-        navigate('/dashboard/chat/new', { replace: true });
-      }
-    } catch (err) {
-      console.error('Failed to load case sessions:', err);
-      navigate('/dashboard/chat/new', { replace: true });
+    // Navigate to the dedicated case route
+    if (location.pathname !== `/dashboard/case/${c._id}`) {
+      navigate(`/dashboard/case/${c._id}`, { replace: true });
     }
 
     setTimeout(() => {
@@ -503,7 +500,7 @@ export const useAILegalCRM = ({
                 try {
                   const caseSessions = await chatStorageService.getSessions(currentProjectId);
                   if (Array.isArray(caseSessions) && caseSessions.length > 0) {
-                    navigate(`/dashboard/chat/${caseSessions[0].sessionId}`);
+                    navigate(`/dashboard/chat/${caseSessions[0].sessionId}`, { replace: true });
                   }
                 } catch (sessionErr) {
                   console.error("Failed to fetch case sessions:", sessionErr);

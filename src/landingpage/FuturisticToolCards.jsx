@@ -251,12 +251,10 @@ const ToolCard = ({ tool, onToolSelect, index, isFlipped, onFlip, onUnflip }) =>
 
   const handleCardClick = () => {
     if (tool.comingSoon) return;
-    if (!isFlipped) {
-      onFlip();
-    } else {
-      onToolSelect(tool.id);
-    }
+    // Call onToolSelect immediately to ensure 1-click activation on all devices
+    onToolSelect(tool.id);
   };
+
 
   const isActive = tool.active;
 
@@ -304,8 +302,8 @@ const ToolCard = ({ tool, onToolSelect, index, isFlipped, onFlip, onUnflip }) =>
         >
           {/* FRONT SIDE */}
           <div
-            className={`absolute inset-0 w-full h-full rounded-[20px] border transition-all duration-300 backface-hidden overflow-hidden ${isActive
-              ? (isDark ? 'bg-primary/10 border-primary shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] backdrop-blur-xl' : 'bg-blue-50 border-primary shadow-[0_0_25px_rgba(var(--primary-rgb),0.15)]')
+            className={`absolute inset-0 w-full h-full rounded-[20px] border transition-all duration-500 backface-hidden overflow-hidden ${isActive
+              ? (isDark ? 'bg-gradient-to-br from-primary/20 via-indigo-500/10 to-purple-500/20 border-primary shadow-[0_0_35px_rgba(var(--primary-rgb),0.3)] backdrop-blur-xl' : 'bg-gradient-to-br from-blue-50/90 via-indigo-50/60 to-blue-50/90 border-primary shadow-[0_0_25px_rgba(var(--primary-rgb),0.15)]')
               : (isDark
                 ? 'sidebar-glass border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]'
                 : 'bg-white border-slate-200/60 shadow-[0_4px_20px_rgba(0,0,0,0.05)]')
@@ -359,7 +357,7 @@ const ToolCard = ({ tool, onToolSelect, index, isFlipped, onFlip, onUnflip }) =>
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="flex items-center gap-1 bg-primary text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-lg animate-pulse"
+                      className="flex items-center gap-1 bg-gradient-to-r from-primary to-indigo-600 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-lg animate-pulse"
                     >
                       <div className="w-1 h-1 rounded-full bg-white animate-ping" />
                       {t('active')}
@@ -394,11 +392,11 @@ const ToolCard = ({ tool, onToolSelect, index, isFlipped, onFlip, onUnflip }) =>
 
           {/* BACK SIDE (Review & Preview) */}
           <div
-            className={`absolute inset-0 w-full h-full rounded-[20px] border overflow-hidden flex flex-col backface-hidden transition-all duration-300 ${isActive
-              ? (isDark ? 'bg-primary/20 border-primary shadow-[0_0_30px_rgba(var(--primary-rgb),0.4)] backdrop-blur-2xl' : 'bg-blue-50 border-primary shadow-[0_0_25px_rgba(var(--primary-rgb),0.2)]')
+            className={`absolute inset-0 w-full h-full rounded-[20px] border overflow-hidden flex flex-col backface-hidden transition-all duration-500 ${isActive
+              ? (isDark ? 'bg-gradient-to-br from-primary/30 via-indigo-500/20 to-purple-500/30 border-primary shadow-[0_0_40px_rgba(var(--primary-rgb),0.4)] backdrop-blur-2xl' : 'bg-gradient-to-br from-blue-50/80 via-indigo-50/50 to-purple-50/80 border-primary shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)]')
               : (isDark
                 ? 'sidebar-glass border-primary/30 shadow-[0_10px_40px_rgba(var(--primary-rgb),0.2)]'
-                : 'bg-white border-primary/20 shadow-[0_10px_40px_rgba(0,0,0,0.1)]')
+                : 'bg-gradient-to-br from-white via-slate-50 to-white border-primary/20 shadow-[0_10px_40px_rgba(0,0,0,0.1)]')
               }`}
             style={{
               backfaceVisibility: 'hidden',
@@ -442,7 +440,7 @@ const ToolCard = ({ tool, onToolSelect, index, isFlipped, onFlip, onUnflip }) =>
                     e.stopPropagation();
                     onToolSelect(tool.id);
                   }}
-                  className="bg-primary text-white text-[8px] font-black uppercase tracking-widest py-1.5 rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-primary/20 cursor-pointer pointer-events-auto"
+                  className="bg-gradient-to-r from-primary via-indigo-500 to-purple-600 text-white text-[8px] font-black uppercase tracking-widest py-1.5 rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-primary/30 cursor-pointer pointer-events-auto hover:shadow-indigo-500/40 transition-all duration-300"
                 >
                   <Zap size={9} fill="white" />
                   {t('liveTry')}

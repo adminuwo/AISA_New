@@ -103,5 +103,17 @@ export const PREMIUM_TOOLS = [
       'AI structures primary arguments and secondary rebuttals.',
       'AI generates targeted cross-examination questions.'
     ]
+  },
+  {
+    id: 'legal_general_chat',
+    name: 'General Legal Chat',
+    icon: MessageCircle,
+    desc: 'Professional legal discourse, simple guidance, and Q&A.',
+    price: 'Free',
+    workflow: [
+      'Ask any general legal question.',
+      'Get professional guidance and simple explanations.',
+      'Engage in AI-assisted legal discussion.'
+    ]
   }
 ];

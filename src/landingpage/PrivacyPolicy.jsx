@@ -49,9 +49,9 @@ const PrivacyPolicy = () => {
 
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-950 dark:via-blue-950/10 dark:to-slate-950">
+        <div className="min-h-screen bg-[#0F172A] selection:bg-primary/30">
             {/* Header */}
-            <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-border">
+            <header className="sticky top-0 z-50 bg-[#0F172A]/80 backdrop-blur-xl border-b border-white/[0.06]">
                 <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
                     <button
                         onClick={() => window.history.state && window.history.state.idx > 0 ? navigate(-1) : navigate('/')}
@@ -91,7 +91,7 @@ const PrivacyPolicy = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-white dark:bg-slate-900 rounded-2xl p-8 mb-8 border border-border shadow-sm"
+                    className="bg-[#18233A] rounded-[2rem] p-8 mb-8 border border-white/[0.06] shadow-xl"
                 >
                     <p className="text-maintext leading-relaxed mb-4">
                         Welcome to {name}™ ("we," "our," or "us"). This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered intelligent assistant platform.
@@ -109,7 +109,7 @@ const PrivacyPolicy = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 * (index + 2) }}
-                            className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg transition-shadow"
+                            className="bg-[#18233A] rounded-[2rem] p-8 border border-white/[0.06] shadow-xl hover:border-primary/20 transition-all group"
                         >
                             <div className="flex items-start gap-4 mb-6">
                                 <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -137,7 +137,7 @@ const PrivacyPolicy = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.75 }}
-                    className="mt-8 bg-white dark:bg-slate-900 rounded-2xl p-8 border border-border shadow-sm"
+                    className="mt-8 bg-[#18233A] rounded-[2rem] p-8 border border-white/[0.06] shadow-xl"
                 >
                     <h2 className="text-2xl font-bold text-maintext mb-4">Global Regulatory Compliance</h2>
                     <p className="text-subtext leading-relaxed mb-4">
@@ -165,7 +165,7 @@ const PrivacyPolicy = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.8 }}
-                    className="mt-12 bg-gradient-to-r from-primary/5 to-indigo-500/5 rounded-2xl p-8 border border-primary/20"
+                    className="mt-12 bg-gradient-to-r from-primary/10 to-indigo-500/10 rounded-[2rem] p-8 border border-primary/20 shadow-xl"
                 >
                     <h2 className="text-2xl font-bold text-maintext mb-4">Questions About Privacy?</h2>
                     <p className="text-subtext leading-relaxed mb-4">
@@ -183,7 +183,7 @@ const PrivacyPolicy = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.9 }}
-                    className="mt-8 p-6 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-xl"
+                    className="mt-8 p-8 bg-primary/5 border border-primary/10 rounded-[2rem] shadow-inner"
                 >
                     <h3 className="text-lg font-semibold text-maintext mb-2">Policy Updates</h3>
                     <p className="text-sm text-subtext leading-relaxed">
@@ -193,7 +193,7 @@ const PrivacyPolicy = () => {
             </main>
 
             {/* Footer */}
-            <footer className="mt-20 py-8 border-t border-border bg-white/50 dark:bg-slate-900/50">
+            <footer className="mt-20 py-12 border-t border-white/[0.06] bg-[#0F172A]">
                 <div className="max-w-5xl mx-auto px-4 text-center">
                     <p className="text-sm text-subtext">
                         © {new Date().getFullYear()} {name}™. All rights reserved.

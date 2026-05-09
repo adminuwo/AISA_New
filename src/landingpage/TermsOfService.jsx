@@ -49,9 +49,9 @@ const TermsOfService = () => {
 
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 dark:from-slate-950 dark:via-indigo-950/10 dark:to-slate-950">
+        <div className="min-h-screen bg-[#0F172A] selection:bg-primary/30">
             {/* Header */}
-            <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-border">
+            <header className="sticky top-0 z-50 bg-[#0F172A]/80 backdrop-blur-xl border-b border-white/[0.06]">
                 <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
                     <button
                         onClick={() => window.history.state && window.history.state.idx > 0 ? navigate(-1) : navigate('/')}
@@ -91,7 +91,7 @@ const TermsOfService = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-white dark:bg-slate-900 rounded-2xl p-8 mb-8 border border-border shadow-sm"
+                    className="bg-[#18233A] rounded-[2rem] p-8 mb-8 border border-white/[0.06] shadow-xl"
                 >
                     <p className="text-maintext leading-relaxed mb-4">
                         Welcome to {name}™. These Terms of Service ("Terms") govern your access to and use of our intelligent AI assistant platform, including all features, applications, content, and services (collectively, the "Service").
@@ -109,7 +109,7 @@ const TermsOfService = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 * (index + 2) }}
-                            className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg transition-shadow"
+                            className="bg-[#18233A] rounded-[2rem] p-8 border border-white/[0.06] shadow-xl hover:border-primary/20 transition-all group"
                         >
                             <div className="flex items-start gap-4 mb-6">
                                 <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center">
@@ -137,7 +137,7 @@ const TermsOfService = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.8 }}
-                    className="mt-8 bg-white dark:bg-slate-900 rounded-2xl p-8 border border-border shadow-sm"
+                    className="mt-8 bg-[#18233A] rounded-[2rem] p-8 border border-white/[0.06] shadow-xl"
                 >
                     <h2 className="text-2xl font-bold text-maintext mb-6">Additional Terms</h2>
                     <div className="space-y-4 text-subtext leading-relaxed">
@@ -172,7 +172,7 @@ const TermsOfService = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.9 }}
-                    className="mt-12 bg-gradient-to-r from-indigo-500/5 to-blue-500/5 rounded-2xl p-8 border border-indigo-500/20"
+                    className="mt-12 bg-gradient-to-r from-primary/10 to-indigo-500/10 rounded-[2rem] p-8 border border-primary/20 shadow-xl"
                 >
                     <h2 className="text-2xl font-bold text-maintext mb-4">Questions About These Terms?</h2>
                     <p className="text-subtext leading-relaxed mb-4">
@@ -187,7 +187,7 @@ const TermsOfService = () => {
             </main>
 
             {/* Footer */}
-            <footer className="mt-20 py-8 border-t border-border bg-white/50 dark:bg-slate-900/50">
+            <footer className="mt-20 py-12 border-t border-white/[0.06] bg-[#0F172A]">
                 <div className="max-w-5xl mx-auto px-4 text-center">
                     <p className="text-sm text-subtext">
                         © {new Date().getFullYear()} {name}™. All rights reserved.

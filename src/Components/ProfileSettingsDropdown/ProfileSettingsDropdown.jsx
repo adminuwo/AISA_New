@@ -503,10 +503,10 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
     });
 
     const renderSettingRow = (label, description, control) => (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-5 border-b border-gray-100 dark:border-white/5 last:border-0 gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between py-6 border-b border-gray-100 dark:border-white/[0.06] last:border-0 gap-4 group/row transition-all hover:bg-white/[0.02] -mx-4 px-4 rounded-xl">
             <div className="flex flex-col gap-1 pr-4 flex-1">
-                <span className="text-sm font-black text-gray-800 dark:text-gray-100 tracking-tight">{label}</span>
-                {description && <span className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed font-medium">{description}</span>}
+                <span className="text-sm font-black text-gray-800 dark:text-gray-100 tracking-tight group-hover/row:text-primary transition-colors">{label}</span>
+                {description && <span className="text-[11px] text-gray-500 dark:text-subtext leading-relaxed font-medium">{description}</span>}
             </div>
             <div className="w-full sm:w-auto shrink-0">
                 {control}
@@ -523,9 +523,9 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
     const renderToggle = (value, onToggle) => (
         <button
             onClick={() => onToggle(!value)}
-            className={`w-11 h-6 rounded-full p-1 transition-all duration-300 shrink-0 ${value ? 'bg-primary' : 'bg-gray-200 dark:bg-zinc-700'}`}
+            className={`w-12 h-6.5 rounded-full p-1 transition-all duration-500 shrink-0 relative ${value ? 'bg-primary' : 'bg-gray-200 dark:bg-[#18233A] border border-white/5'}`}
         >
-            <div className={`w-4 h-4 rounded-full transition-transform duration-300 shadow-sm bg-white ${value ? 'translate-x-5' : 'translate-x-0'}`} />
+            <div className={`w-4.5 h-4.5 rounded-full transition-all duration-500 shadow-lg ${value ? 'translate-x-5.5 bg-white scale-110' : 'translate-x-0 bg-gray-400 dark:bg-white/20'}`} />
         </button>
     );
 
@@ -577,10 +577,10 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
             id: 'nickname', tab: 'account', label: t('displayName'), description: 'Change your display name', keywords: 'name profile',
             component: (
                 <div className="flex flex-col gap-2 py-4 border-b border-gray-100 dark:border-white/5">
-                    <label className="text-xs font-bold text-gray-500 uppercase">{t('displayName')}</label>
-                    <div className="relative">
-                        <input type="text" value={nicknameInput} onChange={e => setNicknameInput(e.target.value)} className="w-full bg-gray-50 dark:bg-zinc-800 border rounded-xl p-3 text-sm outline-none focus:border-primary transition-all" />
-                        <button onClick={handleSaveNickname} className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-primary text-white text-[10px] rounded-lg hover:opacity-90 transition-all font-bold">{t('saveLabel')}</button>
+                    <label className="text-[10px] font-black text-subtext uppercase tracking-[0.15em] ml-1">{t('displayName')}</label>
+                    <div className="relative group">
+                        <input type="text" value={nicknameInput} onChange={e => setNicknameInput(e.target.value)} className="w-full bg-[#18233A] dark:bg-[#18233A] border border-white/[0.06] rounded-2xl p-4 pr-20 text-sm outline-none focus:border-primary/50 transition-all font-bold text-maintext" />
+                        <button onClick={handleSaveNickname} className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-primary text-white text-[10px] rounded-xl hover:scale-105 transition-all font-black uppercase tracking-widest shadow-lg shadow-primary/20">{t('saveLabel')}</button>
                     </div>
                 </div>
             )
@@ -598,8 +598,8 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
             );
             return (
                 <div className="space-y-4">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 px-1">{t('searchResults') || 'Search Results'}</h3>
-                    {results.map(item => <div key={item.id} className="bg-gray-50/50 dark:bg-white/[0.02] rounded-2xl p-4 border border-border/50">{item.component}</div>)}
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-6 px-1">{t('searchResults') || 'Search Results'}</h3>
+                    {results.map(item => <div key={item.id} className="bg-[#18233A] rounded-[1.5rem] p-6 border border-white/[0.06] shadow-xl hover:border-primary/20 transition-all">{item.component}</div>)}
                     {results.length === 0 && (
                         <div className="py-20 text-center opacity-50">
                             <div className="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -624,12 +624,12 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                         </div>
                         <div className="space-y-3">
                             {notifications.length > 0 ? notifications.map(n => (
-                                <div key={n.id} className="p-4 bg-gray-50/80 dark:bg-white/5 rounded-2xl border border-border/50 flex items-start justify-between gap-4 transition-all hover:border-primary/20">
+                                <div key={n.id} className="p-5 bg-[#18233A] rounded-[1.5rem] border border-white/[0.06] flex items-start justify-between gap-4 transition-all hover:border-primary/20 hover:bg-[#1C2945] group/notif">
                                     <div className="space-y-1">
-                                        <h4 className="font-bold text-sm text-maintext leading-tight">{n.title}</h4>
+                                        <h4 className="font-bold text-sm text-maintext leading-tight group-hover/notif:text-primary transition-colors">{n.title}</h4>
                                         <p className="text-xs text-subtext leading-relaxed">{n.desc}</p>
                                     </div>
-                                    <button onClick={() => deleteNotification(n.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors shrink-0"><Trash2 size={16} /></button>
+                                    <button onClick={() => deleteNotification(n.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all shrink-0"><Trash2 size={16} /></button>
                                 </div>
                             )) : (
                                 <div className="py-20 text-center">
@@ -645,26 +645,32 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
             case 'feedback':
                 return (
                     <div className="space-y-6">
-                        <div className="bg-primary/5 rounded-[2.5rem] p-5 sm:p-8 border border-primary/20 shadow-xl shadow-primary/5">
-                            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 text-primary">
-                                <MessageSquare className="w-6 h-6" />
+                        <div className="bg-[#18233A] rounded-[2.5rem] p-6 sm:p-10 border border-white/[0.06] shadow-2xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-10 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
+                                <MessageSquare className="w-64 h-64 -rotate-12" />
                             </div>
-                            <h3 className="text-xl sm:text-2xl font-black mb-2 tracking-tight">Share your feedback</h3>
-                            <p className="text-xs sm:text-sm text-subtext mb-8 leading-relaxed font-medium">Your feedback helps us build the future of AISA™. Tell us what you'd like to see next.</p>
-                            <textarea
-                                rows={5}
-                                value={issueText}
-                                onChange={(e) => setIssueText(e.target.value)}
-                                placeholder="Tell us what's on your mind..."
-                                className="w-full bg-white dark:bg-[#1E2438] rounded-2xl p-4 text-sm focus:outline-none border border-border focus:border-primary transition-all text-maintext resize-none shadow-sm"
-                            />
-                            <button
-                                onClick={handleSupportSubmit}
-                                disabled={isSending || !issueText.trim()}
-                                className="w-full mt-6 px-8 py-4 bg-primary text-white rounded-2xl text-sm font-black uppercase tracking-widest shadow-lg shadow-primary/30 hover:opacity-90 transition-all disabled:opacity-50 active:scale-[0.98]"
-                            >
-                                {isSending ? 'Sending...' : 'Submit Feedback'}
-                            </button>
+                            <div className="relative z-10">
+                                <div className="w-14 h-14 bg-primary/10 dark:bg-primary/20 rounded-2xl flex items-center justify-center mb-8 text-primary shadow-lg shadow-primary/10">
+                                    <MessageSquare className="w-7 h-7" />
+                                </div>
+                                <h3 className="text-2xl sm:text-3xl font-black mb-3 tracking-tight text-maintext">Share your feedback</h3>
+                                <p className="text-xs sm:text-base text-subtext mb-10 leading-relaxed font-medium max-w-lg">Your feedback helps us build the future of AISA™. Tell us what you'd like to see next or any issues you've encountered.</p>
+                                <textarea
+                                    rows={5}
+                                    value={issueText}
+                                    onChange={(e) => setIssueText(e.target.value)}
+                                    placeholder="Tell us what's on your mind..."
+                                    className="w-full bg-[#0F172A] dark:bg-[#0F172A] rounded-[1.5rem] p-5 text-sm focus:outline-none border border-white/[0.06] focus:border-primary/50 transition-all text-maintext resize-none shadow-inner"
+                                />
+                                <button
+                                    onClick={handleSupportSubmit}
+                                    disabled={isSending || !issueText.trim()}
+                                    className="w-full mt-8 px-8 py-5 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:opacity-90 transition-all disabled:opacity-50 active:scale-[0.98] flex items-center justify-center gap-3"
+                                >
+                                    {isSending ? <RefreshCcw size={18} className="animate-spin" /> : <Send size={18} />}
+                                    {isSending ? 'Sending...' : 'Submit Feedback'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 );
@@ -673,17 +679,20 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                 const isPrivacy = activeTab === 'privacy';
                 return (
                     <div className="space-y-8 animate-in fade-in duration-500">
-                        <div className="p-5 sm:p-6 bg-gradient-to-br from-primary/10 to-transparent rounded-[2rem] sm:rounded-3xl border border-primary/10">
-                            <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white dark:bg-[#1E2438] flex items-center justify-center shadow-lg text-primary border border-primary/5 shrink-0">
-                                    {isPrivacy ? <Shield className="w-5 h-5 sm:w-6 sm:h-6" /> : <Scale className="w-5 h-5 sm:w-6 sm:h-6" />}
+                        <div className="p-6 sm:p-8 bg-[#18233A] rounded-[2rem] border border-white/[0.06] shadow-xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
+                                {isPrivacy ? <Shield className="w-48 h-48 rotate-12" /> : <Scale className="w-48 h-48 rotate-12" />}
+                            </div>
+                            <div className="flex items-center gap-4 sm:gap-6 mb-6 relative z-10">
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center shadow-lg text-primary border border-white/[0.06] shrink-0">
+                                    {isPrivacy ? <Shield className="w-6 h-6 sm:w-8 sm:h-8" /> : <Scale className="w-6 h-6 sm:w-8 sm:h-8" />}
                                 </div>
                                 <div>
-                                    <h2 className="text-xl sm:text-2xl font-black text-maintext tracking-tight">{isPrivacy ? t('privacyPolicy') : t('termsOfService')}</h2>
-                                    <p className="text-[10px] text-subtext font-bold uppercase tracking-widest mt-0.5 sm:mt-1 opacity-60">{t('lastUpdated')}: Jan 2026</p>
+                                    <h2 className="text-2xl sm:text-3xl font-black text-maintext tracking-tight">{isPrivacy ? t('privacyPolicy') : t('termsOfService')}</h2>
+                                    <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em] mt-1.5 opacity-80">{t('lastUpdated')}: Jan 2026</p>
                                 </div>
                             </div>
-                            <p className="text-[11px] sm:text-xs text-subtext leading-relaxed font-medium">Please read our {isPrivacy ? 'privacy policy' : 'terms of service'} carefully to understand how we handle your data and the rules of our platform.</p>
+                            <p className="text-xs sm:text-sm text-subtext leading-relaxed font-medium relative z-10 max-w-2xl">Please read our {isPrivacy ? 'privacy policy' : 'terms of service'} carefully to understand how we handle your data and the rules of our platform.</p>
                         </div>
                         
                         <div className="prose prose-sm dark:prose-invert max-w-none text-maintext space-y-6 leading-relaxed">
@@ -707,31 +716,31 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                     </button>
                                 )}
                             </div>
-                            <div className="space-y-2 pr-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                            <div className="space-y-3 pr-2 max-h-[400px] overflow-y-auto custom-scrollbar">
                                 {Object.keys(groupedSessions).length > 0 ? Object.keys(groupedSessions).sort((a, b) => new Date(b) - new Date(a)).map(date => (
-                                    <div key={date} className="border border-border rounded-xl bg-gray-50/50 dark:bg-zinc-800/30">
-                                        <button onClick={() => setExpandedDate(expandedDate === date ? null : date)} className="w-full flex items-center justify-between p-3">
-                                            <span className="text-xs font-bold">{date}</span>
-                                            <ChevronDown size={14} className={`transition-transform ${expandedDate === date ? 'rotate-180' : ''}`} />
+                                    <div key={date} className="border border-white/[0.06] rounded-[1.5rem] bg-[#18233A] overflow-hidden">
+                                        <button onClick={() => setExpandedDate(expandedDate === date ? null : date)} className="w-full flex items-center justify-between p-4 hover:bg-white/[0.02] transition-colors">
+                                            <span className="text-xs font-black tracking-widest uppercase text-subtext">{date}</span>
+                                            <ChevronDown size={14} className={`transition-transform duration-500 ${expandedDate === date ? 'rotate-180 text-primary' : 'text-gray-500'}`} />
                                         </button>
                                         {expandedDate === date && (
-                                            <div className="p-2 pt-0 space-y-1">
+                                            <div className="p-3 pt-0 space-y-1">
                                                 {groupedSessions[date].map(s => (
-                                                    <div key={s.sessionId} className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-zinc-800 rounded-lg text-xs group">
-                                                        <span className="truncate flex-1 font-medium text-gray-600 dark:text-gray-300">{s.title || t('newChat')}</span>
-                                                        <div className="flex items-center gap-1">
+                                                    <div key={s.sessionId} className="flex items-center justify-between p-3 hover:bg-white/[0.04] rounded-xl text-xs group transition-all">
+                                                        <span className="truncate flex-1 font-bold text-maintext">{s.title || t('newChat')}</span>
+                                                        <div className="flex items-center gap-1.5">
                                                             <button
                                                                 onClick={() => { window.location.href = `/dashboard/chat/${s.sessionId}`; onClose(); }}
-                                                                className="px-2 py-1 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded font-bold opacity-0 group-hover:opacity-100 transition-all text-[10px]"
+                                                                className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg font-black text-[9px] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all"
                                                             >
                                                                 {t('viewLabel')}
                                                             </button>
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); handleDeleteChatSession(s.sessionId); }}
-                                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
                                                                 title="Delete Session"
                                                             >
-                                                                <Trash2 size={12} />
+                                                                <Trash2 size={14} />
                                                             </button>
                                                         </div>
                                                     </div>
@@ -739,7 +748,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                             </div>
                                         )}
                                     </div>
-                                )) : <p className="text-center py-10 opacity-50">No chats found</p>}
+                                )) : <p className="text-center py-20 opacity-30 italic font-medium">No chat history found</p>}
                             </div>
                         </div>
                     </div>
@@ -767,9 +776,9 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                 return (
                     <div className="space-y-6">
                         {/* Profile Header Card */}
-                        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-3xl p-3.5 sm:p-6 border border-primary/20 shadow-xl shadow-primary/5 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <Shield className="w-32 h-32 rotate-12" />
+                        <div className="bg-[#18233A] rounded-[2rem] p-5 sm:p-8 border border-white/[0.06] shadow-xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+                                <Shield className="w-48 h-48 rotate-12" />
                             </div>
                             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 relative z-10">
                                 <div
@@ -815,7 +824,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                                         <button
                                             onClick={() => window._aisa_sync_profile && window._aisa_sync_profile()}
-                                            className="inline-flex items-center gap-2 px-4 py-2 bg-white/50 dark:bg-white/5 hover:bg-primary/10 hover:text-primary rounded-xl transition-all group/sync border border-border/50 text-[10px] font-black uppercase tracking-widest"
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-white/[0.04] dark:bg-white/[0.04] hover:bg-primary/10 hover:text-primary rounded-xl transition-all group/sync border border-white/[0.06] text-[10px] font-black uppercase tracking-widest"
                                         >
                                             <RefreshCcw className="w-3.5 h-3.5 group-hover/sync:rotate-180 transition-transform duration-500" />
                                             {t('syncFromSocial')}
@@ -863,9 +872,9 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         key={session._id}
-                                        className={`group relative p-4 sm:p-5 rounded-3xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${session.isCurrent
-                                                ? 'bg-primary/[0.03] border-primary/30 shadow-lg shadow-primary/5 ring-1 ring-primary/10'
-                                                : 'bg-white/40 dark:bg-white/[0.02] border-border/50 hover:border-primary/20 hover:bg-white/60 dark:hover:bg-white/[0.04]'
+                                        className={`group relative p-5 sm:p-6 rounded-[1.5rem] border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${session.isCurrent
+                                                ? 'bg-primary/[0.04] border-primary/30 shadow-lg shadow-primary/5'
+                                                : 'bg-[#18233A] border-white/[0.06] hover:border-white/[0.12] hover:bg-[#1C2945]'
                                             }`}
                                     >
                                         {session.isCurrent && (
@@ -953,7 +962,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                             </div>
                             <button
                                 onClick={() => setShowDeleteModal(true)}
-                                className="px-5 py-2.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-xl font-bold transition-all"
+                                className="px-5 py-2.5 bg-red-500/5 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-xl font-bold transition-all text-xs uppercase tracking-widest"
                             >
                                 {t('deleteAccount') || 'Delete Account'}
                             </button>
@@ -964,51 +973,51 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         {/* Plan Card */}
-                        <div className="p-6 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-4">
-                                <Zap className="w-12 h-12 text-primary opacity-20" />
+                        <div className="p-8 rounded-[2rem] bg-[#18233A] border border-white/[0.06] shadow-2xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+                                <Zap className="w-32 h-32 rotate-12" />
                             </div>
                             <div className="relative z-10">
-                                <h3 className="text-xs font-bold text-primary uppercase tracking-widest mb-1">{t('currentPlan')}</h3>
-                                <div className="flex items-baseline gap-2 mb-4">
-                                    <h2 className="text-3xl font-black text-maintext">{planName.replace(' Plan', '')}</h2>
-                                    <span className="text-xs text-subtext font-medium">/ 1 {t('month')}</span>
+                                <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-2">{t('currentPlan')}</h3>
+                                <div className="flex items-baseline gap-2 mb-6">
+                                    <h2 className="text-3xl sm:text-4xl font-black text-maintext tracking-tight">{planName.replace(' Plan', '')}</h2>
+                                    <span className="text-xs text-subtext font-bold uppercase tracking-widest opacity-60">/ 1 {t('month')}</span>
                                 </div>
 
-                                <div className="flex items-center justify-between bg-white/40 dark:bg-black/40 backdrop-blur-md rounded-xl p-4 border border-white/20">
+                                <div className="flex items-center justify-between bg-white/[0.02] backdrop-blur-md rounded-2xl p-5 border border-white/[0.06]">
                                     <div>
-                                        <p className="text-[10px] font-bold text-subtext uppercase tracking-wider">{t('availableCredits')}</p>
-                                        <p className="text-2xl font-black text-primary">{user?.credits || 0}</p>
+                                        <p className="text-[10px] font-black text-subtext uppercase tracking-[0.15em] mb-1">{t('availableCredits')}</p>
+                                        <p className="text-3xl font-black text-primary">{user?.credits || 0}</p>
                                     </div>
-                                    <button onClick={() => { window.location.href = '/pricing'; onClose(); }} className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all">{t('buyMore')}</button>
+                                    <button onClick={() => { window.location.href = '/pricing'; onClose(); }} className="px-6 py-3 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all">{t('buyMore')}</button>
                                 </div>
                             </div>
                         </div>
 
                         {/* Recent Usage */}
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">{t('recentCreditUsage')}</h4>
+                            <div className="flex items-center justify-between px-1">
+                                <h4 className="text-[10px] font-black text-subtext uppercase tracking-[0.2em]">{t('recentCreditUsage')}</h4>
                                 {loadingHistory && <RefreshCcw className="w-3 h-3 animate-spin text-primary" />}
                             </div>
 
-                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                 {creditLogs.length > 0 ? creditLogs.map(log => (
-                                    <div key={log._id} className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-zinc-800/30 rounded-xl border border-border group hover:bg-white dark:hover:bg-zinc-800 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${log.credits < 0 ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
-                                                {log.credits < 0 ? <Zap size={14} /> : <CreditCard size={14} />}
+                                    <div key={log._id} className="flex items-center justify-between p-5 bg-[#18233A] rounded-[1.5rem] border border-white/[0.06] group hover:border-primary/20 hover:bg-[#1C2945] transition-all">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${log.credits < 0 ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
+                                                {log.credits < 0 ? <Zap size={16} /> : <CreditCard size={16} />}
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold truncate max-w-[150px]">{log.description}</p>
-                                                <p className="text-[10px] text-subtext">{new Date(log.createdAt).toLocaleString()}</p>
+                                                <p className="text-sm font-bold text-maintext truncate max-w-[200px]">{log.description}</p>
+                                                <p className="text-[10px] text-subtext font-medium opacity-60">{new Date(log.createdAt).toLocaleString()}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className={`text-sm font-bold ${log.credits < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                                            <p className={`text-sm font-black ${log.credits < 0 ? 'text-red-500' : 'text-green-500'}`}>
                                                 {log.credits > 0 ? '+' : ''}{log.credits}
                                             </p>
-                                            <p className="text-[10px] text-subtext">{log.balanceAfter} total</p>
+                                            <p className="text-[10px] text-subtext font-bold opacity-40">{log.balanceAfter} total</p>
                                         </div>
                                     </div>
                                 )) : (
@@ -1049,17 +1058,17 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                         placeholder="Search for questions..."
                                         value={faqSearchQuery}
                                         onChange={(e) => setFaqSearchQuery(e.target.value)}
-                                        className="w-full bg-gray-50 dark:bg-white/5 border border-border rounded-xl pl-11 pr-4 py-3 text-sm outline-none focus:border-primary/50 transition-all font-medium"
+                                        className="w-full bg-[#18233A] dark:bg-[#18233A] border border-white/[0.06] rounded-2xl pl-11 pr-4 py-4 text-sm outline-none focus:border-primary/50 transition-all font-bold text-maintext"
                                     />
                                 </div>
 
                                 {/* Categories Pills */}
-                                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 pb-2">
+                                <div className="flex flex-wrap gap-2 pb-2">
                                     {faqs.map((cat, idx) => (
                                         <button
                                             key={cat.category}
                                             onClick={() => { setSelectedFaqCategory(idx); setOpenFaqIndex(null); }}
-                                            className={`px-3 py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center text-center ${idx === faqs.length - 1 && faqs.length % 2 !== 0 ? 'col-span-2' : ''} ${selectedFaqCategory === idx ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-white dark:bg-white/5 border-border text-gray-500 hover:border-primary/30'}`}
+                                            className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center text-center ${selectedFaqCategory === idx ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20' : 'bg-[#18233A] border-white/[0.06] text-subtext hover:border-primary/30 hover:bg-[#1C2945]'}`}
                                         >
                                             {cat.category}
                                         </button>
@@ -1067,17 +1076,17 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                 </div>
 
                                 {/* Questions List */}
-                                <div className="space-y-3 mt-6">
+                                <div className="space-y-4 mt-8">
                                     {faqs[selectedFaqCategory].questions
                                         .filter(q => !faqSearchQuery || q.question.toLowerCase().includes(faqSearchQuery.toLowerCase()))
                                         .map((faq, index) => (
-                                            <div key={index} className="bg-gray-50/50 dark:bg-white/5 rounded-2xl border border-transparent hover:border-primary/10 transition-all">
+                                            <div key={index} className="bg-[#18233A] rounded-[1.5rem] border border-white/[0.06] hover:border-primary/20 transition-all group/faq overflow-hidden">
                                                 <button
                                                     onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
-                                                    className="w-full flex justify-between items-center p-5 text-left group"
+                                                    className="w-full flex justify-between items-center p-6 text-left group"
                                                 >
-                                                    <span className="font-bold text-gray-700 dark:text-gray-200 text-sm group-hover:text-primary transition-colors">{faq.question}</span>
-                                                    <div className={`p-1.5 rounded-lg transition-all ${openFaqIndex === index ? 'bg-primary/10 text-primary rotate-180' : 'text-gray-400'}`}>
+                                                    <span className="font-bold text-gray-700 dark:text-gray-100 text-sm group-hover:text-primary transition-colors">{faq.question}</span>
+                                                    <div className={`p-2 rounded-xl transition-all ${openFaqIndex === index ? 'bg-primary text-white shadow-lg shadow-primary/20 rotate-180' : 'bg-white/[0.04] text-gray-500'}`}>
                                                         <ChevronDown className="w-4 h-4" />
                                                     </div>
                                                 </button>
@@ -1089,7 +1098,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                                             exit={{ height: 0, opacity: 0 }}
                                                             className="overflow-hidden"
                                                         >
-                                                            <div className="px-5 pb-5 text-gray-500 dark:text-gray-400 text-xs leading-relaxed font-medium border-t border-gray-100/50 dark:border-white/5 pt-4">
+                                                            <div className="px-6 pb-6 text-subtext text-[13px] leading-relaxed font-medium border-t border-white/[0.04] pt-5 bg-white/[0.01]">
                                                                 {faq.answer}
                                                             </div>
                                                         </motion.div>
@@ -1166,14 +1175,15 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                 const gmailApp = user?.personalizations?.apps?.find(a => a.name === 'Gmail');
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* Apps & Connectors */}
                         {/* Header */}
-                        <div className="flex flex-col gap-1 pb-4 border-b border-gray-100 dark:border-white/5">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('appsConnectors')}</h3>
-                            <p className="text-sm text-subtext">{t('connectExternalServices')}</p>
+                        <div className="flex flex-col gap-1 pb-4 border-b border-white/[0.06]">
+                            <h3 className="text-lg font-black text-maintext tracking-tight">{t('appsConnectors')}</h3>
+                            <p className="text-xs text-subtext font-medium">{t('connectExternalServices')}</p>
                         </div>
 
                         {/* Gmail Connector Card */}
-                        <div className={`relative overflow-hidden rounded-2xl border transition-all duration-300 ${gmailApp ? 'border-primary/30 bg-gradient-to-br from-primary/5 via-transparent to-transparent dark:from-primary/10' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-primary/30'}`}>
+                        <div className={`relative overflow-hidden rounded-[2rem] border transition-all duration-500 ${gmailApp ? 'border-primary/30 bg-[#18233A] shadow-xl shadow-primary/5' : 'border-white/[0.06] bg-[#18233A] hover:border-primary/20 hover:bg-[#1C2945]'}`}>
                             {/* Top accent line */}
                             {gmailApp && <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-primary/60 via-primary to-primary/60" />}
 
@@ -1202,12 +1212,12 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
 
                                         <div>
                                             <div className="flex items-center gap-2 mb-0.5">
-                                                <h4 className="font-black text-gray-900 dark:text-white text-[15px]">Gmail</h4>
-                                                <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">Google</span>
+                                                <h4 className="font-black text-maintext text-[15px] tracking-tight">Gmail</h4>
+                                                <span className="text-[9px] font-black uppercase tracking-[0.15em] px-2 py-0.5 rounded-lg bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5">Google</span>
                                             </div>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            <p className="text-xs text-subtext font-medium">
                                                 {gmailApp ? (
-                                                    <span className="text-primary font-bold flex items-center gap-1">
+                                                    <span className="text-primary font-black flex items-center gap-1.5">
                                                         <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse inline-block" />
                                                         {gmailApp.tokens?.email_address || 'Connected'}
                                                     </span>
@@ -1272,9 +1282,9 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                         </div>
 
                         {/* Coming Soon placeholder */}
-                        <div className="rounded-2xl border border-dashed border-primary/20 dark:border-primary/10 p-5 text-center opacity-60">
-                            <p className="text-xs font-bold text-primary/60 uppercase tracking-widest">{t('moreConnectorsComingSoon')}</p>
-                            <p className="text-[10px] text-gray-400 mt-1">Google Drive · Notion · Slack · Calendar</p>
+                        <div className="rounded-[1.5rem] border-2 border-dashed border-white/[0.06] p-8 text-center bg-white/[0.01]">
+                            <p className="text-xs font-black text-primary/40 uppercase tracking-[0.2em]">{t('moreConnectorsComingSoon')}</p>
+                            <p className="text-[10px] text-subtext font-bold mt-2 opacity-40">Google Drive · Notion · Slack · Calendar</p>
                         </div>
                     </div>
                 );
@@ -1300,7 +1310,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                         animate={window.innerWidth < 640 ? { x: 0 } : { opacity: 1, scale: 1, y: 0 }}
                         exit={window.innerWidth < 640 ? { x: '100%' } : { opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="absolute sm:relative top-0 left-0 h-full sm:h-[85vh] w-full sm:max-w-5xl bg-white dark:bg-[#161B2E] flex flex-col sm:flex-row shadow-2xl sm:rounded-[2rem] border-r sm:border border-white/5 pointer-events-auto overflow-hidden"
+                        className="absolute sm:relative top-0 left-0 h-full sm:h-[85vh] w-full sm:max-w-5xl bg-white dark:bg-[#0F172A] flex flex-col sm:flex-row shadow-2xl sm:rounded-[2rem] border-r sm:border border-white/5 dark:border-white/[0.06] pointer-events-auto overflow-hidden"
                         onClick={e => e.stopPropagation()}
                     >
                     <input 
@@ -1312,16 +1322,16 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                     />
                     
                     {/* Navigation Sidebar (Always visible on Desktop, Conditional on Mobile) */}
-                    <div className={`flex flex-col h-full w-full sm:w-[320px] bg-gray-50/30 dark:bg-black/20 border-r border-gray-100 dark:border-white/5 shrink-0 transition-all ${view === 'detail' ? 'hidden sm:flex' : 'flex'}`}>
+                    <div className={`flex flex-col h-full w-full sm:w-[320px] bg-gray-50/30 dark:bg-[#131C31] border-r border-gray-100 dark:border-white/[0.06] shrink-0 transition-all ${view === 'detail' ? 'hidden sm:flex' : 'flex'}`}>
                         {/* Sticky Header */}
                         <div className="sticky top-0 z-20 px-6 py-6 flex justify-between items-center bg-transparent shrink-0">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-2xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
                                     <Settings className="w-5 h-5 text-primary" />
                                 </div>
-                                <h2 className="text-2xl font-black tracking-tight">{t('settings') || 'Settings'}</h2>
+                                <h2 className="text-2xl font-black tracking-tight text-gray-800 dark:text-white">{t('settings') || 'Settings'}</h2>
                             </div>
-                            <button onClick={onClose} className="sm:hidden p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-all">
+                            <button onClick={onClose} className="sm:hidden p-2 hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-xl transition-all">
                                 <X size={20} className="text-gray-400" />
                             </button>
                         </div>
@@ -1331,7 +1341,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                             <div className="relative group">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-primary transition-colors" />
                                 <input 
-                                    className="w-full bg-white dark:bg-white/5 border border-border rounded-2xl pl-11 pr-4 py-3.5 text-sm outline-none focus:border-primary/50 transition-all shadow-sm" 
+                                    className="w-full bg-white dark:bg-[#18233A] border border-border dark:border-white/[0.06] rounded-2xl pl-11 pr-4 py-3.5 text-sm outline-none focus:border-primary/50 dark:focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all shadow-sm text-maintext" 
                                     placeholder="Search settings..." 
                                     value={searchQuery} 
                                     onChange={e => setSearchQuery(e.target.value)} 
@@ -1345,12 +1355,12 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                 <button 
                                     key={tab.id} 
                                     onClick={() => { setActiveTab(tab.id); setView('detail'); }} 
-                                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-sm transition-all relative group ${activeTab === tab.id ? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20' : 'text-subtext hover:bg-gray-100 dark:hover:bg-white/5'}`}
+                                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-sm transition-all relative group ${activeTab === tab.id ? 'bg-primary/10 dark:bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20 dark:ring-primary/30' : 'text-subtext hover:bg-gray-100 dark:hover:bg-white/[0.06]'}`}
                                 >
                                     {activeTab === tab.id && (
-                                        <motion.div layoutId="activeTabIndicator" className="absolute left-0 w-1.5 h-8 bg-primary rounded-r-full" />
+                                        <motion.div layoutId="activeTabIndicator" className="absolute left-0 w-1.5 h-8 bg-primary rounded-r-full shadow-[0_0_12px_rgba(139,92,246,0.5)]" />
                                     )}
-                                    <div className={`p-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-primary text-white' : 'bg-gray-200/50 dark:bg-white/5 text-gray-400 group-hover:text-primary group-hover:bg-primary/5'}`}>
+                                    <div className={`p-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-gray-200/50 dark:bg-white/5 text-gray-400 group-hover:text-primary group-hover:bg-primary/5'}`}>
                                         <tab.icon className="w-4 h-4" />
                                     </div>
                                     <span className="font-black flex-1 text-left">{tab.label}</span>
@@ -1361,7 +1371,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
 
                         {/* Footer Actions */}
                         {user?.token && (
-                            <div className="p-6 border-t border-gray-100 dark:border-white/5">
+                            <div className="p-6 border-t border-gray-100 dark:border-white/[0.06]">
                                 <button onClick={onLogout} className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl text-[10px] text-red-500 hover:bg-red-500/10 font-black uppercase tracking-[0.2em] transition-all border border-red-500/10 active:scale-95 bg-white/50 dark:bg-transparent shadow-sm">
                                     <LogOut className="w-4 h-4" /> {t('logOut')}
                                 </button>
@@ -1370,16 +1380,16 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                     </div>
 
                     {/* Detail View / Content Area (Always visible on Desktop, Conditional on Mobile) */}
-                    <div className={`flex-1 flex flex-col min-w-0 bg-white dark:bg-transparent overflow-hidden ${view === 'sidebar' ? 'hidden sm:flex' : 'flex'}`}>
+                    <div className={`flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0F172A] overflow-hidden ${view === 'sidebar' ? 'hidden sm:flex' : 'flex'}`}>
                         {/* Sticky Detail Header */}
-                        <div className="sticky top-0 z-20 px-5 sm:px-8 py-4 sm:py-6 flex items-center justify-between shrink-0 bg-white/80 dark:bg-[#161B2E]/80 backdrop-blur-md">
+                        <div className="sticky top-0 z-20 px-5 sm:px-8 py-4 sm:py-6 flex items-center justify-between shrink-0 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-md">
                             <div className="flex items-center gap-4">
-                                <button onClick={() => setView('sidebar')} className="sm:hidden p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-all active:scale-90">
+                                <button onClick={() => setView('sidebar')} className="sm:hidden p-2 hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-xl transition-all active:scale-90">
                                     <ChevronLeft size={20} className="text-gray-400" />
                                 </button>
                                 <h2 className="text-2xl font-black tracking-tight text-maintext">{searchQuery ? 'Search Results' : tabs.find(t => t.id === activeTab)?.label}</h2>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl transition-all group active:scale-90">
+                            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-white/[0.06] rounded-xl transition-all group active:scale-90">
                                 <X size={24} className="text-gray-400 group-hover:text-maintext transition-colors" />
                             </button>
                         </div>

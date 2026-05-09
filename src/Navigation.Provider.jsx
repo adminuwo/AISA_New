@@ -16,7 +16,7 @@ import SharedChat from './pages/SharedChat';
 
 
 import { AppRoute, apis } from './types';
-import { Menu, Bell, Sun, Moon, LogIn, User } from 'lucide-react';
+import { Menu, Bell, Sun, Moon, LogIn, User, Gavel } from 'lucide-react';
 import { useTheme } from './context/ThemeContext';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import { toggleState, getUserData, clearUser, activeModeData, activeLegalToolData, legalViewData, userData, setUserData } from './userStore/userData';
@@ -45,13 +45,20 @@ const AiBase = lazy(() => import('./Tools/AI_Base/AI_Base').catch(() => ({ defau
 const SecurityAndGuidelines = lazy(() => import('./landingpage/SecurityAndGuidelines'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
+const isAuthenticated = () => {
+  const tokenStr = localStorage.getItem('token');
+  const userToken = getUserData()?.token;
+  return !!tokenStr && tokenStr !== 'undefined' && tokenStr !== 'null' && 
+         !!userToken && userToken !== 'undefined' && userToken !== 'null';
+};
+
 // ------------------------------
 // Home Redirect Component
 // ------------------------------
 // Redirects logged-in users to chat on direct access,
 // but allows them to view landing page when clicking logo from within app
 const HomeRedirect = () => {
-  const hasToken = !!localStorage.getItem('token');
+  const hasToken = isAuthenticated();
   const location = useLocation();
 
   // Check if user came from clicking the logo (internal navigation)
@@ -64,7 +71,7 @@ const HomeRedirect = () => {
       return <Landing />;
     }
     // Otherwise (direct URL access), redirect to chat
-    return <Navigate to="/dashboard/chat" replace />;
+    return <Navigate to="/dashboard/chat/new" replace state={{ forceGlobal: true }} />;
   }
 
   // Non-authenticated users always see the landing page
@@ -76,11 +83,10 @@ const HomeRedirect = () => {
 // ------------------------------
 // Protects login/signup pages - redirects authenticated users to chat
 const GuestRoute = ({ children }) => {
-  const hasToken = !!localStorage.getItem('token');
+  const hasToken = isAuthenticated();
 
-  // If user is already logged in, redirect to chat
   if (hasToken) {
-    return <Navigate to="/dashboard/chat" replace />;
+    return <Navigate to="/dashboard/chat/new" replace state={{ forceGlobal: true }} />;
   }
 
   // Otherwise, allow access to login/signup page
@@ -191,14 +197,14 @@ const DashboardLayout = () => {
   const isMobile = window.innerWidth < 768;
   const searchParams = new URLSearchParams(location.search);
   const tool = searchParams.get("tool");
+  const hideNavbarTools = ["legal_my_case", "legal_precedents", "my-case", "legal-precedents"];
 
   // Jaha navbar NAHI chahiye
-  const hideNavbarTools = ["legal_my_case", "legal_precedents", "my-case", "legal-precedents"];
-  const isHiddenTool = 
-    hideNavbarTools.includes(tool) || 
-    hideNavbarTools.includes(selectedLegalTool?.id) ||
+  const isHiddenTool =
+    currentMode === 'LEGAL_TOOLKIT' ||
+    hideNavbarTools.includes(tool) ||
     location.pathname === '/dashboard/cases';
-  
+
   // Navbar is hidden if it's a restricted tool view, regardless of device.
   const allowNavbar = !isHiddenTool;
 
@@ -265,6 +271,7 @@ const DashboardLayout = () => {
               </motion.button>
 
               <div className="flex items-center gap-2">
+
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -357,7 +364,10 @@ const SSOInterceptor = ({ children }) => {
       // Strip token from URL immediately to prevent re-triggering
       window.history.replaceState({}, '', location.pathname);
 
-      if (!localStorage.getItem('token')) {
+      const existingToken = localStorage.getItem('token');
+      const hasValidToken = !!existingToken && existingToken !== 'undefined' && existingToken !== 'null';
+
+      if (!hasValidToken) {
         setIsVerifying(true);
         axios.post(apis.ssoHandoff, { sso_token: ssoToken, from: fromApp })
           .then(res => {
@@ -436,9 +446,11 @@ const NavigateProvider = () => {
           path={AppRoute.DASHBOARD}
           element={<DashboardLayout />}
         >
-          <Route index element={<Navigate to="chat" replace />} />
-          <Route path="chat/:sessionId?" element={<Chat />} />
+          <Route index element={<Navigate to="chat/new" replace state={{ forceGlobal: true }} />} />
+          <Route path="chat" element={<Navigate to="new" replace state={{ forceGlobal: true }} />} />
+          <Route path="chat/:sessionId" element={<Chat />} />
           <Route path="cases" element={<Chat />} />
+          <Route path="case/:caseId" element={<Chat />} />
           <Route path="social-agent" element={<ProtectedRoute><SocialAgentPage /></ProtectedRoute>} />
           <Route path="ai-personal-assistant" element={<ProtectedRoute><AiPersonalAssistantDashboard /></ProtectedRoute>} />
           <Route path="ai-base" element={<ProtectedRoute><Suspense fallback={<div className="flex h-full items-center justify-center">Loading AI Base...</div>}><AiBase /></Suspense></ProtectedRoute>} />

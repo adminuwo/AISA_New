@@ -28,7 +28,7 @@ const LegalDashboard = ({
   return (
     <div className="flex-1 flex flex-col w-full min-h-0 overflow-hidden aisa-scalable-text bg-slate-50/30 dark:bg-transparent relative">
       {/* Dashboard Header - Sticky */}
-      <div className="w-full px-4 sm:px-10 pt-6 sm:pt-8 pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 border-b border-slate-200/60 dark:border-zinc-800/60 bg-slate-50/80 dark:bg-[#0b0c15]/80 backdrop-blur-xl">
+      <div className="w-full px-4 sm:px-10 pt-6 sm:pt-8 pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 border-b border-slate-200/60 dark:border-white/5 bg-slate-50/80 dark:bg-[#0B1020]/80 backdrop-blur-xl">
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-3">
             <motion.button
@@ -39,7 +39,7 @@ const LegalDashboard = ({
             >
               <ArrowLeft size={20} className="text-slate-600 dark:text-slate-400" />
             </motion.button>
-            <div className="p-2.5 sm:p-3 bg-indigo-600 rounded-xl sm:rounded-2xl shadow-xl shadow-indigo-500/30 text-white">
+            <div className="p-2.5 sm:p-3 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl sm:rounded-2xl shadow-xl shadow-indigo-500/20 text-white">
               <Briefcase className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
           </div>
@@ -51,7 +51,7 @@ const LegalDashboard = ({
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setActiveLegalToolkit(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-zinc-800 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all active:scale-95 shadow-xl shadow-indigo-500/5 whitespace-nowrap"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5 bg-white dark:bg-[#131C31] hover:bg-slate-50 dark:hover:bg-[#18233A] text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-white/5 rounded-xl sm:rounded-full font-black text-xs sm:text-sm transition-all active:scale-95 shadow-xl shadow-indigo-500/5 whitespace-nowrap"
           >
             <Scale className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>{tLegal('legalToolkitTitle')}</span>
@@ -62,7 +62,7 @@ const LegalDashboard = ({
               setNewCaseForm({ clientName: '', caseType: '', otherCaseType: '', accused: '', summary: '' });
               setIsNewCaseModalOpen(true);
             }}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm transition-all active:scale-95 shadow-xl shadow-indigo-500/20 whitespace-nowrap"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 text-white rounded-xl sm:rounded-full font-black text-xs sm:text-sm transition-all active:scale-95 shadow-xl shadow-indigo-500/20 whitespace-nowrap"
           >
             <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>{tLegal('newCaseBtn')}</span>
@@ -80,12 +80,12 @@ const LegalDashboard = ({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -6, scale: 1.01 }}
-                className="group relative bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/15 transition-all cursor-pointer"
+                className="group relative bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl sm:rounded-[28px] p-4 sm:p-6 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/15 transition-all cursor-pointer"
                 onClick={() => handleOpenCase(c)}
               >
                 <div className="flex justify-between items-start mb-4 sm:mb-5">
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl ${currentProjectId === c._id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-indigo-50 dark:bg-zinc-800 text-indigo-600'} transition-colors`}>
+                    <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl ${currentProjectId === c._id ? 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-indigo-50 dark:bg-[#131C31] text-indigo-600'} transition-colors`}>
                       <FolderOpen className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
                     {(() => {
@@ -172,7 +172,7 @@ const LegalDashboard = ({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-slate-100 dark:border-white/5">
                   <span className="text-[9px] sm:text-[10px] text-subtext font-bold uppercase tracking-tighter">
                     {new Date(c.updatedAt || Date.now()).toLocaleDateString()}
                   </span>

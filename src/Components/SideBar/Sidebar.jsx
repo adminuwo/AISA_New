@@ -25,6 +25,7 @@ import {
   Trash2,
   Edit2,
   Check,
+  Square,
   FolderPlus,
   Folder,
   FolderOpen,
@@ -58,6 +59,8 @@ import ProfileSettingsDropdown from '../ProfileSettingsDropdown/ProfileSettingsD
 import { getSubscriptionDetails } from '../../services/pricingService';
 import { apiService } from '../../services/apiService';
 import DeleteConfirmModal from '../DeleteConfirmModal.jsx';
+import { useGenerationStore, selectGeneratingChatIds } from '../../userStore/useGenerationStore';
+import { useShallow } from 'zustand/react/shallow';
 
 
 const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
@@ -105,8 +108,12 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [currentShareId, setCurrentShareId] = useState('');
   const [sessionToShare, setSessionToShare] = useState(null);
-  const [, setMode] = useRecoilState(activeModeData);
+  const [currentMode, setMode] = useRecoilState(activeModeData);
   const [expandedHistoryGroups, setExpandedHistoryGroups] = useState({});
+
+  // ── Live generation status ──────────────────────────────────────
+  // Subscribe to the global generation store so generating chats show live dots
+  const generatingChatIds = useGenerationStore(useShallow(selectGeneratingChatIds));
 
   const toggleHistoryGroup = (groupKey) => {
     setExpandedHistoryGroups(prev => ({
@@ -348,6 +355,9 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
     e.stopPropagation();
     try {
       await chatStorageService.deleteSession(sessionIdToDelete);
+      // Clean up global generation state for this chat
+      useGenerationStore.getState().clearGeneration(sessionIdToDelete);
+      
       const updatedSessions = await chatStorageService.getSessions(currentProjectId);
       setSessions(updatedSessions);
       if (currentSessionId === sessionIdToDelete) {
@@ -465,7 +475,13 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
 
   const handleSwitchProject = (projectId) => {
     setCurrentProjectId(projectId);
-    navigate('/dashboard/chat/new');
+    const p = projects.find(proj => proj._id === projectId);
+    if (p?.isLegalCase) {
+      navigate(`/dashboard/case/${projectId}`);
+    } else {
+      navigate('/dashboard/chat/new');
+    }
+    if (onClose) onClose();
   };
 
   const currentProject = projects.find(p => p._id === currentProjectId);
@@ -528,9 +544,10 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
             <span className="text-xl font-black tracking-tighter transition-all duration-300" style={{ background: 'linear-gradient(135deg, #9333ea 0%, #3b82f6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: '"Times New Roman", Times, serif', display: 'inline-block', paddingRight: '2px' }}>AISA<span style={{ fontSize: '0.6em', verticalAlign: 'super', marginLeft: '2px' }}>™</span></span>
           </Link>
 
-          <div className="flex items-center relative z-10 bg-black/5 border border-[#8B5CF6]/30 rounded-full p-0.5 w-24 h-7">
+          <div className="flex items-center relative z-10 bg-black/5 border border-[#9333ea]/30 rounded-full p-0.5 w-24 h-7">
             <motion.div
-              className="absolute top-0.5 bottom-0.5 left-0.5 w-[46px] bg-[#8B5CF6] rounded-full shadow-sm z-0"
+              className="absolute top-0.5 bottom-0.5 left-0.5 w-[46px] rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_2px_4px_rgba(0,0,0,0.1)] z-0"
+              style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #60a5fa 100%)' }}
               initial={false}
               animate={{
                 x: isNavigating ? 46 : 0
@@ -572,7 +589,6 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
             >
               MALL
             </button>
-            {console.log(import.meta.env.VITE_AI_MALL)}
           </div>
 
           <button
@@ -672,13 +688,25 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
           <div className="px-5 pt-3 pb-2 relative z-10">
             <button
               onClick={handleNewChat}
-              className="w-full relative overflow-hidden group p-[1px] rounded-[16px] transition-all duration-500 hover:scale-[1.03] active:scale-[0.97] bg-blue-600 shadow-[0_8px_25px_rgba(37,99,235,0.4)] dark:shadow-[0_8px_25px_rgba(37,99,235,0.2)]"
+              className="w-full relative overflow-hidden group p-[1px] rounded-[16px] transition-all duration-500 hover:scale-[1.03] active:scale-[0.97] bg-[#a78bfa] shadow-[0_10px_25px_rgba(167,139,250,0.25),0_0_15px_rgba(96,165,250,0.15)]"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-700 animate-gradient bg-[length:300%_auto]" />
-              <div className="relative flex items-center justify-center gap-2 px-4 py-3 backdrop-blur-md rounded-[15px] group-hover:bg-transparent transition-all duration-500 bg-blue-600/10">
+              {/* Main Gradient Background - Lighter Version */}
+              <div 
+                className="absolute inset-0 transition-opacity duration-500 bg-gradient-to-br from-[#a78bfa] via-[#8b5cf6] to-[#60a5fa]" 
+                style={{ backgroundSize: '100% 100%' }}
+              />
+              
+              {/* Glossy Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent opacity-70 pointer-events-none" />
+              
+              {/* Inner Content */}
+              <div className="relative flex items-center justify-center gap-2 px-4 py-3 backdrop-blur-sm rounded-[15px] group-hover:bg-white/10 transition-all duration-500">
                 <Plus className="w-4 h-4 text-white group-hover:rotate-180 transition-transform duration-700" strokeWidth={3} />
-                <span className="font-black text-[13px] tracking-wide text-white">{t('newChat')}</span>
+                <span className="font-black text-[13px] tracking-wide text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.2)]">{t('newChat')}</span>
               </div>
+              
+              {/* Hover Glow Edge */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-20deg] translate-x-[-100%] group-hover:translate-x-[100%] transform" style={{ transitionDuration: '1.2s' }} />
             </button>
           </div>
 
@@ -984,13 +1012,11 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                       </div>
                                     ) : (
                                       <div className="sidebar-chat-container relative">
-                                        <div
-                                          onClick={() => {
-                                            navigate(`/dashboard/chat/${session.sessionId}`);
-                                            onClose();
-                                          }}
-                                          className={`sidebar-chat-item group/item transition-all duration-500 mx-2 cursor-pointer
-                                        ${currentSessionId === session.sessionId
+                                        <NavLink
+                                          to={`/dashboard/chat/${session.sessionId}`}
+                                          onClick={onClose}
+                                          className={({ isActive }) => `sidebar-chat-item group/item transition-all duration-500 mx-2 cursor-pointer
+                                        ${isActive
                                               ? (isDark ? 'bg-white/[0.08] text-white border border-white/10 shadow-2xl backdrop-blur-3xl' : 'bg-white text-primary border border-primary/20 shadow-lg shadow-primary/10 backdrop-blur-3xl ring-4 ring-primary/5')
                                               : (isDark ? 'text-subtext/60 hover:bg-white/[0.04] hover:text-white border border-transparent' : 'text-slate-700 hover:bg-white hover:text-slate-900 border border-transparent hover:shadow-md hover:scale-[1.01]')
                                             }
@@ -1003,8 +1029,21 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                             />
                                           )}
                                           <div className="sidebar-chat-title-group text-left flex-1 min-w-0">
-                                            <div className="sidebar-chat-title truncate">
-                                              {highlightMatch(session.title || "Untitled Intelligence", searchQuery)}
+                                            <div className="sidebar-chat-title flex items-center gap-1.5">
+                                              {/* ── Live Generation Indicator ── */}
+                                              {generatingChatIds.includes(session.sessionId) && (
+                                                <span
+                                                  title="Generating response..."
+                                                  className="flex items-center gap-[3px] shrink-0"
+                                                >
+                                                  <span className="w-[5px] h-[5px] rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                  <span className="w-[5px] h-[5px] rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '120ms' }} />
+                                                  <span className="w-[5px] h-[5px] rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '240ms' }} />
+                                                </span>
+                                              )}
+                                              <span className="truncate">
+                                                {highlightMatch(session.title || "Untitled Intelligence", searchQuery)}
+                                              </span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                               {searchQuery && session.projectId && (
@@ -1019,13 +1058,26 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                           </div>
 
                                           <div className="sidebar-chat-actions">
-                                            <button
-                                              onClick={(e) => { e.stopPropagation(); startRename(e, session); }}
-                                              className="sidebar-chat-action-btn"
-                                              title="Rename Chat"
-                                            >
-                                              <Edit2 />
-                                            </button>
+                                            {generatingChatIds.includes(session.sessionId) ? (
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  useGenerationStore.getState().abortGeneration(session.sessionId);
+                                                }}
+                                                className="sidebar-chat-action-btn stop-btn text-red-500 hover:text-red-600 bg-red-500/10 rounded-lg p-1 animate-pulse"
+                                                title="Stop Generation"
+                                              >
+                                                <Square className="w-2.5 h-2.5 fill-current" />
+                                              </button>
+                                            ) : (
+                                              <button
+                                                onClick={(e) => { e.stopPropagation(); startRename(e, session); }}
+                                                className="sidebar-chat-action-btn"
+                                                title="Rename Chat"
+                                              >
+                                                <Edit2 />
+                                              </button>
+                                            )}
                                             <button
                                               onClick={(e) => { e.stopPropagation(); handleDeleteSession(e, session.sessionId); }}
                                               className="sidebar-chat-action-btn delete"
@@ -1034,7 +1086,7 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                               <X />
                                             </button>
                                           </div>
-                                        </div>
+                                        </NavLink>
                                       </div>
                                     )}
                                   </motion.div>

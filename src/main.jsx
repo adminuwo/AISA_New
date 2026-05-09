@@ -39,17 +39,8 @@ const AppTree = (
   </StrictMode>
 );
 
-// High-performance scroll listener to optimize heavy glassmorphic effects while scrolling
-let scrollTimeout;
-window.addEventListener('scroll', () => {
-  if (!document.documentElement.classList.contains('is-scrolling')) {
-    document.documentElement.classList.add('is-scrolling');
-  }
-  clearTimeout(scrollTimeout);
-  scrollTimeout = setTimeout(() => {
-    document.documentElement.classList.remove('is-scrolling');
-  }, 150);
-}, { passive: true });
+// is-scrolling optimization removed — it triggered CSS repaints on ALL backdrop-blur elements
+// causing severe full-screen flicker on scroll. Glassmorphism is now always GPU-rendered.
 
 createRoot(document.getElementById('root')).render(
   <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>

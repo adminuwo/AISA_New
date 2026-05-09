@@ -140,7 +140,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
   const renderOverview = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {/* Summary Card */}
-      <div className="bg-slate-50 dark:bg-zinc-800/50 rounded-2xl p-5 border border-slate-200 dark:border-zinc-700/50">
+      <div className="bg-slate-50 dark:bg-[#131C31] rounded-2xl p-5 border border-slate-200 dark:border-white/5">
         <div className="flex items-center gap-2 mb-3 text-indigo-600 dark:text-indigo-400">
           <FileText size={18} />
           <h4 className="text-xs font-black uppercase tracking-wider">{tLegal('summary')}</h4>
@@ -178,7 +178,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
 
       {/* Quick Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center relative overflow-hidden">
+        <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center text-center relative overflow-hidden">
           {isAnalyzing && (
             <div className="absolute inset-0 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
               <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
@@ -199,7 +199,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
           <span className="text-[10px] font-black uppercase tracking-widest text-subtext mt-2">{tLegal('caseStrength')}</span>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center relative overflow-hidden">
+        <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center text-center relative overflow-hidden">
           {isAnalyzing && (
             <div className="absolute inset-0 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
               <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
@@ -228,7 +228,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
            <select 
              value={caseData.stage}
              onChange={(e) => setCaseData({...caseData, stage: e.target.value})}
-             className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-indigo-500/20"
+             className="w-full bg-slate-50 dark:bg-[#0B1020]/40 border border-slate-200 dark:border-white/5 rounded-xl px-4 py-3 text-sm font-bold appearance-none outline-none focus:ring-2 focus:ring-indigo-500/20"
            >
              <option value="Pre-litigation">{tLegal('preLitigation')}</option>
              <option value="Notice">{tLegal('noticeStage')}</option>
@@ -252,8 +252,8 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
                  onClick={() => setCaseData({...caseData, priority: p.id})}
                  className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
                    caseData.priority === p.id 
-                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20' 
-                   : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-subtext hover:border-indigo-500/50'
+                    ? 'bg-gradient-to-r from-indigo-600 to-violet-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20' 
+                   : 'bg-white dark:bg-[#131C31] border-slate-200 dark:border-white/5 text-subtext hover:border-indigo-500/50'
                  }`}
                >
                  {p.label}
@@ -290,7 +290,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
         </div>
         <button 
           onClick={() => setCaseData({...caseData, communicationLogs: [{type: 'Note', date: new Date().toISOString(), summary: ''}, ...(caseData.communicationLogs || [])]})}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all"
         >
           <Plus size={14} />
           {tLegal('addNewLog')}
@@ -299,7 +299,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
 
       <div className="space-y-4">
         {(caseData.communicationLogs || []).map((log, i) => (
-          <div key={i} className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+          <div key={i} className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
             <div className={`absolute top-0 left-0 w-1 h-full ${
               log.type === 'Call' ? 'bg-blue-500' : 
               log.type === 'Email' ? 'bg-amber-500' : 
@@ -341,7 +341,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
                  newLogs[i].summary = e.target.value;
                  setCaseData({...caseData, communicationLogs: newLogs});
               }}
-              className="w-full bg-slate-50/50 dark:bg-black/20 border border-slate-100 dark:border-zinc-800/50 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500/20 p-4 min-h-[80px] resize-none"
+              className="w-full bg-slate-50/50 dark:bg-[#0B1020]/40 border border-slate-100 dark:border-white/5 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500/20 p-4 min-h-[80px] resize-none"
               placeholder={tLegal('whatDiscussed')}
             />
           </div>
@@ -363,7 +363,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
   const renderParties = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="space-y-4">
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5">
+        <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-5">
            <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
                 <UserPlus size={20} />
@@ -379,7 +379,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
            />
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5">
+        <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-5">
            <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg">
                 <UserMinus size={20} />
@@ -395,7 +395,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
            />
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5">
+        <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-5">
            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg">
@@ -461,7 +461,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
       <div className="space-y-6 sm:space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-1">
           <div className="flex items-center gap-3">
-            <div className="p-2 sm:p-2.5 bg-indigo-600 text-white rounded-lg sm:rounded-xl shadow-lg shadow-indigo-500/10">
+            <div className="p-2 sm:p-2.5 bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-lg sm:rounded-xl shadow-lg shadow-indigo-500/10">
               <Gavel size={18} className="sm:w-5 sm:h-5" />
             </div>
             <div>
@@ -482,7 +482,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
               setCaseData({ ...caseData, hearings: [...(caseData.hearings || []), newHearing] });
               toast.success("Hearing added");
             }}
-            className="flex items-center justify-center gap-2 px-3.5 py-2 bg-indigo-600 text-white rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest shadow-md shadow-indigo-500/10 hover:bg-indigo-700 transition-all w-full sm:w-auto h-9 sm:h-10"
+            className="flex items-center justify-center gap-2 px-3.5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-widest shadow-md shadow-indigo-500/10 hover:opacity-90 transition-all w-full sm:w-auto h-9 sm:h-10"
           >
             <Plus size={14} /> {tLegal('addHearing')}
           </button>
@@ -497,7 +497,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
           {upcoming.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {upcoming.map((h, i) => (
-                <div key={`up-${i}`} className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/50 rounded-2xl p-4 sm:px-5 sm:py-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:shadow-none hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] transition-all relative group">
+                <div key={`up-${i}`} className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-4 sm:px-5 sm:py-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] dark:shadow-none hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] transition-all relative group">
                   {upcoming.length > 1 && (
                     <div className="absolute top-4 sm:top-5 left-4 sm:left-6 text-lg sm:text-xl font-black text-slate-100 dark:text-zinc-800 -z-0 select-none">
                       {i + 1}.
@@ -730,7 +730,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
           ))}
           <button 
             onClick={() => setCaseData({...caseData, facts: [...(caseData.facts || []), {event: 'New Event', date: new Date().toISOString(), description: ''}]})}
-            className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-subtext hover:border-indigo-500 hover:text-indigo-500 transition-all"
+            className="w-full py-3 border-2 border-dashed border-slate-200 dark:border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-subtext hover:border-indigo-500 hover:text-indigo-500 transition-all"
           >
             {tLegal('addTimelineEvent')}
           </button>
@@ -772,7 +772,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
              </div>
              <div className="space-y-2">
                 {(caseData.intelligence?.weakPoints || []).map((w, i) => (
-                  <div key={i} className="flex gap-3 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <div key={i} className="flex gap-3 bg-white dark:bg-[#1A2540] p-4 rounded-xl border border-slate-200 dark:border-white/5 text-sm font-medium text-slate-700 dark:text-slate-300">
                      <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
                      {w}
                   </div>
@@ -790,7 +790,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
              </div>
              <div className="space-y-2">
                 {(caseData.intelligence?.opponentStrategies || []).map((s, i) => (
-                  <div key={i} className="flex gap-3 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-slate-200 dark:border-zinc-800 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <div key={i} className="flex gap-3 bg-white dark:bg-[#1A2540] p-4 rounded-xl border border-slate-200 dark:border-white/5 text-sm font-medium text-slate-700 dark:text-slate-300">
                      <ShieldCheck size={16} className="text-indigo-500 shrink-0 mt-0.5" />
                      {s}
                   </div>
@@ -846,7 +846,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
                 const reasoningList = formatToBullets(reasoning);
                 
                 return (
-                  <div key={i} className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[20px] p-5 shadow-sm hover:shadow-md transition-all group flex flex-col h-full relative overflow-hidden">
+                   <div key={i} className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-[20px] p-5 shadow-sm hover:shadow-md transition-all group flex flex-col h-full relative overflow-hidden">
                      <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={() => handleRemovePrecedent(id)}
@@ -897,7 +897,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
              })}
 
              {(!caseData.savedPrecedents || caseData.savedPrecedents.length === 0) && (
-               <div className="col-span-full py-12 flex flex-col items-center justify-center bg-slate-50/50 dark:bg-zinc-900/30 rounded-3xl border-2 border-dashed border-slate-200 dark:border-zinc-800/50">
+                <div className="col-span-full py-12 flex flex-col items-center justify-center bg-slate-50/50 dark:bg-[#131C31] rounded-3xl border-2 border-dashed border-slate-200 dark:border-white/5">
                   <div className="p-4 bg-white dark:bg-zinc-800 rounded-2xl mb-4 shadow-sm">
                      <Bookmark size={24} className="text-slate-300" />
                   </div>
@@ -919,7 +919,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
           
           <div className="space-y-4">
              {(caseData.research || []).map((r, i) => (
-               <div key={i} className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm group hover:border-amber-200/50 transition-all">
+                <div key={i} className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-5 shadow-sm group hover:border-amber-200/50 transition-all">
                   <div className="flex justify-between items-start mb-3">
                      <div className="flex items-center gap-2 flex-wrap">
                         <div className="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-black uppercase tracking-wider border border-amber-100/50 dark:border-amber-900/30">{r.lawName || 'Law Reference'}</div>
@@ -949,7 +949,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
-        <div className="fixed inset-0 z-[200] pointer-events-none">
+        <div className="fixed inset-0 z-[9999] pointer-events-none">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -991,11 +991,11 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
               mass: 0.6,
               filter: { duration: 0.2 }
             }}
-            className="fixed bg-white dark:bg-[#0b0c15] shadow-[0_40px_100px_-15px_rgba(0,0,0,0.4)] flex flex-col pointer-events-auto overflow-hidden border border-black/5 dark:border-white/10 z-[201]"
+            className="fixed bg-white dark:bg-[#0B1020] shadow-[0_40px_100px_-15px_rgba(0,0,0,0.4)] flex flex-col pointer-events-auto overflow-hidden border border-black/5 dark:border-white/5 z-[10000]"
           >
           {/* Header */}
           <div className="relative shrink-0 overflow-hidden">
-            <div className="absolute inset-0 bg-indigo-600 dark:bg-indigo-600/90 z-0" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#1E293B] to-[#0F172A] z-0 border-b border-white/5" />
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 z-0" />
             
             <div className="relative z-10 p-3 sm:p-6 flex items-center justify-between text-white">
@@ -1015,7 +1015,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
               <div className="flex items-center gap-1 sm:gap-2">
                 <button 
                   onClick={() => setIsMaximized(!isMaximized)}
-                  className="p-1.5 hover:bg-white/10 rounded-full transition-all active:scale-90 shrink-0 hidden sm:block"
+                  className="p-1.5 hover:bg-white/10 rounded-full transition-all active:scale-90 shrink-0"
                 >
                   {isMaximized ? <Minimize2 size={18} className="sm:w-5 sm:h-5" /> : <Maximize2 size={18} className="sm:w-5 sm:h-5" />}
                 </button>
@@ -1030,15 +1030,15 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex items-center gap-1 p-2 bg-slate-50 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 overflow-x-auto custom-scrollbar no-scrollbar">
+          <div className="flex items-center gap-1 p-2 bg-slate-50 dark:bg-[#0B1020] border-b border-slate-200 dark:border-white/5 overflow-x-auto custom-scrollbar no-scrollbar">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
                   activeTab === tab.id 
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 scale-[1.02]' 
-                  : 'text-subtext hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/20 scale-[1.02]' 
+                  : 'text-subtext hover:bg-slate-100 dark:hover:bg-[#131C31] hover:text-slate-900 dark:hover:text-[#F8FAFC]'
                 }`}
               >
                 <tab.icon size={14} />
@@ -1091,7 +1091,7 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
                   
                   <div className="space-y-3">
                     {(caseData.evidence || []).map((doc, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl group">
+                      <div key={i} className="flex items-center justify-between p-4 bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl group">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-slate-50 dark:bg-black/20 rounded-xl text-subtext group-hover:text-indigo-500 transition-colors">
                             <FileDigit size={20} />

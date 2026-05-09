@@ -151,12 +151,15 @@
 }
 
 /* Sidebar New Chat button — neon gradient */
-.dark [class*="bg-primary hover:opacity-90"][class*="text-white font-bold py-3"] {
-  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #2563eb 100%) !important;
+.dark [class*="bg-primary hover:opacity-90"][class*="text-white font-bold py-3"],
+.dark [class*="bg-[#a78bfa]"][class*="shadow-"] {
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #60a5fa 100%) !important;
   background-size: 200% 200% !important;
   animation: gradient-shift 4s ease infinite !important;
-  box-shadow: 0 4px 24px rgba(124,58,237,0.4), 0 0 0 1px rgba(139,92,246,0.3) !important;
-  border: 1px solid rgba(167,139,250,0.3) !important;
+  box-shadow: 0 8px 32px rgba(167,139,250,0.25), 0 0 0 1px rgba(167,139,250,0.15), inset 0 1px 1px rgba(255,255,255,0.25) !important;
+  border: 1px solid rgba(167,139,250,0.2) !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
 /* Sidebar search bar focus glow */

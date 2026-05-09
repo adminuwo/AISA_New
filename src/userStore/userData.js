@@ -48,12 +48,24 @@ export const setUserData = (data) => {
   return finalData;
 }
 export const getUserData = () => {
-  const data = JSON.parse(localStorage.getItem('user'))
-  return processUser(data);
+  try {
+    const item = localStorage.getItem('user');
+    if (!item || item === "undefined" || item === "null") return null;
+    const data = JSON.parse(item);
+    return processUser(data);
+  } catch (e) {
+    return null;
+  }
 }
 export const getAccounts = () => {
-  const data = JSON.parse(localStorage.getItem('accounts') || '[]');
-  return data.map(processUser);
+  try {
+    const item = localStorage.getItem('accounts');
+    if (!item || item === "undefined" || item === "null") return [];
+    const data = JSON.parse(item);
+    return data.map(processUser);
+  } catch (e) {
+    return [];
+  }
 }
 export const removeAccount = (email) => {
   const accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
