@@ -57,6 +57,7 @@ import GmailConnectedModal from '../Components/GmailConnectedModal';
 import AISnapshot from '../landingpage/AISnapshot';
 import ShareModal from '../Components/ShareModal';
 import ProfileSettingsDropdown from '../Components/ProfileSettingsDropdown/ProfileSettingsDropdown.jsx';
+import GlobalFloatingNavbar from '../Components/GlobalFloatingNavbar.jsx';
 import { useTheme } from '../context/ThemeContext';
 
 // AI Legal Modular Components
@@ -853,6 +854,12 @@ const Chat = () => {
   const [activeTool, setActiveTool] = useState(null);
   const [unlockedTools, setUnlockedTools] = useState([]);
   const [selectedLegalTool, setSelectedLegalTool] = useRecoilState(activeLegalToolData);
+  const excludedFloatingNavTools = ['legal_my_case', 'legal_precedents', 'legal-precedents', 'my-case', 'legal_precedents_search'];
+  const showFloatingNavbar = currentMode === 'LEGAL_TOOLKIT' && 
+                             selectedLegalTool?.id && 
+                             !excludedFloatingNavTools.includes(selectedLegalTool.id) &&
+                             legalView === 'CHAT';
+
   const [videoAspectRatio, setVideoAspectRatio] = useState('');
   const [videoModelId, setVideoModelId] = useState('veo-3.1-fast-generate-001');
   const [editModelId, setEditModelId] = useState('gemini-2.5-flash');
@@ -6318,6 +6325,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
 
   return (
     <div className="flex w-full bg-transparent relative overflow-hidden aisa-scalable-text h-full">
+      {showFloatingNavbar && <GlobalFloatingNavbar />}
       {/* Redundant background removed to prevent flicker - using global layout background */}
 
 
@@ -6508,7 +6516,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
           onScroll={handleScroll}
           className={`relative flex-1 aisa-scalable-text chatgpt-container z-20 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent ${((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT')
             ? 'z-[30] h-full w-full overflow-hidden flex flex-col bg-slate-50 min-h-0'
-            : `overflow-y-auto ${currentMode === 'LEGAL_TOOLKIT' || location.pathname === '/dashboard/cases' ? 'pt-4' : 'pt-[76px]'} lg:pt-6 pb-64 md:pb-72`
+            : `overflow-y-auto ${showFloatingNavbar ? 'pt-24' : (currentMode === 'LEGAL_TOOLKIT' || location.pathname === '/dashboard/cases' ? 'pt-4' : 'pt-[76px]')} lg:pt-6 pb-64 md:pb-72`
             }`}
           style={{
             overflowY: ((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT') ? 'hidden' : 'auto',

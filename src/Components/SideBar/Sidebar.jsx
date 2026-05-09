@@ -541,17 +541,57 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
         {/* Brand & Top Actions */}
         <div className="p-5 pb-2 mb-2 flex flex-col gap-4 relative z-10 border-b border-white/5 lg:border-none">
           <div className="flex items-center justify-between w-full">
-            <Link to="/" state={{ fromLogo: true }} className="group/logo flex items-center gap-2">
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-150 animate-pulse opacity-0 group-hover/logo:opacity-100 transition-opacity" />
-                <img
-                  src={logo}
-                  alt="AISA™"
-                  className="h-8 w-auto relative z-10 transition-transform duration-500 group-hover/logo:scale-110"
+            <div className="flex items-center gap-3 flex-nowrap">
+              <Link to="/" state={{ fromLogo: true }} className="group/logo flex items-center gap-2">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-150 animate-pulse opacity-0 group-hover/logo:opacity-100 transition-opacity" />
+                  <img
+                    src={logo}
+                    alt="AISA™"
+                    className="h-8 w-auto relative z-10 transition-transform duration-500 group-hover/logo:scale-110"
+                  />
+                </div>
+                <span className="text-lg font-black tracking-tighter whitespace-nowrap" style={{ background: 'linear-gradient(135deg, #9333ea 0%, #3b82f6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: '"Times New Roman", Times, serif' }}>
+                  AISA<span style={{ fontSize: '0.55em', verticalAlign: 'super', marginLeft: '1px' }}>TM</span>
+                </span>
+              </Link>
+
+              {/* AISA/MALL Toggle - Now side-by-side */}
+              <div className="flex items-center relative z-10 bg-black/5 border border-[#9333ea]/30 rounded-full p-0.5 w-fit h-7">
+                <motion.div
+                  className="absolute top-0.5 bottom-0.5 left-0.5 w-[46px] rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_2px_4px_rgba(0,0,0,0.1)] z-0"
+                  style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #60a5fa 100%)' }}
+                  initial={false}
+                  animate={{
+                    x: isNavigating ? 46 : 0
+                  }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
+                <div className={`relative z-10 w-[46px] flex justify-center items-center text-[9px] font-bold transition-colors ${!isNavigating ? 'text-white' : (isDark ? 'text-gray-400' : 'text-gray-500')}`}>
+                  AISA
+                </div>
+                <button
+                  onClick={async () => {
+                    const targetUrl = (window._env_ && window._env_.VITE_AI_MALL) || import.meta.env.VITE_AI_MALL;
+                    if (!targetUrl) return;
+                    const sessionToken = getUserData()?.token || localStorage.getItem('token');
+                    if (!sessionToken) { window.location.href = targetUrl; return; }
+                    setIsNavigating(true);
+                    try {
+                      const { data } = await axios.post(apis.ssoGenerate, {}, { headers: { 'Authorization': `Bearer ${sessionToken}` } });
+                      const base = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
+                      window.location.href = `${base}/dashboard/marketplace?sso_token=${encodeURIComponent(data.sso_token)}&from=aisa`;
+                    } catch (err) {
+                      setIsNavigating(false);
+                      window.location.href = targetUrl;
+                    }
+                  }}
+                  className={`relative z-10 w-[46px] flex justify-center items-center text-[9px] font-bold transition-colors ${isNavigating ? 'text-white' : (isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-[#8B5CF6]')}`}
+                >
+                  MALL
+                </button>
               </div>
-              <span className="text-lg font-black tracking-tighter" style={{ background: 'linear-gradient(135deg, #9333ea 0%, #3b82f6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: '"Times New Roman", Times, serif' }}>AISA™</span>
-            </Link>
+            </div>
 
             <button
               onClick={onClose}
@@ -561,41 +601,6 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                   : 'text-slate-500 hover:text-primary bg-slate-100 hover:bg-slate-200 border-slate-200'}`}
             >
               <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="flex items-center relative z-10 bg-black/5 border border-[#9333ea]/30 rounded-full p-0.5 w-fit h-7">
-            <motion.div
-              className="absolute top-0.5 bottom-0.5 left-0.5 w-[46px] rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_2px_4px_rgba(0,0,0,0.1)] z-0"
-              style={{ background: 'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #60a5fa 100%)' }}
-              initial={false}
-              animate={{
-                x: isNavigating ? 46 : 0
-              }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            />
-            <div className={`relative z-10 w-[46px] flex justify-center items-center text-[9px] font-bold transition-colors ${!isNavigating ? 'text-white' : (isDark ? 'text-gray-400' : 'text-gray-500')}`}>
-              AISA
-            </div>
-            <button
-              onClick={async () => {
-                const targetUrl = (window._env_ && window._env_.VITE_AI_MALL) || import.meta.env.VITE_AI_MALL;
-                if (!targetUrl) return;
-                const sessionToken = getUserData()?.token || localStorage.getItem('token');
-                if (!sessionToken) { window.location.href = targetUrl; return; }
-                setIsNavigating(true);
-                try {
-                  const { data } = await axios.post(apis.ssoGenerate, {}, { headers: { 'Authorization': `Bearer ${sessionToken}` } });
-                  const base = targetUrl.endsWith('/') ? targetUrl.slice(0, -1) : targetUrl;
-                  window.location.href = `${base}/dashboard/marketplace?sso_token=${encodeURIComponent(data.sso_token)}&from=aisa`;
-                } catch (err) {
-                  setIsNavigating(false);
-                  window.location.href = targetUrl;
-                }
-              }}
-              className={`relative z-10 w-[46px] flex justify-center items-center text-[9px] font-bold transition-colors ${isNavigating ? 'text-white' : (isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-[#8B5CF6]')}`}
-            >
-              MALL
             </button>
           </div>
         </div>

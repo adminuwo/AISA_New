@@ -351,7 +351,7 @@ const Hero = () => {
               transition: 'all 0.3s',
               display: 'inline-block'
             }}>
-              AISA<span aria-hidden="true" style={{ fontSize: '0.6em', verticalAlign: 'super', marginLeft: '2px' }}>™</span>
+              AISA<span aria-hidden="true" style={{ fontSize: '0.55em', verticalAlign: 'super', marginLeft: '1px' }}>TM</span>
             </span>
           </motion.div>
 

@@ -108,7 +108,7 @@ const AboutAISA = ({ isOpen, onClose }) => {
                             className="text-3xl md:text-5xl font-black tracking-tighter mb-1 bg-clip-text text-transparent"
                             style={{ backgroundImage: isDarkMode ? 'linear-gradient(to bottom, #fff, rgba(255,255,255,0.6))' : 'linear-gradient(to bottom, #1e1b4b, #4338ca)' }}
                         >
-                            AISA<span className="text-blue-500">™</span>
+                            AISA<span className="text-blue-500" style={{ fontSize: '0.55em', verticalAlign: 'super', marginLeft: '1px' }}>TM</span>
                         </motion.h2>
                         
                         <motion.p 

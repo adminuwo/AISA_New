@@ -259,9 +259,9 @@ const DashboardLayout = () => {
         {allowNavbar && !isFullScreen && !isSidebarOpen && !tglState.focusMode && (
           <div
             className={`navbar fixed top-0 left-0 right-0 z-[1001] transition-transform duration-300 lg:left-[280px]
-              ${showOnScroll ? "translate-y-0" : "-translate-y-full"}`}
+              ${(showOnScroll || !isMobile) ? "translate-y-0" : "-translate-y-full"}`}
           >
-            <div className="flex items-center justify-between lg:justify-end px-6 py-3 bg-transparent shrink-0">
+            <div className="flex items-center justify-between lg:justify-end px-6 py-3 bg-transparent lg:bg-white dark:lg:bg-black shrink-0">
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setIsSidebarOpen(true)}
