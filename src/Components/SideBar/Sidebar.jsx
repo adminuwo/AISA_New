@@ -1081,10 +1081,7 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                                 </div>
                                               )}
 
-                                              {/* ── Timestamp ── */}
-                                              <span className="text-[9px] text-subtext/40 font-medium ml-auto">
-                                                {new Date(session.lastModified || session.updatedAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                              </span>
+                                              {/* ── Timestamp Removed ── */}
                                             </div>
                                           </div>
 

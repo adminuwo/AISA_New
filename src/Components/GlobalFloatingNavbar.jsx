@@ -78,10 +78,10 @@ const GlobalFloatingNavbar = () => {
 
   // Update CSS variable for layout padding (optional but good for consistency)
   useEffect(() => {
-    const hValue = visible ? '72px' : '0px';
-    document.documentElement.style.setProperty('--floating-nav-h', hValue);
+    // Keep padding constant to prevent layout shifts/flickering on scroll.
+    document.documentElement.style.setProperty('--floating-nav-h', '72px');
     return () => document.documentElement.style.setProperty('--floating-nav-h', '0px');
-  }, [visible]);
+  }, []);
 
   return (
     <>

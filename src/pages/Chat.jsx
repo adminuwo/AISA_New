@@ -3592,6 +3592,7 @@ const Chat = () => {
   const shouldAutoScrollRef = useRef(true);
   const isStreamingRef = useRef(false); // true while AI is typing word-by-word
   const ticking = useRef(false);
+  const scrollTimeoutRef = useRef(null);
 
   const handleScroll = () => {
     if (chatContainerRef.current) {
@@ -3612,10 +3613,13 @@ const Chat = () => {
           }
           lastScrollTopRef.current = scrollTop <= 0 ? 0 : scrollTop;
 
-          // Update workspace scroll position for persistence
+          // Update workspace scroll position for persistence (Debounced to prevent re-render flickering)
           if (caseId || currentProjectId) {
             const id = caseId || currentProjectId;
-            updateWorkspace(id, { uiState: { scrollPosition: scrollTop } });
+            if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+            scrollTimeoutRef.current = setTimeout(() => {
+              updateWorkspace(id, { uiState: { scrollPosition: scrollTop } });
+            }, 300);
           }
 
           // Increased threshold (250px) to be less sensitive to minor scroll movements or large images

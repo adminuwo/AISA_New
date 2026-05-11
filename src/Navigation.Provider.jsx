@@ -125,10 +125,14 @@ const useScrollNavbar = () => {
   const [visible, setVisible] = useState(true);
   const lastScrollY = useRef(new Map());
   const ticking = useRef(false);
+  const isLocked = useRef(false);
+  const lockTimeout = useRef(null);
   const scrollThreshold = 15;
 
   useEffect(() => {
     const handleScroll = (e) => {
+      if (isLocked.current) return;
+
       const target = e.target;
       
       // In DashboardLayout, the document itself does not scroll (fixed inset-0).
@@ -151,7 +155,12 @@ const useScrollNavbar = () => {
 
           // Always show at top (with a small buffer for bounce)
           if (currentScrollY <= 10) {
-            setVisible(true);
+            if (!visible) {
+              setVisible(true);
+              isLocked.current = true;
+              clearTimeout(lockTimeout.current);
+              lockTimeout.current = setTimeout(() => { isLocked.current = false; }, 300);
+            }
             lastScrollY.current.set(targetKey, currentScrollY);
             ticking.current = false;
             return;
@@ -161,10 +170,20 @@ const useScrollNavbar = () => {
           if (Math.abs(diff) > scrollThreshold) {
             if (currentScrollY > prevScrollY) {
               // scroll down
-              setVisible(false);
+              if (visible) {
+                setVisible(false);
+                isLocked.current = true;
+                clearTimeout(lockTimeout.current);
+                lockTimeout.current = setTimeout(() => { isLocked.current = false; }, 300);
+              }
             } else {
               // scroll up
-              setVisible(true);
+              if (!visible) {
+                setVisible(true);
+                isLocked.current = true;
+                clearTimeout(lockTimeout.current);
+                lockTimeout.current = setTimeout(() => { isLocked.current = false; }, 300);
+              }
             }
             lastScrollY.current.set(targetKey, currentScrollY);
           }
@@ -177,7 +196,7 @@ const useScrollNavbar = () => {
     // Use capture: true to catch scroll events from child containers like #chat-container
     window.addEventListener("scroll", handleScroll, { capture: true, passive: true });
     return () => window.removeEventListener("scroll", handleScroll, { capture: true, passive: true });
-  }, []);
+  }, [visible]);
 
   return visible;
 };
@@ -220,9 +239,10 @@ const DashboardLayout = () => {
 
   // Sync CSS variable for child pages top-padding
   useEffect(() => {
-    const hValue = (allowNavbar && showOnScroll) ? '64px' : '0px';
+    // Keep padding constant to prevent layout shifts/flickering. The navbar will slide out of view smoothly via CSS translate, but the content shouldn't abruptly jump up.
+    const hValue = allowNavbar ? '64px' : '0px';
     document.documentElement.style.setProperty('--mobile-nav-h', hValue);
-  }, [allowNavbar, showOnScroll]);
+  }, [allowNavbar]);
 
   return (
     <div className="fixed inset-0 flex bg-transparent text-maintext overflow-hidden aisa-scalable-text">
