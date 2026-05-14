@@ -6,6 +6,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import AISnapshot from '../../landingpage/AISnapshot';
+// import { io } from 'socket.io-client';
 import { io } from 'socket.io-client';
 import apiService from '../../services/apiService';
 
