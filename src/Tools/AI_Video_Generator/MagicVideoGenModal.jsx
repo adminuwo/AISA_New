@@ -304,7 +304,7 @@ const MagicVideoGenModal = ({ isOpen, onClose, onCreditDeduction }) => {
     return (
         <AnimatePresence>
             {isOpen && (
-            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <div className="fixed inset-0 z-[1050] flex items-center justify-center p-4 bg-transparent backdrop-blur-md">
                 <div className="relative w-full max-w-3xl">
 
                     <motion.div
@@ -466,10 +466,10 @@ const MagicVideoGenModal = ({ isOpen, onClose, onCreditDeduction }) => {
                             )}
                         </div>
                     ) : (
-                        <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar flex flex-col gap-6 relative z-[8]">
+                        <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar flex flex-col gap-4 relative z-[8]">
 
                             <div className={`grid grid-cols-1 ${isGenerating || resultVideoUrl ? 'md:grid-cols-2' : ''} gap-4`}>
-                                <div className={`flex flex-col gap-2 ${!isGenerating && !resultVideoUrl ? 'max-w-sm mx-auto w-full' : ''}`}>
+                                <div className={`flex flex-col gap-2 ${!isGenerating && !resultVideoUrl ? 'max-w-[280px] mx-auto w-full' : ''}`}>
                                     <span className="text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-[0.25em] self-start ml-1">Source Image</span>
                                     {previewUrl ? (
                                         <div className="relative group w-full aspect-square bg-white/40 rounded-[20px] overflow-hidden border border-white/70 shadow-sm">
@@ -524,7 +524,7 @@ const MagicVideoGenModal = ({ isOpen, onClose, onCreditDeduction }) => {
                             </div>
 
                             {/* Controls */}
-                            <div className="flex flex-wrap gap-4 shrink-0">
+                            <div className="flex flex-wrap gap-3 shrink-0">
                                 <div className="flex flex-col gap-2 w-full sm:w-auto flex-1 text-left">
                                     <div className="flex items-center gap-2 ml-1">
                                         <div className="w-1 h-1 rounded-full bg-slate-800 shadow-[0_0_6px_rgba(0,0,0,0.4)]" />
@@ -577,7 +577,7 @@ const MagicVideoGenModal = ({ isOpen, onClose, onCreditDeduction }) => {
                             </div>
                             
                             {/* Input Field */}
-                            <div className="flex flex-col gap-2 shrink-0">
+                            <div className="flex flex-col gap-1.5 shrink-0">
                                 <div className="flex items-center gap-2 ml-1">
                                     <div className="w-1 h-1 rounded-full bg-slate-800 shadow-[0_0_6px_rgba(0,0,0,0.4)]" />
                                     <label className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-700">Animation Prompt</label>

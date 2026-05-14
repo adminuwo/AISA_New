@@ -4169,8 +4169,11 @@ const Chat = () => {
               gen.setPartialResponse(displayedContent, aiMsgId, activeSessionId);
 
               // Delay: simulate real-time typing (NOT instant) per chunk
-              const delay = Math.min(400, Math.max(80, chunks[i].length * 3));
-              await new Promise(resolve => setTimeout(resolve, delay));
+              // Skip delay if tab is in background to prevent browser throttling from freezing generation
+              if (!document.hidden) {
+                const delay = Math.min(400, Math.max(80, chunks[i].length * 3));
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
             }
 
             isStreamingRef.current = false;
@@ -4847,8 +4850,10 @@ ${documentConvertActive ? `### DOCUMENT CONVERSION MODE ENABLED (CRITICAL):
             // Also sync partial content to global store so it persists when navigating away
             gen.setPartialResponse(displayedContent, msgId, activeSessionId);
 
-            // Wait before next word
-            await new Promise(resolve => setTimeout(resolve, delay));
+            // Wait before next word (skip if tab is in background to prevent browser throttling)
+            if (!document.hidden) {
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
           }
 
           // Streaming done — unlock auto-scroll
