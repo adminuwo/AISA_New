@@ -114,36 +114,35 @@ const ModernDashboard = ({ userName, onToolSelect, activeToolId, activeCategory 
 
   const currentCategoryData = categories.find(c => c.id === activeCategory);
 
-  /* Perfectly Centered Flex Layout — Systematic alignment with extra vertical breathing room */
-  const gridClass = `flex flex-row flex-wrap justify-center gap-x-4 gap-y-16 sm:gap-x-6 sm:gap-y-24 mx-auto w-full max-w-7xl px-2 sm:px-4`;
+  /* Mobile-first 2-column grid, scales up on larger screens */
+  const gridClass = `grid grid-cols-2 sm:flex sm:flex-row sm:flex-wrap sm:justify-center gap-3 sm:gap-x-4 sm:gap-y-6 mx-auto w-full max-w-2xl sm:max-w-7xl px-2 sm:px-4`;
 
   return (
-    <div className="relative w-full max-w-6xl mx-auto px-2 sm:px-6 pt-2 sm:pt-4 pb-20 sm:pb-28 space-y-4 sm:space-y-6 min-h-[500px]">
+    <div className="relative w-full max-w-6xl mx-auto px-2 sm:px-6 pt-1 sm:pt-4 pb-2 sm:pb-10 space-y-2 sm:space-y-4">
       {/* Background Decor Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-0 -left-4 w-72 h-72 bg-violet-500/5 dark:bg-violet-500/10 rounded-full blur-[100px] animate-pulse" />
         <div className="absolute bottom-0 -right-4 w-72 h-72 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
       {/* Hero Section */}
-      <div className="text-center space-y-4 sm:space-y-6 px-4">
+      <div className="text-center px-4 pt-1">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-1"
         >
-          <h1 className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center justify-center gap-2">
+          <h1 className="text-base sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center justify-center gap-1.5">
             Welcome back, <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 font-black">{userName || 'User'}</span>
             <motion.span
               animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.2, 1.2, 1] }}
               transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
             >
-              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 fill-amber-400" />
+              <Sparkles className="w-4 h-4 sm:w-6 sm:h-6 text-amber-400 fill-amber-400" />
             </motion.span>
           </h1>
         </motion.div>
       </div>
 
-      {/* Dynamic Category Description - Now after Greeting */}
+      {/* Dynamic Category Description - Hidden on mobile to save space */}
       <AnimatePresence mode="wait">
         {activeCategory && (
           <motion.div
@@ -152,7 +151,7 @@ const ModernDashboard = ({ userName, onToolSelect, activeToolId, activeCategory 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.25 }}
-            className="max-w-3xl mx-auto text-center px-6"
+            className="hidden sm:block max-w-3xl mx-auto text-center px-6"
           >
             <p className="text-[13px] sm:text-[14px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-lg mx-auto">
               {currentCategoryData?.description}
@@ -182,26 +181,31 @@ const ModernDashboard = ({ userName, onToolSelect, activeToolId, activeCategory 
             transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
           >
             <div className={gridClass}>
-              {currentCategoryData?.tools.map((tool, index) => (
-                <motion.div
-                  key={tool.id}
-                  initial={{ opacity: 0, y: 16, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="h-[76px] sm:h-[88px]"
-                  transition={{
-                    duration: 0.35,
-                    delay: index * 0.05,
-                    ease: [0.23, 1, 0.32, 1]
-                  }}
-                >
-                  <DashboardCard
-                    tool={tool}
-                    onSelect={onToolSelect}
-                    isActive={activeToolId === tool.id}
-                    isDark={isDark}
-                  />
-                </motion.div>
-              ))}
+              {currentCategoryData?.tools.map((tool, index) => {
+                const tools = currentCategoryData.tools;
+                const isLastOdd = tools.length % 2 !== 0 && index === tools.length - 1;
+                return (
+                  <motion.div
+                    key={tool.id}
+                    initial={{ opacity: 0, y: 16, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    className={`sm:w-auto sm:h-auto ${isLastOdd ? 'col-span-2 flex justify-center sm:col-span-1 sm:block' : 'w-full'}`}
+                    transition={{
+                      duration: 0.35,
+                      delay: index * 0.05,
+                      ease: [0.23, 1, 0.32, 1]
+                    }}
+                  >
+                    <DashboardCard
+                      tool={tool}
+                      onSelect={onToolSelect}
+                      isActive={activeToolId === tool.id}
+                      isDark={isDark}
+                      isCentered={isLastOdd}
+                    />
+                  </motion.div>
+                );
+              })}
             </div>
           </motion.div>
         )}
@@ -296,7 +300,7 @@ const CategoryTabs = ({ categories, activeCategory, onCategoryChange, isDark }) 
   );
 };
 
-const DashboardCard = ({ tool, onSelect, isActive, isDark }) => {
+const DashboardCard = ({ tool, onSelect, isActive, isDark, isCentered }) => {
   const { icon: Icon } = tool;
 
   return (
@@ -304,7 +308,7 @@ const DashboardCard = ({ tool, onSelect, isActive, isDark }) => {
       whileHover={{ y: -6, scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => onSelect(tool.id)}
-      className="group relative cursor-pointer h-full"
+      className={`group relative cursor-pointer h-full ${isCentered ? 'w-[calc(50vw-20px)] sm:w-auto max-w-[185px]' : 'w-full sm:w-auto'}`}
     >
       {/* Animated Glow on Hover */}
       <div className="absolute -inset-1 rounded-[26px] bg-gradient-to-r from-violet-500/20 to-indigo-500/20 opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-500" />
@@ -319,7 +323,7 @@ const DashboardCard = ({ tool, onSelect, isActive, isDark }) => {
         }}
       >
         <div
-          className={`group relative flex flex-col items-center justify-center p-3 sm:p-5 rounded-[24px] sm:rounded-[32px] cursor-pointer transition-all duration-500 overflow-hidden h-full min-h-[120px] sm:min-h-[150px] w-[145px] sm:w-[185px] lg:w-[200px] shrink-0 ${
+          className={`group relative flex flex-col items-center justify-center p-2 sm:p-5 rounded-[18px] sm:rounded-[32px] cursor-pointer transition-all duration-500 overflow-hidden h-full min-h-[90px] sm:min-h-[150px] w-full sm:w-[185px] lg:w-[200px] shrink-0 ${
             isActive
               ? 'bg-white dark:bg-white/10 shadow-xl ring-2 ring-violet-500/50'
               : 'bg-white/60 dark:bg-black/20 hover:bg-white dark:hover:bg-black/40 shadow-sm border border-white/50 dark:border-white/5'
@@ -334,32 +338,32 @@ const DashboardCard = ({ tool, onSelect, isActive, isDark }) => {
             style={{ background: tool.color }}
           />
 
-          <div className="flex flex-col items-center text-center gap-2 sm:gap-3 w-full relative z-10">
+          <div className="flex flex-col items-center text-center gap-1.5 sm:gap-3 w-full relative z-10">
             <motion.div
               whileHover={{ rotate: 12, scale: 1.1 }}
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-all duration-500 bg-white/40 dark:bg-black/20 backdrop-blur-md relative"
+              className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-all duration-500 bg-white/40 dark:bg-black/20 backdrop-blur-md relative"
               style={{
                 border: isDark ? '1px solid rgba(139, 92, 246, 0.2)' : '1px solid rgba(139, 92, 246, 0.1)',
               }}
             >
               <div
-                className="absolute inset-0 rounded-2xl opacity-20 group-hover:opacity-40 transition-opacity"
+                className="absolute inset-0 rounded-xl sm:rounded-2xl opacity-20 group-hover:opacity-40 transition-opacity"
                 style={{ background: `radial-gradient(circle at center, ${tool.color}, transparent)` }}
               />
-              <Icon className="w-5 h-5 sm:w-6 sm:h-6 relative z-10" style={{ color: tool.color }} />
+              <Icon className="w-4 h-4 sm:w-6 sm:h-6 relative z-10" style={{ color: tool.color }} />
             </motion.div>
             
-            <div className="flex flex-col items-center gap-1 min-w-0 px-1">
-              <h4 className="font-extrabold text-[11px] sm:text-[13px] text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors leading-tight line-clamp-2">
+            <div className="flex flex-col items-center gap-0.5 min-w-0 px-1">
+              <h4 className="font-extrabold text-[10px] sm:text-[13px] text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors leading-tight line-clamp-2 text-center">
                 {tool.label}
               </h4>
               
               {tool.premium && (
                 <motion.div 
                   whileHover={{ scale: 1.2, rotate: 5 }}
-                  className="flex items-center justify-center w-4 h-4 rounded bg-violet-500/10 dark:bg-violet-500/20 border border-violet-500/20 shrink-0 shadow-sm"
+                  className="flex items-center justify-center w-3.5 h-3.5 sm:w-4 sm:h-4 rounded bg-violet-500/10 dark:bg-violet-500/20 border border-violet-500/20 shrink-0 shadow-sm"
                 >
-                  <Star className="w-2.5 h-2.5 text-violet-600 dark:text-violet-400 fill-violet-600 dark:fill-violet-400" />
+                  <Star className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-violet-600 dark:text-violet-400 fill-violet-600 dark:fill-violet-400" />
                 </motion.div>
               )}
             </div>
