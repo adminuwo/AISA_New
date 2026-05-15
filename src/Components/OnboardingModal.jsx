@@ -21,7 +21,7 @@ const OnboardingModal = ({ isOpen, onClose, onComplete }) => {
     const handleSubmit = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.put(`${apis.baseUrl}/api/memory`, {
+            await axios.put(`${apis.baseUrl}/memory`, {
                 name: form.name,
                 businessType: form.businessType,
                 goals: [form.goal]

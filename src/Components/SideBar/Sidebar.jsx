@@ -568,9 +568,16 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                   }}
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
-                <div className={`relative z-10 w-[46px] flex justify-center items-center text-[9px] font-bold transition-colors ${!isNavigating ? 'text-white' : (isDark ? 'text-gray-400' : 'text-gray-500')}`}>
+                <button
+                  onClick={() => {
+                    setIsNavigating(false);
+                    navigate('/dashboard/chat/new');
+                    if (onClose) onClose();
+                  }}
+                  className={`relative z-10 w-[46px] flex justify-center items-center text-[9px] font-bold transition-colors ${!isNavigating ? 'text-white' : (isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-[#8B5CF6]')}`}
+                >
                   AISA
-                </div>
+                </button>
                 <button
                   onClick={async () => {
                     const targetUrl = (window._env_ && window._env_.VITE_AI_MALL) || import.meta.env.VITE_AI_MALL;

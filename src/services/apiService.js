@@ -341,6 +341,17 @@ export const apiService = {
     }
   },
 
+  async cancelSocialAgentJob(jobId) {
+    try {
+      const response = await apiClient.delete(`/social-agent/jobs/${jobId}/cancel`);
+      console.log(`[API] Job ${jobId} cancelled on backend:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.warn(`[API] cancelSocialAgentJob failed for ${jobId}:`, error.message);
+      return { success: false };
+    }
+  },
+
   /**
    * AI Ads Agent — Visual Post Generation Pipeline
    * GPT-4 Prompt Engineering → Vertex AI Imagen 3/4 → GCS → Asset

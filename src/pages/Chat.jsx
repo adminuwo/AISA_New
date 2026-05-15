@@ -3544,7 +3544,7 @@ const Chat = () => {
           const user = getUserData();
           if (user && user.token) {
             try {
-              const res = await axios.get(`${apis.baseUrl}/api/memory`, {
+              const res = await axios.get(`${apis.baseUrl}/memory`, {
                 headers: { Authorization: `Bearer ${user.token}` }
               });
               const mem = res.data;
@@ -3552,18 +3552,18 @@ const Chat = () => {
               if (mem && mem.isMemoryEnabled) {
                 const name = mem.name || user.name || "friend";
                 const business = mem.businessType;
-                if (!mem.name && !mem.businessType && sessionId === 'new') setShowOnboarding(true);
+                // if (!mem.name && !mem.businessType && sessionId === 'new') setShowOnboarding(true);
 
-                let greeting = `Hello ${name}! 👋 Welcome back. `;
-                if (business) greeting += `How is everything going with your ${business} work? `;
-                greeting += "I've loaded your context and I'm ready to assist. What can we achieve today?";
+                // let greeting = `Hello ${name}! 👋 Welcome back. `;
+                // if (business) greeting += `How is everything going with your ${business} work? `;
+                // greeting += "I've loaded your context and I'm ready to assist. What can we achieve today?";
 
-                setMessages([{
-                  id: 'welcome-' + Date.now(),
-                  role: 'model',
-                  content: greeting,
-                  timestamp: new Date()
-                }]);
+                // setMessages([{
+                //   id: 'welcome-' + Date.now(),
+                //   role: 'model',
+                //   content: greeting,
+                //   timestamp: new Date()
+                // }]);
               }
             } catch (e) { console.warn("Memory load failed", e); }
           }
