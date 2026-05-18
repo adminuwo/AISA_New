@@ -498,16 +498,23 @@ const Chat = () => {
       return false;
     }
 
-    // Whitelist certain tools for all LOGGED IN users (even free tier)
-    if (toolName === 'AI Legal' || toolName === 'AI CashFlow' || toolName === 'AI Ad Agent') return true;
-
     // Admin Access Rule: Treat all tools as unlocked
     if (user.email === 'admin@uwo24.com' || isAdminUser) return true;
 
     if (isPremiumUser === null) return true; // still loading, allow optimistically
 
-    // Check if tool is video and plan is starter/founder
+    // Lock Video features for Free users
     if (['Generate Video', 'Image to Video', 'Image to Video Magic'].includes(toolName)) {
+      if (!isPremiumUser) {
+        window.dispatchEvent(new CustomEvent('premium_required', {
+          detail: {
+            toolName,
+            customMessage: `Video features are locked for free users. Please subscribe to an active plan to unlock Text-to-Video and Image-to-Video Magic Cards.`
+          }
+        }));
+        return false;
+      }
+      
       const plan = (userPlanName || '').toLowerCase();
       if (plan.includes('starter') || plan.includes('founder')) {
         window.dispatchEvent(new CustomEvent('premium_required', {
@@ -520,9 +527,8 @@ const Chat = () => {
       }
     }
 
-    if (isPremiumUser) return true;
-    window.dispatchEvent(new CustomEvent('premium_required', { detail: { toolName } }));
-    return false;
+    // All other tools (Image, Code, etc.) are available to free users using their 500 complimentary credits!
+    return true;
   };
 
   const handleCopyImage = async (imageUrl) => {
