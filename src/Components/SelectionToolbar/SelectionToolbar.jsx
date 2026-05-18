@@ -131,12 +131,17 @@ const SelectionToolbar = ({
       navigator.clipboard.writeText(selection.text);
       setCopied(true);
       toast.success('Copied to clipboard', { icon: '📋' });
-      setTimeout(() => setCopied(false), 2000);
       if (onAction) onAction('copy');
+      // Auto-close the toolbar shortly after copying
+      setTimeout(() => {
+        setCopied(false);
+        if (onClose) onClose();
+      }, 600);
     } catch (err) {
       toast.error('Failed to copy');
     }
-  }, [selection.text, onAction]);
+  }, [selection.text, onAction, onClose]);
+
 
   const handleSelectAll = useCallback((e) => {
     e.preventDefault();
