@@ -512,6 +512,7 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
+  height: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -1229,6 +1230,7 @@ html.lenis body {
   padding: 3.5px 12px !important;
   gap: 8px !important;
   border-radius: 12px !important;
+  position: relative !important;
 }
 
 .sidebar-chat-title-group {

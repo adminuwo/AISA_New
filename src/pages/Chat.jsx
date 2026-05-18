@@ -4277,6 +4277,45 @@ const Chat = () => {
       // Navigate to real session before launching tool handlers (so messages are visible)
       if (isFirstMessage) {
         isNavigatingRef.current = activeSessionId;
+        
+        // ── Early Optimistic Update for Media Modes ──
+        // Since image/video/edit modes return early and skip the main optimistic update below,
+        // we must create the session in the sidebar immediately.
+        if (isImageGeneration || toolOverride === 'text_to_image' || 
+            isVideoGeneration || toolOverride === 'text_to_video' || toolOverride === 'image_to_video' || 
+            isMagicEditing || toolOverride === 'image_edit') {
+            
+            const earlyMode = (isImageGeneration || toolOverride === 'text_to_image') ? MODES.IMAGE_GENERATION :
+                            ((isVideoGeneration || toolOverride === 'text_to_video' || toolOverride === 'image_to_video') ? MODES.VIDEO_GENERATION : MODES.IMAGE_EDIT);
+            
+            setSessions(prev => {
+              const currentSessions = Array.isArray(prev) ? prev : [];
+              if (currentSessions.some(s => s.sessionId === activeSessionId)) return currentSessions;
+              return [{
+                sessionId: activeSessionId,
+                title: "New Chat",
+                lastModified: Date.now(),
+                detectedMode: earlyMode,
+                projectId: currentProjectId
+              }, ...currentSessions];
+            });
+
+            chatStorageService.generateSessionTitle(activeSessionId, contentToSend).then(newTitle => {
+              if (newTitle) {
+                setSessions(prev => {
+                  const currentSessions = Array.isArray(prev) ? prev : [];
+                  const idx = currentSessions.findIndex(s => s.sessionId === activeSessionId);
+                  if (idx !== -1) {
+                    const updated = [...currentSessions];
+                    updated[idx] = { ...updated[idx], title: newTitle, lastModified: Date.now() };
+                    return [...updated].sort((a, b) => b.lastModified - a.lastModified);
+                  }
+                  return currentSessions;
+                });
+              }
+            });
+        }
+        
         navigate(`/dashboard/chat/${activeSessionId}`, { replace: true });
       }
 
@@ -4456,6 +4495,20 @@ const Chat = () => {
         await chatStorageService.saveMessage(activeSessionId, userMsg, null, currentProjectId);
 
         if (isFirstMessage) {
+          // ── Optimistic Update for Sidebar History ──
+          // Ensures the session immediately appears in history even if title generation is slow
+          setSessions(prev => {
+            const currentSessions = Array.isArray(prev) ? prev : [];
+            const exists = currentSessions.find(s => s.sessionId === activeSessionId);
+            if (exists) return currentSessions;
+            return [{
+              sessionId: activeSessionId,
+              title: "New Chat",
+              lastModified: Date.now(),
+              detectedMode: detectedMode
+            }, ...currentSessions];
+          });
+
           // ── Navigate AFTER state is stabilized ──
           navigate(`/dashboard/chat/${activeSessionId}`, { replace: true });
 
@@ -6761,7 +6814,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                               )}
                             </div>
 
-                            <div className="flex-1 chatgpt-text select-text">
+                            <div className="flex-1 min-w-0 chatgpt-text select-text">
                               {/* Mode Badge - Integrated Tool Indicator */}
                               {msg.role === 'user' && msg.mode && getModeInfo(msg.mode) && (
                                 <motion.div
@@ -7091,7 +7144,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                                         </button>
                                                       </div>
                                                     )}
-                                                    <div className={`${isUser ? 'max-h-[500px]' : 'max-h-[600px]'} overflow-auto custom-scrollbar-thin ${isUser ? 'bg-transparent' : 'bg-[#0d0d0d]'}`}>
+                                                    <div className={`${isUser ? 'max-h-[500px]' : 'max-h-[600px]'} overflow-auto custom-scrollbar ${isUser ? 'bg-transparent' : 'bg-[#0d0d0d]'}`}>
                                                       <SyntaxHighlighter
                                                         language={lang || 'text'}
                                                         style={highlighterTheme}

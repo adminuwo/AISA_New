@@ -449,8 +449,28 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
     };
   }, [isOpen, activeTab, loading]);
 
+  // ── Scroll Lock: freeze page scroll while AI extraction overlay is shown ──
+  useEffect(() => {
+    const mainContainer = document.getElementById('main-scroll-container');
+    if (isExtracting) {
+      // Lock body scroll
+      document.body.style.overflow = 'hidden';
+      // Lock the dashboard's own Dialog scroll container
+      if (mainContainer) mainContainer.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      if (mainContainer) mainContainer.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      if (mainContainer) mainContainer.style.overflow = '';
+    };
+  }, [isExtracting]);
+
+
 
   const handleDownloadMedia = async (url, filename) => {
+
     if (!url) return;
     const downloadToast = toast.loading("Preparing download...");
 
@@ -1760,11 +1780,12 @@ const AiSocialMediaDashboard = ({ isOpen, onClose, userPlan, isPremium, isAdmin 
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="fixed inset-0 z-[500] flex items-center justify-center"
+              className="fixed inset-0 z-[500] flex items-center justify-center min-h-[100dvh]"
               style={{ pointerEvents: 'all' }}
             >
-              {/* Heavy full-screen blur layer */}
-              <div className="absolute inset-0 bg-white/60 dark:bg-black/70 backdrop-blur-2xl" />
+              {/* Full-screen blur layer — covers entire viewport including scroll-offset content */}
+              <div className="absolute inset-0 bg-white/70 dark:bg-[#080808]/80 backdrop-blur-3xl" style={{ WebkitBackdropFilter: 'blur(40px)', backdropFilter: 'blur(40px)' }} />
+
 
               {/* Animated card */}
               <motion.div

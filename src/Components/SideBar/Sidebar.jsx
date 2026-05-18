@@ -1027,19 +1027,25 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                         <NavLink
                                           to={`/dashboard/chat/${session.sessionId}`}
                                           onClick={onClose}
-                                          className={({ isActive }) => `sidebar-chat-item group/item transition-all duration-500 mx-2 cursor-pointer
-                                        ${isActive
-                                              ? (isDark ? 'bg-white/[0.08] text-white border border-white/10 shadow-2xl backdrop-blur-3xl' : 'bg-white text-primary border border-primary/20 shadow-lg shadow-primary/10 backdrop-blur-3xl ring-4 ring-primary/5')
-                                              : (isDark ? 'text-subtext/60 hover:bg-white/[0.04] hover:text-white border border-transparent' : 'text-slate-700 hover:bg-white hover:text-slate-900 border border-transparent hover:shadow-md hover:scale-[1.01]')
-                                            }
-                                      `}
                                         >
-                                          {currentSessionId === session.sessionId && (
-                                            <motion.div
-                                              layoutId="activeIndicator"
-                                              className="absolute left-1 top-4 bottom-4 w-1 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]"
-                                            />
-                                          )}
+                                          {({ isActive }) => (
+                                            <div className={`sidebar-chat-item group/item transition-all duration-500 mx-2 cursor-pointer
+                                          ${isActive
+                                                ? (isDark ? 'bg-white/[0.08] text-white border border-white/10 shadow-2xl backdrop-blur-3xl' : 'bg-white text-primary border border-primary/20 shadow-lg shadow-primary/10 backdrop-blur-3xl ring-4 ring-primary/5')
+                                                : (isDark ? 'text-subtext/60 hover:bg-white/[0.04] hover:text-white border border-transparent' : 'text-slate-700 hover:bg-white hover:text-slate-900 border border-transparent hover:shadow-md hover:scale-[1.01]')
+                                              }
+                                        `}>
+                                            {/* ── Left Indicator Pill (always visible) ── */}
+                                            {isActive ? (
+                                              <motion.div
+                                                layoutId="activeIndicator"
+                                                className="absolute left-1 top-3 bottom-3 w-[3px] bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.6)]"
+                                              />
+                                            ) : (
+                                              <div
+                                                className={`absolute left-1 top-3 bottom-3 w-[3px] rounded-full transition-all duration-300 group-hover/item:opacity-60 ${isDark ? 'bg-white/10 opacity-20' : 'bg-slate-300/80 opacity-30'}`}
+                                              />
+                                            )}
                                           <div className="sidebar-chat-title-group text-left flex-1 min-w-0">
                                             <div className="sidebar-chat-title flex items-center gap-1.5">
                                               {/* ── Icon Selection ── */}
@@ -1122,7 +1128,9 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                             >
                                               <X />
                                             </button>
+                                           </div>
                                           </div>
+                                          )}
                                         </NavLink>
                                       </div>
                                     )}
