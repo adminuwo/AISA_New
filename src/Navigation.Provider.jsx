@@ -322,7 +322,7 @@ const DashboardLayout = () => {
                       className="w-10 h-10 flex items-center justify-center bg-transparent rounded-xl border border-transparent text-primary overflow-hidden"
                     >
                       {user?.avatar ? (
-                        <img src={user.avatar} alt="P" className="w-full h-full object-cover" />
+                        <img src={user.avatar} alt="P" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/account.png'; }} />
                       ) : (
                         <User size={20} />
                       )}

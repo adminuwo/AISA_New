@@ -779,7 +779,7 @@ const ProfileSettingsDropdown = ({ onClose, onLogout }) => {
                                     <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full opacity-0 group-hover/avatar:opacity-100 transition-opacity" />
                                     <div className="w-14 h-14 sm:w-24 sm:h-24 rounded-2xl bg-white dark:bg-zinc-900 flex items-center justify-center text-primary border border-primary/20 shadow-lg overflow-hidden relative z-10 transition-transform group-hover/avatar:scale-105">
                                         {user.avatar ? (
-                                            <img src={user.avatar} alt={user.name} className="w-full h-full object-cover group-hover/avatar:opacity-50 transition-opacity" />
+                                            <img src={user.avatar} alt={user.name} className="w-full h-full object-cover group-hover/avatar:opacity-50 transition-opacity" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/account.png'; }} />
                                         ) : (
                                             <span className="text-3xl font-black group-hover/avatar:opacity-50 transition-opacity">{(user.name || 'U').charAt(0).toUpperCase()}</span>
                                         )}

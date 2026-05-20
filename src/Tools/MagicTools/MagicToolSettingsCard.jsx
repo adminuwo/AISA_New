@@ -72,7 +72,7 @@ const MagicToolSettingsCard = ({ isOpen, onClose, toolType, config, onChange, pr
     return (
         <AnimatePresence>
             <div 
-                className="fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-4 bg-transparent backdrop-blur-[4px] sm:backdrop-blur-[8px]"
+                className="fixed inset-0 z-[1000] flex items-start justify-center pt-[72px] pb-[100px] px-3 sm:px-4 bg-transparent backdrop-blur-[4px] sm:backdrop-blur-[8px] overflow-y-auto"
                 onClick={(e) => e.target === e.currentTarget && onClose()}
             >
                 {/* Main animated container */}
@@ -87,7 +87,7 @@ const MagicToolSettingsCard = ({ isOpen, onClose, toolType, config, onChange, pr
                         y: 0,
                     }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-[320px] sm:max-w-[340px] rounded-[28px] shadow-2xl bg-white/95 dark:bg-zinc-900/95 border border-white/20"
+                    className="relative w-full max-w-[320px] sm:max-w-[340px] rounded-[28px] shadow-2xl bg-white/95 dark:bg-zinc-900/95 border border-white/20 my-auto"
                 >
 
                     {/* Main Content Layer */}
@@ -144,7 +144,7 @@ const MagicToolSettingsCard = ({ isOpen, onClose, toolType, config, onChange, pr
                         </div>
 
                         {/* ── Body ── */}
-                        <div className="relative z-20 px-5 sm:px-6 py-5 space-y-5 sm:space-y-6 max-h-[60vh] sm:max-h-[55vh] overflow-y-auto scrollbar-hide scroll-smooth will-change-transform">
+                        <div className="relative z-20 px-5 sm:px-6 py-5 space-y-5 sm:space-y-6 max-h-[45dvh] overflow-y-auto scrollbar-hide scroll-smooth will-change-transform">
                             
                             {/* Segmented Aspect Control — hidden for edit mode and chat tools */}
                             {config.aspectRatio !== undefined && isVisualTool && toolType !== 'edit' && (

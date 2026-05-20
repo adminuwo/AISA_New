@@ -128,7 +128,7 @@ const GlobalFloatingNavbar = () => {
                 className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center bg-transparent rounded-xl border border-transparent text-primary overflow-hidden"
               >
                 {user?.avatar ? (
-                  <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/account.png'; }} />
                 ) : (
                   <span className="font-bold text-sm uppercase">{user?.name?.charAt(0) || 'U'}</span>
                 )}

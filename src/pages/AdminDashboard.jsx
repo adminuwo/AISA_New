@@ -319,7 +319,7 @@ const UsersTab = () => {
                             <div className="flex items-center gap-3 min-w-0">
                                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border border-white/10 shrink-0">
                                     {user.avatar ? (
-                                        <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                                        <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/account.png'; }} />
                                     ) : (
                                         <span className="font-bold text-primary text-sm">
                                             {user.name?.charAt(0)?.toUpperCase() || 'U'}
