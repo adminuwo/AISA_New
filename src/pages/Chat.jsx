@@ -6661,7 +6661,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
           onScroll={handleScroll}
           className={`relative flex-1 aisa-scalable-text chatgpt-container z-20 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent ${((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT')
             ? 'z-[30] h-full w-full overflow-hidden flex flex-col bg-slate-50 min-h-0'
-            : `overflow-y-auto ${showFloatingNavbar ? 'pt-[60px] sm:mt-0 sm:pt-24' : (currentMode === 'LEGAL_TOOLKIT' || location.pathname === '/dashboard/cases' ? 'pt-4' : 'pt-[60px] sm:mt-0 sm:pt-[76px]')} lg:pt-6 pb-64 md:pb-72`
+            : `overflow-y-auto ${showFloatingNavbar ? 'pt-[72px] sm:mt-0 sm:pt-24' : (currentMode === 'LEGAL_TOOLKIT' || location.pathname === '/dashboard/cases' ? 'pt-4' : 'pt-[72px] sm:mt-0 sm:pt-[76px]')} lg:pt-6 pb-64 md:pb-72`
             }`}
           style={{
             overflowY: ((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT') ? 'hidden' : 'auto',

@@ -1422,9 +1422,9 @@ html.lenis body {
     padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
   }
 
-  /* Prevent overlapping of fixed header pills */
+  /* Prevent overlapping of fixed navbar — 76px clears the 64px mobile header */
   .chatgpt-container {
-    padding-top: 10px !important;
+    padding-top: 76px !important;
   }
 }
 
