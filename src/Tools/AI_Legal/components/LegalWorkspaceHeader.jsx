@@ -40,8 +40,8 @@ const LegalWorkspaceHeader = ({
         </div>
 
         {currentCase && (
-          <div className="flex flex-row items-center justify-between gap-4 sm:gap-6 bg-white/50 dark:bg-[#0F172A]/40 p-2 sm:p-0 rounded-2xl sm:rounded-none border border-slate-100 dark:border-white/5 sm:border-none">
-            <div className="flex items-center gap-2 sm:gap-5 flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-6 bg-white/50 dark:bg-[#0F172A]/40 p-3 sm:p-0 rounded-2xl sm:rounded-none border border-slate-100 dark:border-white/5 sm:border-none w-full">
+            <div className="flex items-center gap-3 sm:gap-5 w-full sm:flex-1 min-w-0">
               {/* Case Icon - Smaller on Mobile */}
               <div className="relative group shrink-0 hidden xs:block">
                 <div className="relative p-2 sm:p-4 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl sm:rounded-2xl text-white shadow-lg sm:shadow-xl shadow-indigo-500/10">
@@ -90,9 +90,9 @@ const LegalWorkspaceHeader = ({
               </div>
             </div>
 
-            {/* Tool Identity Row - Inline on Mobile */}
-            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-                <div className="flex flex-col items-end">
+            {/* Tool Identity Row */}
+            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 sm:gap-3 shrink-0 mt-1 sm:mt-0 pt-3 sm:pt-0 border-t border-slate-200 dark:border-white/10 sm:border-none">
+                <div className="flex flex-col items-start sm:items-end">
                    <span className="text-[7px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 hidden sm:block">Current Tool</span>
                    <AnimatePresence mode="wait">
                     <motion.div
@@ -115,17 +115,17 @@ const LegalWorkspaceHeader = ({
                       setRenameValue(currentCase.name);
                       setIsRenamingCase(currentCase._id);
                     }}
-                    className="p-1.5 sm:p-2.5 bg-white dark:bg-[#131C31] border border-slate-200 dark:border-white/5 text-slate-400 hover:text-indigo-600 rounded-lg sm:rounded-full transition-all shadow-sm group"
+                    className="p-2 sm:p-2.5 bg-white dark:bg-[#131C31] border border-slate-200 dark:border-white/5 text-slate-400 hover:text-indigo-600 rounded-lg sm:rounded-full transition-all shadow-sm group"
                     title="Rename Case"
                   >
-                    <Edit2 size={12} className="sm:w-4 sm:h-4" />
+                    <Edit2 size={14} className="sm:w-4 sm:h-4" />
                   </button>
                    <button
                     onClick={() => handleDeleteCase(currentCase._id)}
-                    className="p-1.5 sm:p-2.5 bg-white dark:bg-[#131C31] border border-slate-200 dark:border-white/5 text-slate-400 hover:text-red-500 rounded-lg sm:rounded-full transition-all shadow-sm group"
+                    className="p-2 sm:p-2.5 bg-white dark:bg-[#131C31] border border-slate-200 dark:border-white/5 text-slate-400 hover:text-red-500 rounded-lg sm:rounded-full transition-all shadow-sm group"
                     title="Delete Case"
                   >
-                    <Trash2 size={12} className="sm:w-4 sm:h-4" />
+                    <Trash2 size={14} className="sm:w-4 sm:h-4" />
                   </button>
                 </div>
             </div>

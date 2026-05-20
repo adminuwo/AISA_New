@@ -15,7 +15,7 @@ import { useRecoilState } from 'recoil';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus as highlighterTheme } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { dracula as highlighterTheme } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import Loader from '../Components/Loader/Loader';
 import toast from 'react-hot-toast';
 import LiveAI from '../Components/LiveAI';
@@ -7133,25 +7133,30 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
 
                                               if (!inline) {
                                                 return (
-                                                  <div className={`rounded-xl overflow-hidden my-3 border ${isUser ? 'border-white/10 bg-black/20' : 'border-[#1a1a1a] bg-[#0d0d0d]'} shadow-2xl w-full max-w-full group/code`}>
+                                                  <div className={`rounded-xl overflow-hidden my-3 border ${isUser ? 'border-white/10 bg-[#282a36]/50' : 'border-[#191a21] bg-[#282a36]'} shadow-2xl w-full max-w-full group/code`}>
                                                     {!isUser && (
-                                                      <div className="flex items-center justify-between px-4 py-2.5 bg-[#2d2d2d]/80 backdrop-blur-sm border-b border-zinc-800">
+                                                      <div className="flex items-center justify-between px-4 py-3 bg-[#21222c] border-b border-[#191a21]">
                                                         <div className="flex items-center gap-2">
-                                                          <span className="text-[10px] font-black uppercase tracking-widest text-[#9ca3af]">{lang || 'plain text'}</span>
+                                                          <div className="flex items-center gap-1.5 mr-2">
+                                                            <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                                                            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                                                            <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+                                                          </div>
+                                                          <span className="text-[10px] font-black uppercase tracking-widest text-[#6272a4]">{lang || 'plain text'}</span>
                                                         </div>
                                                         <button
                                                           onClick={() => {
                                                             copyText(codeValue);
                                                             toast.success("Code copied!");
                                                           }}
-                                                          className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 hover:text-white transition-all bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-white/5 active:scale-95"
+                                                          className="flex items-center gap-1.5 text-[11px] font-bold text-[#6272a4] hover:text-[#f8f8f2] transition-all bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-transparent hover:border-white/10 active:scale-95"
                                                         >
                                                           <Copy className="w-3.5 h-3.5" />
                                                           Copy
                                                         </button>
                                                       </div>
                                                     )}
-                                                    <div className={`w-full ${isUser ? 'bg-transparent' : 'bg-[#0d0d0d]'}`}>
+                                                    <div className={`w-full ${isUser ? 'bg-transparent' : 'bg-[#282a36]'}`}>
                                                       <SyntaxHighlighter
                                                         className="custom-scrollbar"
                                                         language={lang || 'text'}
@@ -7165,17 +7170,20 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                                           background: 'transparent',
                                                           borderRadius: 0,
                                                           border: 'none',
-                                                          color: '#e5e7eb', // Ensure visibility for plain text
+                                                          color: '#f8f8f2',
                                                           fontFamily: '"Fira Code", "JetBrains Mono", source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace',
                                                           overflowX: 'auto',
                                                           overflowY: 'auto',
-                                                          maxHeight: isUser ? '500px' : '600px'
+                                                          maxHeight: isUser ? '500px' : '600px',
+                                                          WebkitOverflowScrolling: 'touch'
                                                         }}
                                                         codeTagProps={{
                                                           style: {
                                                             fontFamily: 'inherit',
                                                             background: 'transparent',
-                                                            color: 'inherit'
+                                                            color: 'inherit',
+                                                            display: 'block',
+                                                            minWidth: 'max-content'
                                                           }
                                                         }}
                                                         {...props}
