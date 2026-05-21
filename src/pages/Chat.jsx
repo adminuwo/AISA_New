@@ -7376,7 +7376,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                               toast.success('Magic Edit mode active! Type your request.');
                                               inputRef.current?.focus();
                                             }}
-                                            className="p-2.5 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 shadow-lg border border-white/20"
+                                            className="p-2.5 bg-white/20 backdrop-blur-sm text-primary rounded-xl hover:bg-white/30 shadow-lg border border-white/20"
                                             title="Edit this Image"
                                           >
                                             <Wand2 className="w-4 h-4" />
@@ -7387,7 +7387,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                               e.stopPropagation();
                                               handleCopyImage(msg.imageUrl);
                                             }}
-                                            className="p-2.5 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 shadow-lg border border-white/20"
+                                            className="p-2.5 bg-white/20 backdrop-blur-sm text-primary rounded-xl hover:bg-white/30 shadow-lg border border-white/20"
                                             title="Copy Image"
                                           >
                                             <Copy className="w-4 h-4" />
@@ -7398,19 +7398,14 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                               e.stopPropagation();
                                               handleDownload(msg.imageUrl, 'AISA-generated.png');
                                             }}
-                                            className={`p-2.5 rounded-xl shadow-lg border border-white/20 flex items-center gap-2 ${isDownloadingUrl === msg.imageUrl ? 'bg-zinc-600 cursor-wait' : 'bg-primary text-white hover:bg-primary/90'}`}
+                                            className={`p-2.5 rounded-xl shadow-lg border border-white/20 flex items-center justify-center ${isDownloadingUrl === msg.imageUrl ? 'bg-zinc-600 cursor-wait' : 'bg-primary text-white hover:bg-primary/90'}`}
                                             title="Download High-Res"
                                           >
-                                            <div className="flex items-center gap-2 px-1">
-                                              {isDownloadingUrl === msg.imageUrl ? (
-                                                <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                                              ) : (
-                                                <Download className="w-4 h-4" />
-                                              )}
-                                              <span className="text-[10px] font-bold uppercase">
-                                                {isDownloadingUrl === msg.imageUrl ? 'Downloading...' : 'Download'}
-                                              </span>
-                                            </div>
+                                            {isDownloadingUrl === msg.imageUrl ? (
+                                              <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                            ) : (
+                                              <Download className="w-4 h-4" />
+                                            )}
                                           </button>
                                         </div>
                                       </div>
