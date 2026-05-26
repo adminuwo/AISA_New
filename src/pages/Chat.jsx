@@ -6869,7 +6869,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                 <motion.div
                                   initial={{ opacity: 0, scale: 0.9 }}
                                   animate={{ opacity: 1, scale: 1 }}
-                                  className={`inline-flex !flex-row !items-center w-fit gap-2 px-3 py-1 rounded-full border shadow-sm ${getModeInfo(msg.mode).bg} ${getModeInfo(msg.mode).border} ${getModeInfo(msg.mode).color} mb-3`}
+                                  className={`inline-flex !flex-row !items-center w-fit gap-2 px-3 py-1 rounded-full border shadow-sm ${getModeInfo(msg.mode).bg} ${getModeInfo(msg.mode).border} ${getModeInfo(msg.mode).color} mt-1.5 mb-3`}
                                 >
                                   {(() => {
                                     const Icon = getModeInfo(msg.mode).icon;

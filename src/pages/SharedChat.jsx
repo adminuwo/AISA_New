@@ -5,12 +5,18 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus as highlighterTheme } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Globe, MessageCircle, Bot, User, Sparkles, ExternalLink, Calendar, Rocket, ChevronDown } from 'lucide-react';
+import { 
+  Globe, MessageCircle, Bot, User, Sparkles, ExternalLink, Calendar, Rocket, ChevronDown, 
+  X, Download, FileSpreadsheet, Presentation, FileText, File as FileIcon 
+} from 'lucide-react';
 import Loader from '../Components/Loader/Loader';
 import { getModeIcon, getModeName, MODES } from '../utils/modeDetection';
 import toast from 'react-hot-toast';
 import { useRecoilValue } from 'recoil';
 import { userData } from '../userStore/userData';
+
+// Lazy load video player to optimize initial bundle size
+const CustomVideoPlayer = React.lazy(() => import('../Tools/AI_Video_Generator/CustomVideoPlayer').catch(() => ({ default: () => null })));
 
 const SharedChat = () => {
   const { shareId } = useParams();
@@ -19,6 +25,7 @@ const SharedChat = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedMessages, setExpandedMessages] = useState({});
+  const [viewingDoc, setViewingDoc] = useState(null);
 
   useEffect(() => {
     const fetchSharedChat = async () => {
@@ -153,6 +160,78 @@ const SharedChat = () => {
                     </div>
                 )}
 
+                {/* Attachment Display */}
+                {((msg.attachments && msg.attachments.length > 0) || msg.attachment) && (
+                  <div className="flex flex-col gap-3 mb-4 mt-1">
+                    {(msg.attachments || (msg.attachment ? [msg.attachment] : [])).map((att, attIdx) => (
+                      <div key={attIdx} className="w-full max-w-sm">
+                        {att.type === 'image' || att.url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                          <div
+                            className="relative group/image overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-md cursor-pointer max-w-[320px]"
+                            onClick={() => setViewingDoc(att)}
+                          >
+                            <img
+                              src={att.url}
+                              alt="Attachment"
+                              className="w-full h-auto max-h-[300px] object-contain bg-black/5"
+                              loading="lazy"
+                            />
+                          </div>
+                        ) : (
+                          <div className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${msg.role === 'user' ? 'bg-zinc-100/50 border-zinc-200 dark:bg-zinc-800/30 dark:border-zinc-800' : 'bg-zinc-50 border-zinc-200 dark:bg-zinc-900 dark:border-zinc-800'}`}>
+                            <div
+                              className="flex-1 flex items-center gap-3 min-w-0 cursor-pointer"
+                              onClick={() => setViewingDoc(att)}
+                            >
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${(() => {
+                                const name = (att.name || '').toLowerCase();
+                                if (name.endsWith('.pdf')) return 'bg-red-50 dark:bg-red-950/30 text-red-500';
+                                if (name.match(/\.(doc|docx)$/)) return 'bg-blue-50 dark:bg-blue-950/30 text-blue-500';
+                                if (name.match(/\.(xls|xlsx|csv)$/)) return 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-500';
+                                if (name.match(/\.(ppt|pptx)$/)) return 'bg-orange-50 dark:bg-orange-950/30 text-orange-500';
+                                return 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500';
+                              })()}`}>
+                                {(() => {
+                                  const name = (att.name || '').toLowerCase();
+                                  const baseClass = "w-5 h-5";
+                                  if (name.match(/\.(xls|xlsx|csv)$/)) return <FileSpreadsheet className={baseClass} />;
+                                  if (name.match(/\.(ppt|pptx)$/)) return <Presentation className={baseClass} />;
+                                  if (name.endsWith('.pdf')) return <FileText className={baseClass} />;
+                                  if (name.match(/\.(doc|docx)$/)) return <FileIcon className={baseClass} />;
+                                  return <FileIcon className={baseClass} />;
+                                })()}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-xs truncate text-slate-800 dark:text-zinc-200 mb-0.5">{att.name || 'File'}</p>
+                                <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-semibold">
+                                  {(() => {
+                                    const name = (att.name || '').toLowerCase();
+                                    if (name.endsWith('.pdf')) return 'PDF';
+                                    if (name.match(/\.(doc|docx)$/)) return 'Word';
+                                    if (name.match(/\.(xls|xlsx|csv)$/)) return 'Excel';
+                                    if (name.match(/\.(ppt|pptx)$/)) return 'Powerpoint';
+                                    return 'Document';
+                                  })()}
+                                </p>
+                              </div>
+                            </div>
+                            <a
+                              href={att.url}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <Download size={14} />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="prose prose-zinc dark:prose-invert max-w-none text-sm leading-relaxed text-maintext">
                   <div className="flex flex-col">
                     <div className={`collapsible-container ${msg.content && msg.content.length > 350 && !expandedMessages[idx] ? 'collapsed-message' : ''}`}>
@@ -180,6 +259,23 @@ const SharedChat = () => {
                                 {children}
                               </code>
                             );
+                          },
+                          img: ({ node, ...props }) => {
+                            return (
+                              <div className="relative my-4 group/img-container max-w-full">
+                                <div 
+                                  className="relative group/image overflow-hidden aspect-auto max-w-[500px] cursor-zoom-in w-fit rounded-xl border border-zinc-200 dark:border-zinc-800" 
+                                  onClick={() => setViewingDoc({ url: props.src, type: 'image', name: props.alt || 'AI Image' })}
+                                >
+                                  <img
+                                    src={props.src}
+                                    alt={props.alt || "AI Image"}
+                                    className="max-w-full h-auto object-contain bg-black/5"
+                                    loading="lazy"
+                                  />
+                                </div>
+                              </div>
+                            );
                           }
                         }}
                       >
@@ -204,6 +300,32 @@ const SharedChat = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Video Url Rendering */}
+                {msg.videoUrl && (
+                  <div className="relative mt-4 mb-2 w-fit max-w-full">
+                    <React.Suspense fallback={<div className="w-full aspect-video bg-black/20 animate-pulse rounded-xl" />}>
+                      <CustomVideoPlayer src={msg.videoUrl} compact={true} />
+                    </React.Suspense>
+                  </div>
+                )}
+
+                {/* Image Url Rendering */}
+                {msg.imageUrl && (
+                  <div
+                    className="relative group/generated mt-4 mb-2 overflow-hidden rounded-2xl transition-all duration-500 ease-in-out border border-transparent hover:border-primary/25 hover:shadow-lg hover:shadow-primary/10 cursor-zoom-in w-fit max-w-sm"
+                    onClick={() => {
+                      setViewingDoc({ url: msg.imageUrl, type: 'image', name: 'Generated Image' });
+                    }}
+                  >
+                    <img
+                      src={msg.imageUrl}
+                      alt="Generated Content"
+                      className="w-full h-auto max-h-[420px] object-contain transition-all duration-500"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
 
                 {/* Sources List */}
                 {msg.role === 'model' && msg.sources && msg.sources.length > 0 && (
@@ -237,6 +359,40 @@ const SharedChat = () => {
            <span>Continue Chat</span>
          </button>
       </div>
+
+      {/* Document/Image Viewer Modal (Lightbox popup) */}
+      {viewingDoc && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+          <div className="absolute top-4 right-4 flex items-center gap-2 z-[110]">
+            <a 
+              href={viewingDoc.url} 
+              download 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="p-2.5 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+              title="Open in new tab"
+            >
+              <ExternalLink size={20} />
+            </a>
+            <button 
+              onClick={() => setViewingDoc(null)} 
+              className="p-2.5 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+              title="Close"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div className="max-w-full max-h-full flex items-center justify-center w-full h-full" onClick={() => setViewingDoc(null)}>
+            <div className="max-w-[90vw] max-h-[85vh] flex items-center justify-center" onClick={e => e.stopPropagation()}>
+              {viewingDoc.type === 'video' || viewingDoc.url?.match(/\.(mp4|webm|ogg|mov)$/i) ? (
+                <video src={viewingDoc.url} controls autoPlay className="max-w-full max-h-[85vh] rounded-lg shadow-2xl" />
+              ) : (
+                <img src={viewingDoc.url} alt={viewingDoc.name || "Preview"} className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
