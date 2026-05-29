@@ -142,6 +142,8 @@
     overflow-wrap: anywhere;
     word-break: normal;
     padding-bottom: env(safe-area-inset-bottom);
+    /* Stable touch scrolling */
+    touch-action: manipulation;
   }
 
   /* Marked/Highlighted text styling */
@@ -1865,3 +1867,152 @@ body.modal-open-hide-navbar {
 }
 
 
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE KEYBOARD FIX — Stable layout when virtual keyboard opens
+   Prevents page-push-up on Android Chrome and iOS Safari
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 1. Root height variable (set by VisualViewportManager in main.jsx) */
+:root {
+  --real-vh: 100dvh;
+  --real-vw: 100dvw;
+  --dvh: 1dvh;
+}
+
+/* 2. Prevent BODY from scrolling/bouncing on mobile */
+@media (max-width: 1023px) {
+  html {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    height: 100%;
+    overflow: hidden;
+    /* Prevent iOS rubber-band scroll from moving the whole page */
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+/* 3. Dashboard layout root — use real-vh so it does NOT shrink on keyboard */
+@media (max-width: 1023px) {
+  .aisa-scalable-text {
+    height: var(--real-vh, 100dvh) !important;
+    max-height: var(--real-vh, 100dvh) !important;
+    overflow: hidden !important;
+  }
+}
+
+/* 4. Mobile navbar stays fixed and unaffected by keyboard */
+@media (max-width: 1023px) {
+  .navbar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1001 !important;
+    will-change: transform !important;
+    transform: translateZ(0) !important;
+  }
+}
+
+/* 5. Chat input — sticks above keyboard, never gets buried */
+@media (max-width: 1023px) {
+  .chat-input-wrapper,
+  .chat-input-container {
+    position: sticky !important;
+    bottom: 0 !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    z-index: 100 !important;
+    flex-shrink: 0 !important;
+    transform: translateZ(0) !important;
+    will-change: transform !important;
+    background-color: inherit !important;
+  }
+}
+
+/* 6. Scrollable chat area shrinks smoothly, not pushes up */
+@media (max-width: 1023px) {
+  .chatgpt-container {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+}
+
+/* 7. Prevent iOS zoom on input focus (font-size < 16px triggers zoom) */
+@media (max-width: 1023px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="number"],
+  textarea,
+  [contenteditable="true"] {
+    font-size: max(16px, 1em) !important;
+    transform: translateZ(0);
+  }
+}
+
+/* 8. Sidebar stays full device height, independent of keyboard */
+@media (max-width: 1023px) {
+  .sidebar-container,
+  aside {
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* 9. Modals use real-vh to stay fully visible on keyboard-open screens */
+@media (max-width: 1023px) {
+  .modal-default,
+  .modal-maximized,
+  [role="dialog"] {
+    max-height: var(--real-vh, 100dvh) !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* 10. Landscape + keyboard: very tiny height — compact mode */
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 500px) {
+  .chatgpt-container {
+    padding-top: 50px !important;
+  }
+  .chat-bubble-text {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* 11. Main flex column — no overflow bleed */
+@media (max-width: 1023px) {
+  main {
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+}
+
+/* 12. Flex-1 children shrink instead of overflow */
+@media (max-width: 1023px) {
+  .flex-1 {
+    min-height: 0 !important;
+  }
+}
