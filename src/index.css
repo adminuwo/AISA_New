@@ -1900,13 +1900,14 @@ body.modal-open-hide-navbar {
   }
 }
 
-/* 3. Dashboard layout root — use real-vh so it does NOT shrink on keyboard */
-@media (max-width: 1023px) {
-  .aisa-scalable-text {
-    height: var(--real-vh, 100dvh) !important;
-    max-height: var(--real-vh, 100dvh) !important;
-    overflow: hidden !important;
-  }
+/* 3. Dashboard layout root — explicitly sized to visual viewport
+      JS (VisualViewportManager) sets this via inline style too, this is the CSS fallback */
+#aisa-app-root {
+  /* Ensure the main shell always exactly matches visual viewport height */
+  height: var(--real-vh, 100dvh) !important;
+  max-height: var(--real-vh, 100dvh) !important;
+  /* Ensure nothing overflows out of view */
+  overflow: hidden !important;
 }
 
 /* 4. Mobile navbar stays fixed and unaffected by keyboard */
@@ -2014,5 +2015,85 @@ body.modal-open-hide-navbar {
 @media (max-width: 1023px) {
   .flex-1 {
     min-height: 0 !important;
+  }
+}
+
+/* ─── ADDITIONAL MOBILE KEYBOARD FIXES ─── */
+
+/* 13. Fix the large empty gap between content and input bar on mobile.
+       The chatgpt-container has large pb-64 padding for desktop — reduce on mobile
+       to prevent excessive white space when keyboard is visible. */
+@media (max-width: 767px) {
+  .chatgpt-container {
+    /* Tighter bottom padding — the input bar is absolutely positioned */
+    padding-bottom: 120px !important;
+  }
+
+  .chatgpt-container.tool-active {
+    padding-bottom: 180px !important;
+  }
+}
+
+/* 14. Welcome screen / dashboard overlay — center content within visual viewport.
+       Uses min-height instead of fixed height so it shrinks with keyboard. */
+@media (max-width: 767px) {
+  /* Welcome screen uses absolute inset-0 — clip it to visual viewport */
+  .chatgpt-container > .absolute.inset-0 {
+    /* Allow it to be clipped by the parent container's visual height */
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    /* Prevent welcome screen from extending behind keyboard */
+    overflow: hidden !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* 15. Prevent input bar from shifting when keyboard opens.
+       The absolute bottom-0 input is relative to the chatgpt-container/flex parent.
+       We ensure it stays at the very bottom of the visible area. */
+@media (max-width: 767px) {
+  /* The input container wrapper in Chat.jsx */
+  .absolute.bottom-0.left-0.right-0.z-\\[1001\\] {
+    /* Stay anchored to bottom with safe-area padding */
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    /* Prevent keyboard from overlapping */
+    background-clip: padding-box !important;
+  }
+}
+
+/* 16. Remove transition on height changes to prevent jump animation */
+@media (max-width: 767px) {
+  #aisa-app-root,
+  #aisa-app-root > * {
+    /* Prevent animated layout shifts — keyboard open/close should be instant */
+    transition: none !important;
+  }
+
+  /* Re-allow transitions only for intentional UI animations */
+  #aisa-app-root button,
+  #aisa-app-root [class*="motion"],
+  #aisa-app-root [class*="animate"] {
+    transition: revert !important;
+  }
+}
+
+/* 17. Fix for the specific gap on dashboard welcome view.
+       The welcome screen pb-32 causes extra space when keyboard opens. */
+@media (max-width: 767px) {
+  /* Target welcome screen's inner scroll container */
+  [class*="sm\\:pb-32"],
+  [class*="md\\:pb-48"] {
+    padding-bottom: 8px !important;
+  }
+
+  /* Center welcome screen items at the actual visible center */
+  .absolute.inset-0.z-\\[50\\].pointer-events-none {
+    justify-content: flex-start !important;
+    padding-top: 20px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 }

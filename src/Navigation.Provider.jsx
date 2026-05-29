@@ -235,7 +235,11 @@ const DashboardLayout = () => {
   }, [allowNavbar]);
 
   return (
-    <div className="fixed inset-0 flex bg-transparent text-maintext overflow-hidden aisa-scalable-text">
+    <div
+      id="aisa-app-root"
+      className="fixed inset-0 flex bg-transparent text-maintext overflow-hidden aisa-scalable-text"
+      style={{ height: 'var(--real-vh, 100dvh)', maxHeight: 'var(--real-vh, 100dvh)' }}
+    >
       {/* ─── Animated Atmospheric Background ─── */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
         {/* Light mode gradient */}
