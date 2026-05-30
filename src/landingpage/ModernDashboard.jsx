@@ -118,7 +118,7 @@ const ModernDashboard = ({ userName, onToolSelect, activeToolId, activeCategory 
   const gridClass = `grid grid-cols-2 sm:flex sm:flex-row sm:flex-wrap sm:justify-center gap-3 sm:gap-x-4 sm:gap-y-6 mx-auto w-full max-w-2xl sm:max-w-7xl px-2 sm:px-4`;
 
   return (
-    <div className="relative w-full max-w-6xl mx-auto px-2 sm:px-6 pt-8 sm:pt-12 pb-2 sm:pb-10 space-y-2 sm:space-y-4">
+    <div className="relative w-full max-w-6xl mx-auto px-2 sm:px-6 pt-4 sm:pt-12 pb-2 sm:pb-10 space-y-4 sm:space-y-4">
       {/* Background Decor Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-0 -left-4 w-72 h-72 bg-violet-500/5 dark:bg-violet-500/10 rounded-full blur-[100px] animate-pulse" />
