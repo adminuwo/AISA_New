@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import { useRecoilState } from 'recoil';
 import { userData, updateUser } from '../userStore/userData';
 import { useLanguage } from '../context/LanguageContext';
+import GooglePayButton from '../Components/GooglePayButton';
+import ApplePayButton from '../Components/ApplePayButton';
 
 const Pricing = () => {
   const { t } = useLanguage();
@@ -534,17 +536,70 @@ const Pricing = () => {
                   ✓ {t('currentPlan')}
                 </button>
               ) : (
-                <button
-                  className="cta-button"
-                  onClick={() => handleUpgrade(plan)}
-                  disabled={processing}
-                >
-                  {displayPrice === 0
-                    ? t('startForFree')
-                    : (billingCycle === 'yearly')
-                      ? `${t('upgradeFor')} ₹${totalYearlyAmount}${t('billedYearlySuffix')}`
-                      : t('upgradeTo') + getDisplayPlanName(plan.planName)}
-                </button>
+                <div className="payment-buttons-stack">
+                  {/* ── Razorpay Button ── */}
+                  <button
+                    className="cta-button"
+                    onClick={() => handleUpgrade(plan)}
+                    disabled={processing}
+                  >
+                    {displayPrice === 0
+                      ? t('startForFree')
+                      : (billingCycle === 'yearly')
+                        ? `${t('upgradeFor')} ₹${totalYearlyAmount}${t('billedYearlySuffix')}`
+                        : t('upgradeTo') + getDisplayPlanName(plan.planName)}
+                  </button>
+
+                  {/* ── Google Pay Button (only for paid plans) ── */}
+                  {!isFree && (
+                    <>
+                      <div className="payment-divider">
+                        <span>or pay with</span>
+                      </div>
+                      <GooglePayButton
+                        planId={plan._id}
+                        billingCycle={billingCycle}
+                        amount={billingCycle === 'yearly' ? totalYearlyAmount : displayPrice}
+                        currency="INR"
+                        onSuccess={(data) => {
+                          toast.success(`✅ Google Pay successful! ${getDisplayPlanName(plan.planName)} activated.`);
+                          if (data.credits !== undefined) {
+                            const updatedUser = updateUser({
+                              credits: data.credits,
+                              founderStatus: isStartupProPlan(plan) ? true : userState.user?.founderStatus
+                            });
+                            setUserState({ user: updatedUser });
+                          }
+                        }}
+                        onError={(err) => {
+                          toast.error(err.message || 'Google Pay failed. Please try Razorpay.');
+                        }}
+                        disabled={processing}
+                      />
+                      {/* ── Apple Pay Button (auto-hides on non-Safari) ── */}
+                      <ApplePayButton
+                        planId={plan._id}
+                        billingCycle={billingCycle}
+                        amount={billingCycle === 'yearly' ? totalYearlyAmount : displayPrice}
+                        currency="INR"
+                        onSuccess={(data) => {
+                          toast.success(`✅ Apple Pay successful! ${getDisplayPlanName(plan.planName)} activated.`);
+                          if (data.credits !== undefined) {
+                            const updatedUser = updateUser({
+                              credits: data.credits,
+                              founderStatus: isStartupProPlan(plan) ? true : userState.user?.founderStatus
+                            });
+                            setUserState({ user: updatedUser });
+                          }
+                        }}
+                        onError={(err) => {
+                          toast.error(err.message || 'Apple Pay failed.');
+                        }}
+                        disabled={processing}
+                      />
+                    </>
+                  )}
+                </div>
               )}
             </div>
           );

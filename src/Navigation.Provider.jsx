@@ -332,7 +332,7 @@ const DashboardLayout = () => {
         <NotificationCenter isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} />
         {/* Outlet for pages */}
         <main
-          className={`flex-1 ${(location.pathname.includes('/chat') || location.pathname.includes('/cases')) ? 'overflow-hidden' : 'overflow-y-auto'} relative w-full scroll-smooth p-0 scrollbar-hide transition-all duration-300 ease-in-out`}
+          className={`flex-1 ${(location.pathname.includes('/chat') || location.pathname.includes('/case')) ? 'overflow-hidden' : 'overflow-y-auto'} relative w-full scroll-smooth p-0 scrollbar-hide transition-all duration-300 ease-in-out`}
           style={{ paddingTop: '0px' }}
         >
           <Outlet />

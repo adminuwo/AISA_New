@@ -66,7 +66,6 @@ import ActionCard from '../Components/ActionCard';
 import { useAILegalCRM } from '../Tools/AI_Legal/hooks/useAILegalCRM';
 import LegalWorkspaceHeader from '../Tools/AI_Legal/components/LegalWorkspaceHeader';
 import LegalWorkspaceWelcome from '../Tools/AI_Legal/components/LegalWorkspaceWelcome';
-import ContextualLegalPanel from '../Tools/AI_Legal/components/ContextualLegalPanel';
 import useCaseWorkspaceStore from '../userStore/caseWorkspaceStore';
 import { SelectionToolbarProvider } from '../Components/SelectionToolbar/SelectionToolbarProvider';
 import useChatGeneration from '../userStore/useChatGeneration';
@@ -647,7 +646,6 @@ const Chat = () => {
   const gen = useChatGeneration(activeSessionId);
 
 
-  const [isContextualPanelOpen, setIsContextualPanelOpen] = useState(false);
   const { updateWorkspace, getWorkspace } = useCaseWorkspaceStore();
   const handleSendMessageRef = useRef(null);
   useEffect(() => {
@@ -821,6 +819,7 @@ const Chat = () => {
   const [filePreviews, setFilePreviews] = useState([]);
   const [activeAgent, setActiveAgent] = useState({ agentName: 'AI Ads', category: 'General' });
   const [userAgents, setUserAgents] = useState([]);
+  const hasLoadedAgentsRef = useRef(false);
   const [toolModels, setToolModels] = useState({
     chat: 'gemini-2.5-flash',
     image: 'gemini-2.5-flash',
@@ -1084,10 +1083,24 @@ const Chat = () => {
         };
         restoreSession();
       }
-    } else if (!caseIdInUrl) {
+    } else if (!caseIdInUrl && !location.pathname.startsWith('/dashboard/case') && (sessionId === 'new' || !sessionId)) {
       lastHydratedRef.current = null;
+      // If we are in a general chat route and there's no caseId in URL, 
+      // reset the active case context so they return to normal chat mode
+      if (currentProjectId && currentProjectId !== 'default' && currentProjectId !== 'all') {
+        console.log("[Navigation] Resetting case context since no caseId in route/URL");
+        setCurrentProjectId('default');
+        localStorage.setItem('aisa_active_project_id', 'default');
+        setCurrentCase(null);
+        // Only reset mode if it was locked to a case tool
+        if (currentMode === 'LEGAL_TOOLKIT' && selectedLegalTool?.id === 'legal_my_case') {
+          setCurrentMode('NORMAL_CHAT');
+          setSelectedLegalTool(null);
+          setActiveTool(null);
+        }
+      }
     }
-  }, [location.search, caseId, sessionId, currentProjectId, setCurrentProjectId, setCurrentMode, setMessages, setLegalView, setActiveLegalToolkit]);
+  }, [location.search, location.pathname, caseId, sessionId, currentProjectId, setCurrentProjectId, setCurrentMode, setMessages, setLegalView, setActiveLegalToolkit, selectedLegalTool, currentMode]);
 
   // Listen for 'forceGlobal' navigation state to reset case context
   useEffect(() => {
@@ -1100,13 +1113,12 @@ const Chat = () => {
       setSelectedLegalTool(null);
       setActiveTool(null);
       setActiveLegalToolkit(false);
-      setIsContextualPanelOpen(false);
       setMessages([]);
       setLegalView('CHAT');
       // Clear the state so it doesn't re-fire on other renders
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, location.pathname, navigate, setCurrentProjectId, setCurrentMode, setSelectedLegalTool, setMessages, setLegalView, setActiveTool, setActiveLegalToolkit, setCurrentCase, setIsContextualPanelOpen]);
+  }, [location.state, location.pathname, navigate, setCurrentProjectId, setCurrentMode, setSelectedLegalTool, setMessages, setLegalView, setActiveTool, setActiveLegalToolkit, setCurrentCase]);
 
 
   const [intentSuggestion, setIntentSuggestion] = useState(null);
@@ -3447,6 +3459,9 @@ const Chat = () => {
         const user = JSON.parse(localStorage.getItem('user'));
         const userId = user?.id || user?._id;
         if (userId) {
+          if (hasLoadedAgentsRef.current) {
+            return;
+          }
           const token = getUserData()?.token || localStorage.getItem("token");
           const res = await axios.post(apis.getUserAgents, { userId }, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -3454,6 +3469,7 @@ const Chat = () => {
           const agents = res.data?.agents || [];
           const processedAgents = [{ agentName: 'AI Ads', category: 'General', avatar: '/AGENTS_IMG/AI Ads_BRAIN_LOGO.png' }, ...agents];
           setUserAgents(processedAgents);
+          hasLoadedAgentsRef.current = true;
         } else {
           setUserAgents([{ agentName: 'AI Ads', category: 'General', avatar: '/AGENTS_IMG/AI Ads_BRAIN_LOGO.png' }]);
         }
@@ -3637,7 +3653,7 @@ const Chat = () => {
           }
 
           const user = getUserData();
-          if (user && user.token) {
+          if (user && user.token && !memory) {
             try {
               const res = await axios.get(`${apis.baseUrl}/memory`, {
                 headers: { Authorization: `Bearer ${user.token}` }
@@ -3681,7 +3697,7 @@ const Chat = () => {
       }
     };
     initChat();
-  }, [sessionId, location.key, currentProjectId]);
+  }, [sessionId, currentProjectId, location.search, location.pathname]);
 
   const chatContainerRef = useRef(null);
   const shouldAutoScrollRef = useRef(true);
@@ -8924,11 +8940,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                     <span
                                       className="uppercase tracking-wide text-[8px] sm:text-[10px] font-black truncate max-w-[80px] sm:max-w-[120px] cursor-pointer hover:text-primary transition-colors"
                                       onClick={() => {
-                                        if (caseId || currentProjectId) {
-                                          setIsContextualPanelOpen(true);
-                                        } else {
-                                          setActiveLegalToolkit(true);
-                                        }
+                                        setActiveLegalToolkit(true);
                                       }}
                                       title="Open AI Legal™"
                                     >
@@ -9925,6 +9937,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                 : `**${tool.name} Activated** ⚖️`,
               timestamp: Date.now(),
             }));
+            setActiveLegalToolkit(false); // Close the toolkit card upon selection
             if (inputRef.current) inputRef.current.focus();
           }}
         />
@@ -9959,16 +9972,6 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
           setCurrentCase(updated);
           // Sync with the legalCases list if needed
           setAllProjects(prev => prev.map(c => c._id === updated._id ? updated : c));
-        }}
-      />
-
-      <ContextualLegalPanel
-        isOpen={isContextualPanelOpen}
-        onClose={() => setIsContextualPanelOpen(false)}
-        activeToolId={selectedLegalTool?.id}
-        onSelectTool={(toolId, toolName) => {
-          setIsContextualPanelOpen(false);
-          activateToolWithTypingEffect(toolId, toolName);
         }}
       />
     </div>

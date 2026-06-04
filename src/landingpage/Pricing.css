@@ -498,6 +498,39 @@
   background: #4338ca;
 }
 
+/* ─── Google Pay button wrapper inside pricing card ─── */
+.payment-buttons-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  width: 100%;
+}
+
+.payment-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.payment-divider::before,
+.payment-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.dark .payment-divider::before,
+.dark .payment-divider::after {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* Comparison Table */
 .comparison-section {
   max-width: 1200px;

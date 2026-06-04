@@ -352,7 +352,7 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
                         <motion.div
                             key={c._id}
                             whileHover={{ y: -3 }}
-                            className="case-card bg-card border border-border rounded-[20px] p-5 shadow-sm hover:shadow-lg hover:border-indigo-500/50 transition-all cursor-pointer flex flex-col justify-between"
+                            className="case-card bg-card border border-border rounded-[20px] p-5 shadow-sm hover:shadow-lg hover:border-indigo-500/50 transition-colors duration-300 cursor-pointer flex flex-col justify-between"
                             onClick={() => onCaseClick(c)}
                         >
                             <div>
@@ -384,7 +384,7 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
                     <motion.div
                         whileHover={{ scale: 1.02 }}
                         onClick={onCreateCase}
-                        className="border-2 border-dashed border-border rounded-[20px] p-5 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all min-h-[140px]"
+                        className="border-2 border-dashed border-border rounded-[20px] p-5 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-colors duration-300 min-h-[140px]"
                     >
                         <div className="w-10 h-10 rounded-full bg-card flex items-center justify-center">
                             <Plus size={20} className="text-subtext" />
@@ -624,8 +624,8 @@ const PrecedentCard = ({ caseItem, onClick, onCopyCitation, t }) => {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -4, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.3)" }}
-            className="precedent-card group bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden cursor-pointer shadow-sm transition-all"
+            whileHover={{ y: -4 }}
+            className="precedent-card group bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-lg transition-colors duration-300"
             onClick={onClick}
         >
             <div className="precedent-card-body p-6">

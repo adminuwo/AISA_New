@@ -136,7 +136,10 @@ export const useAILegalCRM = ({
     navigate('/dashboard/chat/new', { replace: true });
   };
 
-  const fetchLegalCases = async () => {
+  const fetchLegalCases = async (force = false) => {
+    if (!force && allProjects && allProjects.length > 0) {
+      return;
+    }
     try {
       const all = await apiService.getProjects();
       setAllProjects(all);
@@ -258,7 +261,7 @@ export const useAILegalCRM = ({
       try {
         await apiService.deleteProject(id);
         toast.success("Case deleted");
-        fetchLegalCases();
+        fetchLegalCases(true);
 
         if (currentProjectId === id) {
           setCurrentProjectId(null);
@@ -280,7 +283,7 @@ export const useAILegalCRM = ({
     try {
       await apiService.updateProject(id, { name: renameValue });
       setIsRenamingCase(null);
-      fetchLegalCases();
+      fetchLegalCases(true);
 
       if (currentCase?._id === id) {
         setCurrentCase(prev => ({ ...prev, name: renameValue }));

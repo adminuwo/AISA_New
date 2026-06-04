@@ -1020,14 +1020,14 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
               </div>
               <div className="flex items-center gap-1 sm:gap-2">
                 <button 
-                  onClick={() => setIsMaximized(!isMaximized)}
-                  className="p-1.5 hover:bg-white/10 rounded-full transition-all active:scale-90 shrink-0"
+                  onClick={(e) => { e.stopPropagation(); setIsMaximized(!isMaximized); }}
+                  className="p-1.5 hover:bg-white/10 rounded-full text-white/80 hover:text-white transition-colors duration-200 shrink-0 cursor-pointer"
                 >
                   {isMaximized ? <Minimize2 size={18} className="sm:w-5 sm:h-5" /> : <Maximize2 size={18} className="sm:w-5 sm:h-5" />}
                 </button>
                 <button 
-                  onClick={onClose}
-                  className="p-1.5 hover:bg-white/10 rounded-full transition-all active:scale-90 shrink-0"
+                  onClick={(e) => { e.stopPropagation(); onClose(); }}
+                  className="p-1.5 hover:bg-white/10 rounded-full text-white/80 hover:text-white transition-colors duration-200 shrink-0 cursor-pointer"
                 >
                   <X size={18} className="sm:w-6 sm:h-6" />
                 </button>
@@ -1054,7 +1054,10 @@ const CaseIntelligencePanel = ({ isOpen, onClose, currentCase, onUpdate, onUseIn
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-8 pb-72 sm:pb-80 bg-slate-50/30 dark:bg-transparent scroll-smooth">
+          <div 
+            className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-8 pb-72 sm:pb-80 bg-slate-50/30 dark:bg-transparent scroll-smooth"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
              {activeTab === 'overview' && renderOverview()}
              {activeTab === 'communication' && renderCommunication()}
              {activeTab === 'hearings' && renderHearings()}

@@ -71,7 +71,10 @@ const LegalDashboard = ({
       </div>
 
       {/* Case Grid - Scrollable */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-10 py-6 sm:py-8 overscroll-contain touch-pan-y">
+      <div 
+        className="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-10 py-6 sm:py-8 overscroll-contain touch-pan-y"
+        style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth' }}
+      >
         {legalCases.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {legalCases.map((c) => (
@@ -80,7 +83,7 @@ const LegalDashboard = ({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -6, scale: 1.01 }}
-                className="group relative bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl sm:rounded-[28px] p-4 sm:p-6 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/15 transition-all cursor-pointer"
+                className="group relative bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl sm:rounded-[28px] p-4 sm:p-6 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/15 transition-colors duration-300 cursor-pointer"
                 onClick={() => handleOpenCase(c)}
               >
                 <div className="flex justify-between items-start mb-4 sm:mb-5">

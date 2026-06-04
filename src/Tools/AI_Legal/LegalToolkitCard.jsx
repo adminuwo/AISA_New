@@ -103,7 +103,7 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
           onSelect(tool, isUnlocked);
         }
       }}
-      className={`group relative cursor-pointer rounded-[1.4rem] p-4 transition-all duration-300 border overflow-hidden
+      className={`group relative cursor-pointer rounded-[1.4rem] p-4 transition-colors duration-300 border overflow-hidden
         bg-white/65 border-white/75 backdrop-blur-[12px] shadow-[0_4px_16px_rgba(99,102,241,0.06)]
         dark:bg-[#1A2540]/60 dark:border-white/5 dark:shadow-none`}
     >
@@ -114,7 +114,8 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
             initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
             animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
             exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-            className="absolute inset-0 z-20 bg-indigo-600/95 rounded-[1.4rem] p-6 flex flex-col justify-start overflow-y-auto custom-scrollbar"
+            className="absolute inset-0 z-20 bg-indigo-600/95 rounded-[1.4rem] p-6 flex flex-col justify-start overflow-y-auto custom-scrollbar overscroll-contain"
+            style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth' }}
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -281,11 +282,9 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, transition: { duration: 0.12 } }}
-              layout
               transition={{
-                layout: { duration: 0.25, ease: 'easeInOut' },
-                opacity: { duration: 0.18 },
-                scale: { duration: 0.22 }
+                opacity: { duration: 0.15 },
+                scale: { duration: 0.15 }
               }}
               className={`relative z-[2] flex flex-col overflow-hidden w-full ${isMaximized ? 'modal-maximized rounded-[27px]' : 'modal-default rounded-[28px]'}`}
               style={{
@@ -358,7 +357,10 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
               </div>
 
               {/* Body */}
-              <div className="relative z-[8] flex-1 overflow-y-auto px-5 sm:px-11 py-5 sm:py-7 custom-scrollbar min-h-0">
+              <div 
+                className="relative z-[8] flex-1 overflow-y-auto px-5 sm:px-11 py-5 sm:py-7 custom-scrollbar min-h-0 overscroll-contain"
+                style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth' }}
+              >
 
                 {!isMaximized && (
                   <div className="mb-6">
