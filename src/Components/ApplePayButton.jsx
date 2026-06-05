@@ -148,8 +148,17 @@ const ApplePayButton = ({
                 return;
             }
 
-            // ── Step 2: Create Apple Pay Session ──────────────────────────────
-            const session = new ApplePaySession(3, orderData.applePayRequest);
+            // ── Step 2: Validate applePayRequest before creating session ─────
+            const req = orderData.applePayRequest;
+            const AMOUNT_PATTERN = /^\d+(\.\d{2})?$/;
+            if (!req || !req.total || !AMOUNT_PATTERN.test(req.total?.amount)) {
+                throw new Error(
+                    `Invalid Apple Pay amount format: "${req?.total?.amount}". Please try again or use another payment method.`
+                );
+            }
+
+            // ── Step 3: Create Apple Pay Session ──────────────────────────────
+            const session = new ApplePaySession(3, req);
             sessionRef.current = session;
 
             // ── Step 3: Merchant Validation (Apple calls your backend) ────────
