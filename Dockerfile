@@ -24,6 +24,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy entrypoint script
 COPY entrypoint.sh /
+RUN sed -i 's/\r$//' /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 8080
