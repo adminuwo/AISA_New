@@ -514,7 +514,7 @@ const Chat = () => {
         }));
         return false;
       }
-      
+
       const plan = (userPlanName || '').toLowerCase();
       if (plan.includes('starter') || plan.includes('founder')) {
         window.dispatchEvent(new CustomEvent('premium_required', {
@@ -728,7 +728,7 @@ const Chat = () => {
         setTypingMessageId(null);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gen.isGenerating, gen.partialResponse, gen.typingMessageId]);
   const [editRefImage, setEditRefImage] = useState(null);
   const [isMagicVideoModalOpen, setIsMagicVideoModalOpen] = useState(false);
@@ -902,10 +902,10 @@ const Chat = () => {
   const [unlockedTools, setUnlockedTools] = useState([]);
   const [selectedLegalTool, setSelectedLegalTool] = useRecoilState(activeLegalToolData);
   const excludedFloatingNavTools = ['legal_my_case', 'legal_precedents', 'legal-precedents', 'my-case', 'legal_precedents_search'];
-  const showFloatingNavbar = currentMode === 'LEGAL_TOOLKIT' && 
-                             selectedLegalTool?.id && 
-                             !excludedFloatingNavTools.includes(selectedLegalTool.id) &&
-                             legalView === 'CHAT';
+  const showFloatingNavbar = currentMode === 'LEGAL_TOOLKIT' &&
+    selectedLegalTool?.id &&
+    !excludedFloatingNavTools.includes(selectedLegalTool.id) &&
+    legalView === 'CHAT';
 
   const [videoAspectRatio, setVideoAspectRatio] = useState('16:9');
   const [videoModelId, setVideoModelId] = useState('veo-3.1-fast-generate-001');
@@ -1001,7 +1001,7 @@ const Chat = () => {
         setSelectedLegalTool(null);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search, activeSessionId, location.state?.fromTool]);
 
 
@@ -3781,11 +3781,11 @@ const Chat = () => {
     // Proactive Guest Limit Check for new session creation
     const token = getUserData()?.token;
     if (!token && sessions.length >= 5) {
-      window.dispatchEvent(new CustomEvent('login_required', { 
-        detail: { 
+      window.dispatchEvent(new CustomEvent('login_required', {
+        detail: {
           toolName: 'AISA™ Unlimited Chat',
           customMessage: "You've reached the guest limit of 5 sessions. Please sign in to create more chat sessions!"
-        } 
+        }
       }));
       return;
     }
@@ -4173,7 +4173,7 @@ const Chat = () => {
           // ── Save User Message Immediately (Fix for Sidebar History) ──
           // This ensures the session is created on the backend BEFORE the AI response finishes,
           // allowing the sidebar to fetch it correctly during navigation.
-          
+
           // 1. First, add an optimistic entry to the sidebar so it shows up IMMEDIATELY
           if (isFirstMessage) {
             const optimisticSession = {
@@ -4221,7 +4221,7 @@ const Chat = () => {
 
           // Credit Check & Deduction for AI Legal Tools (Exclude General Chat)
           const premiumLegalTools = [
-            'legal_my_case', 'legal_precedents', 'legal_draft_maker', 
+            'legal_my_case', 'legal_precedents', 'legal_draft_maker',
             'legal_evidence_checker', 'legal_argument_builder', 'legal_case_predictor',
             'legal_contract_analyzer', 'legal_strategy_engine', 'legal_research_assistant'
           ];
@@ -4266,7 +4266,7 @@ const Chat = () => {
             if (res.data.toolUsed) setActiveTool(res.data.toolUsed);
             setMessages(prev => [...prev, aiMsg], activeSessionId);
             setTypingMessageId(aiMsgId);
-            
+
             // Sync with global store so navigation doesn't kill the typewriter effect
             gen.setPartialResponse('', aiMsgId, activeSessionId);
 
@@ -4330,56 +4330,56 @@ const Chat = () => {
       // Navigate to real session before launching tool handlers (so messages are visible)
       if (isFirstMessage) {
         isNavigatingRef.current = activeSessionId;
-        
+
         // ── Early Optimistic Update for Media Modes ──
         // Since image/video/edit modes return early and skip the main optimistic update below,
         // we must create the session in the sidebar immediately.
-        if (isImageGeneration || toolOverride === 'text_to_image' || 
-            isVideoGeneration || toolOverride === 'text_to_video' || toolOverride === 'image_to_video' || 
-            isMagicEditing || toolOverride === 'image_edit') {
-            
-            const earlyMode = (isImageGeneration || toolOverride === 'text_to_image') ? MODES.IMAGE_GENERATION :
-                            ((isVideoGeneration || toolOverride === 'text_to_video' || toolOverride === 'image_to_video') ? MODES.VIDEO_GENERATION : MODES.IMAGE_EDIT);
-            
-            // Use a truncated prompt as the interim title instead of "New Chat"
-            // This ensures the sidebar shows something meaningful immediately
-            const interimTitle = contentToSend.length > 40 
-              ? contentToSend.substring(0, 40) + '...' 
-              : contentToSend;
-            
-            // Store interim title so handleGenerateImage/Video can pass it to saveMessage
-            pendingMediaTitleRef.current = interimTitle;
+        if (isImageGeneration || toolOverride === 'text_to_image' ||
+          isVideoGeneration || toolOverride === 'text_to_video' || toolOverride === 'image_to_video' ||
+          isMagicEditing || toolOverride === 'image_edit') {
 
-            setSessions(prev => {
-              const currentSessions = Array.isArray(prev) ? prev : [];
-              if (currentSessions.some(s => s.sessionId === activeSessionId)) return currentSessions;
-              return [{
-                sessionId: activeSessionId,
-                title: interimTitle,
-                lastModified: Date.now(),
-                detectedMode: earlyMode,
-                projectId: currentProjectId
-              }, ...currentSessions];
-            });
+          const earlyMode = (isImageGeneration || toolOverride === 'text_to_image') ? MODES.IMAGE_GENERATION :
+            ((isVideoGeneration || toolOverride === 'text_to_video' || toolOverride === 'image_to_video') ? MODES.VIDEO_GENERATION : MODES.IMAGE_EDIT);
 
-            // Generate a polished AI title in the background and update sidebar + backend
-            chatStorageService.generateSessionTitle(activeSessionId, contentToSend).then(newTitle => {
-              pendingMediaTitleRef.current = null; // Clear interim ref
-              if (newTitle) {
-                setSessions(prev => {
-                  const currentSessions = Array.isArray(prev) ? prev : [];
-                  const idx = currentSessions.findIndex(s => s.sessionId === activeSessionId);
-                  if (idx !== -1) {
-                    const updated = [...currentSessions];
-                    updated[idx] = { ...updated[idx], title: newTitle, lastModified: Date.now() };
-                    return [...updated].sort((a, b) => b.lastModified - a.lastModified);
-                  }
-                  return currentSessions;
-                });
-              }
-            });
+          // Use a truncated prompt as the interim title instead of "New Chat"
+          // This ensures the sidebar shows something meaningful immediately
+          const interimTitle = contentToSend.length > 40
+            ? contentToSend.substring(0, 40) + '...'
+            : contentToSend;
+
+          // Store interim title so handleGenerateImage/Video can pass it to saveMessage
+          pendingMediaTitleRef.current = interimTitle;
+
+          setSessions(prev => {
+            const currentSessions = Array.isArray(prev) ? prev : [];
+            if (currentSessions.some(s => s.sessionId === activeSessionId)) return currentSessions;
+            return [{
+              sessionId: activeSessionId,
+              title: interimTitle,
+              lastModified: Date.now(),
+              detectedMode: earlyMode,
+              projectId: currentProjectId
+            }, ...currentSessions];
+          });
+
+          // Generate a polished AI title in the background and update sidebar + backend
+          chatStorageService.generateSessionTitle(activeSessionId, contentToSend).then(newTitle => {
+            pendingMediaTitleRef.current = null; // Clear interim ref
+            if (newTitle) {
+              setSessions(prev => {
+                const currentSessions = Array.isArray(prev) ? prev : [];
+                const idx = currentSessions.findIndex(s => s.sessionId === activeSessionId);
+                if (idx !== -1) {
+                  const updated = [...currentSessions];
+                  updated[idx] = { ...updated[idx], title: newTitle, lastModified: Date.now() };
+                  return [...updated].sort((a, b) => b.lastModified - a.lastModified);
+                }
+                return currentSessions;
+              });
+            }
+          });
         }
-        
+
         navigate(`/dashboard/chat/${activeSessionId}`, { replace: true });
       }
 
@@ -7068,241 +7068,264 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                         <div className="flex flex-col">
                                           <div className={`collapsible-container ${msg.content && msg.content.length > 350 && msg.id !== typingMessageId && !expandedMessages[msg.id] ? 'collapsed-message' : ''}`}>
                                             <ReactMarkdown
-                                          className="select-text"
-                                          remarkPlugins={[remarkGfm]}
-                                          urlTransform={(value) => value}
-                                          components={{
-                                            a: ({ href, children }) => {
-                                              const text = children?.toString() || "";
-                                              if (href && href.startsWith('action:')) {
-                                                const isLocked = text.includes('🔒') || text.includes('Unlock');
+                                              className="select-text"
+                                              remarkPlugins={[remarkGfm]}
+                                              urlTransform={(value) => value}
+                                              components={{
+                                                a: ({ href, children }) => {
+                                                  const text = children?.toString() || "";
+                                                  if (href && href.startsWith('action:')) {
+                                                    const isLocked = text.includes('🔒') || text.includes('Unlock');
 
-                                                if (text.startsWith('ActionCard|')) {
-                                                  const parts = text.split('|');
-                                                  const title = parts[1] || "";
-                                                  const desc = parts[2] || "";
-                                                  const actionLabel = (parts[3] || "Open").replace(/^Action:\s*/i, '');
+                                                    if (text.startsWith('ActionCard|')) {
+                                                      const parts = text.split('|');
+                                                      const title = parts[1] || "";
+                                                      const desc = parts[2] || "";
+                                                      const actionLabel = (parts[3] || "Open").replace(/^Action:\s*/i, '');
 
-                                                  return (
-                                                    <ActionCard
-                                                      title={title}
-                                                      desc={desc}
-                                                      action={actionLabel}
-                                                      link={href}
-                                                      isLocked={isLocked}
-                                                      onClick={(e) => {
-                                                        e.preventDefault();
-                                                        const toolKey = href.replace('action:', '');
-                                                        setCurrentMode('LEGAL_TOOLKIT');
+                                                      return (
+                                                        <ActionCard
+                                                          title={title}
+                                                          desc={desc}
+                                                          action={actionLabel}
+                                                          link={href}
+                                                          isLocked={isLocked}
+                                                          onClick={(e) => {
+                                                            e.preventDefault();
+                                                            const toolKey = href.replace('action:', '');
+                                                            setCurrentMode('LEGAL_TOOLKIT');
 
-                                                        const TOOL_NAMES = {
-                                                          legal_draft_maker: "Draft Maker",
-                                                          legal_case_predictor: "Case Predictor",
-                                                          legal_argument_builder: "Argument Builder",
-                                                          legal_evidence_checker: "Evidence Analyst",
-                                                          legal_contract_analyzer: "Contract Analyzer",
-                                                          legal_strategy_engine: "Strategy Engine"
-                                                        };
-                                                        const toolName = TOOL_NAMES[toolKey] || toolKey;
+                                                            const TOOL_NAMES = {
+                                                              legal_draft_maker: "Draft Maker",
+                                                              legal_case_predictor: "Case Predictor",
+                                                              legal_argument_builder: "Argument Builder",
+                                                              legal_evidence_checker: "Evidence Analyst",
+                                                              legal_contract_analyzer: "Contract Analyzer",
+                                                              legal_strategy_engine: "Strategy Engine"
+                                                            };
+                                                            const toolName = TOOL_NAMES[toolKey] || toolKey;
 
-                                                        if (isLocked) {
-                                                          window.dispatchEvent(new CustomEvent('premium_required', { detail: { toolName } }));
-                                                          return;
-                                                        }
+                                                            if (isLocked) {
+                                                              window.dispatchEvent(new CustomEvent('premium_required', { detail: { toolName } }));
+                                                              return;
+                                                            }
 
-                                                        activateToolWithTypingEffect(toolKey, toolName);
-                                                      }}
-                                                    />
-                                                  );
-                                                }
-
-                                                return (
-                                                  <button
-                                                    onClick={(e) => {
-                                                      e.preventDefault();
-                                                      const toolKey = href.replace('action:', '');
-                                                      setCurrentMode('LEGAL_TOOLKIT');
-
-                                                      const TOOL_NAMES = {
-                                                        legal_draft_maker: "Draft Maker",
-                                                        legal_case_predictor: "Case Predictor",
-                                                        legal_argument_builder: "Argument Builder",
-                                                        legal_evidence_checker: "Evidence Analyst",
-                                                        legal_contract_analyzer: "Contract Analyzer",
-                                                        legal_strategy_engine: "Strategy Engine"
-                                                      };
-                                                      const toolName = TOOL_NAMES[toolKey] || toolKey;
-
-                                                      // Open the premium upsell if locked
-                                                      if (isLocked) {
-                                                        window.dispatchEvent(new CustomEvent('premium_required', { detail: { toolName } }));
-                                                        return;
-                                                      }
-
-                                                      activateToolWithTypingEffect(toolKey, toolName);
-                                                    }}
-                                                    className={`inline-flex mt-2 items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold shadow-sm transition-all hover:-translate-y-0.5 active:translate-y-0 ${isLocked ? 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20' : 'bg-gradient-to-r from-primary/10 to-primary-dark/10 border border-primary/20 text-primary hover:bg-primary/20 hover:border-primary/40'}`}
-                                                  >
-                                                    {children}
-                                                    <ChevronRight className="w-4 h-4 ml-1 opacity-70" />
-                                                  </button>
-                                                );
-                                              }
-                                              const isInternal = href && href.startsWith('/');
-                                              return (
-                                                <a
-                                                  href={href}
-                                                  onClick={(e) => {
-                                                    if (isInternal) {
-                                                      e.preventDefault();
-                                                      navigate(href);
-                                                    }
-                                                  }}
-                                                  className="text-primary hover:underline font-bold cursor-pointer"
-                                                  target={isInternal ? "_self" : "_blank"}
-                                                  rel={isInternal ? "" : "noopener noreferrer"}
-                                                >
-                                                  {children}
-                                                </a>
-                                              );
-                                            },
-                                            p: ({ children }) => <p>{children}</p>,
-                                            ul: ({ children }) => <ul className="list-disc pl-5 space-y-1.5">{children}</ul>,
-                                            ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1.5">{children}</ol>,
-                                            li: ({ children }) => <li>{children}</li>,
-                                            h1: ({ children }) => <h1 className="font-bold tracking-tight">{children}</h1>,
-                                            h2: ({ children }) => <h2 className="font-bold tracking-tight">{children}</h2>,
-                                            h3: ({ children }) => <h3 className="font-bold tracking-tight">{children}</h3>,
-                                            strong: ({ children }) => <strong>{children}</strong>,
-                                            table: ({ children }) => (
-                                              <div className="overflow-x-auto my-4 rounded-xl border border-border/50 shadow-lg bg-surface/30 backdrop-blur-sm">
-                                                <table className="w-full border-collapse text-sm">{children}</table>
-                                              </div>
-                                            ),
-                                            thead: ({ children }) => <thead className="bg-primary/10 border-b border-border/50">{children}</thead>,
-                                            tbody: ({ children }) => <tbody className="divide-y divide-border/30">{children}</tbody>,
-                                            tr: ({ children }) => <tr className="transition-colors hover:bg-white/3">{children}</tr>,
-                                            th: ({ children }) => <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-primary">{children}</th>,
-                                            td: ({ children }) => <td className="px-4 py-3 text-sm text-maintext leading-relaxed">{children}</td>,
-                                            mark: ({ children }) => <mark className="bg-[#5555ff] text-white px-1 py-0.5 rounded-sm">{children}</mark>,
-                                            code: ({ node, inline, className, children, ...props }) => {
-                                              const match = /language-(\w+)/.exec(className || '');
-                                              const lang = match ? match[1] : '';
-                                              const codeValue = String(children).replace(/\n$/, '');
-                                              const isUser = msg.role === 'user';
-
-                                              if (!inline) {
-                                                return (
-                                                  <div className={`rounded-xl overflow-hidden my-3 border ${isUser ? 'border-white/10 bg-[#282a36]/50' : 'border-[#191a21] bg-[#282a36]'} shadow-2xl w-full max-w-full group/code`}>
-                                                    {!isUser && (
-                                                      <div className="flex items-center justify-between px-4 py-3 bg-[#21222c] border-b border-[#191a21]">
-                                                        <div className="flex items-center gap-2">
-                                                          <div className="flex items-center gap-1.5 mr-2">
-                                                            <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-                                                            <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-                                                            <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
-                                                          </div>
-                                                          <span className="text-[10px] font-black uppercase tracking-widest text-[#6272a4]">{lang || 'plain text'}</span>
-                                                        </div>
-                                                        <button
-                                                          onClick={() => {
-                                                            copyText(codeValue);
-                                                            toast.success("Code copied!");
+                                                            activateToolWithTypingEffect(toolKey, toolName);
                                                           }}
-                                                          className="flex items-center gap-1.5 text-[11px] font-bold text-[#6272a4] hover:text-[#f8f8f2] transition-all bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-transparent hover:border-white/10 active:scale-95"
-                                                        >
-                                                          <Copy className="w-3.5 h-3.5" />
-                                                          Copy
-                                                        </button>
-                                                      </div>
-                                                    )}
-                                                    <div className={`w-full ${isUser ? 'bg-transparent' : 'bg-[#282a36]'}`}>
-                                                      <SyntaxHighlighter
-                                                        className="custom-scrollbar"
-                                                        language={lang || 'text'}
-                                                        style={highlighterTheme}
-                                                        PreTag="div"
-                                                        customStyle={{
-                                                          margin: 0,
-                                                          padding: isUser ? '16px' : '20px',
-                                                          fontSize: isUser ? '13px' : '14px',
-                                                          lineHeight: '1.7',
-                                                          background: 'transparent',
-                                                          borderRadius: 0,
-                                                          border: 'none',
-                                                          color: '#f8f8f2',
-                                                          fontFamily: '"Fira Code", "JetBrains Mono", source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace',
-                                                          overflowX: 'auto',
-                                                          overflowY: 'auto',
-                                                          maxHeight: isUser ? '500px' : '600px',
-                                                          WebkitOverflowScrolling: 'touch'
-                                                        }}
-                                                        codeTagProps={{
-                                                          style: {
-                                                            fontFamily: 'inherit',
-                                                            background: 'transparent',
-                                                            color: 'inherit',
-                                                            display: 'block',
-                                                            minWidth: 'max-content'
+                                                        />
+                                                      );
+                                                    }
+
+                                                    return (
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.preventDefault();
+                                                          const toolKey = href.replace('action:', '');
+                                                          setCurrentMode('LEGAL_TOOLKIT');
+
+                                                          const TOOL_NAMES = {
+                                                            legal_draft_maker: "Draft Maker",
+                                                            legal_case_predictor: "Case Predictor",
+                                                            legal_argument_builder: "Argument Builder",
+                                                            legal_evidence_checker: "Evidence Analyst",
+                                                            legal_contract_analyzer: "Contract Analyzer",
+                                                            legal_strategy_engine: "Strategy Engine"
+                                                          };
+                                                          const toolName = TOOL_NAMES[toolKey] || toolKey;
+
+                                                          // Open the premium upsell if locked
+                                                          if (isLocked) {
+                                                            window.dispatchEvent(new CustomEvent('premium_required', { detail: { toolName } }));
+                                                            return;
                                                           }
+
+                                                          activateToolWithTypingEffect(toolKey, toolName);
                                                         }}
-                                                        {...props}
+                                                        className={`inline-flex mt-2 items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold shadow-sm transition-all hover:-translate-y-0.5 active:translate-y-0 ${isLocked ? 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20' : 'bg-gradient-to-r from-primary/10 to-primary-dark/10 border border-primary/20 text-primary hover:bg-primary/20 hover:border-primary/40'}`}
                                                       >
-                                                        {codeValue}
-                                                      </SyntaxHighlighter>
-                                                    </div>
+                                                        {children}
+                                                        <ChevronRight className="w-4 h-4 ml-1 opacity-70" />
+                                                      </button>
+                                                    );
+                                                  }
+                                                  const isInternal = href && href.startsWith('/');
+                                                  return (
+                                                    <a
+                                                      href={href}
+                                                      onClick={(e) => {
+                                                        if (isInternal) {
+                                                          e.preventDefault();
+                                                          navigate(href);
+                                                        }
+                                                      }}
+                                                      className="text-primary hover:underline font-bold cursor-pointer"
+                                                      target={isInternal ? "_self" : "_blank"}
+                                                      rel={isInternal ? "" : "noopener noreferrer"}
+                                                    >
+                                                      {children}
+                                                    </a>
+                                                  );
+                                                },
+                                                p: ({ children }) => <p>{children}</p>,
+                                                ul: ({ children }) => <ul className="list-disc pl-5 space-y-1.5">{children}</ul>,
+                                                ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1.5">{children}</ol>,
+                                                li: ({ children }) => <li>{children}</li>,
+                                                h1: ({ children }) => <h1 className="font-bold tracking-tight">{children}</h1>,
+                                                h2: ({ children }) => <h2 className="font-bold tracking-tight">{children}</h2>,
+                                                h3: ({ children }) => <h3 className="font-bold tracking-tight">{children}</h3>,
+                                                strong: ({ children }) => <strong>{children}</strong>,
+                                                table: ({ children }) => (
+                                                  <div className="overflow-x-auto my-4 rounded-xl border border-border/50 shadow-lg bg-surface/30 backdrop-blur-sm">
+                                                    <table className="w-full border-collapse text-sm">{children}</table>
                                                   </div>
-                                                );
-                                              }
-                                              return (
-                                                <code className="bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-md font-mono text-primary font-bold mx-0.5 text-xs translate-y-[-1px] inline-block" {...props}>
-                                                  {children}
-                                                </code>
-                                              );
-                                            },
-                                            img: ({ node, ...props }) => {
-                                              const isDownloading = isDownloadingUrl === props.src;
-                                              return (
-                                                <div className="relative my-4 group/img-container max-w-full">
-                                                  <div className="relative group/image overflow-hidden aspect-auto max-w-[500px] cursor-zoom-in w-fit" onClick={() => setViewingDoc({ url: props.src, type: 'image', name: 'AI Image' })}>
-                                                    {msg.role === 'model' && (
-                                                      <div className="absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/60 to-transparent z-10 flex justify-between items-center opacity-100 sm:opacity-0 sm:group-hover/img-container:opacity-100 transition-opacity duration-500 ease-in-out">
-                                                        <div className="flex items-center gap-2">
-                                                          <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                                                          <span className="text-[10px] font-bold text-white uppercase tracking-widest">AISA™ Generated Asset</span>
+                                                ),
+                                                thead: ({ children }) => <thead className="bg-primary/10 border-b border-border/50">{children}</thead>,
+                                                tbody: ({ children }) => <tbody className="divide-y divide-border/30">{children}</tbody>,
+                                                tr: ({ children }) => <tr className="transition-colors hover:bg-white/3">{children}</tr>,
+                                                th: ({ children }) => <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-widest text-primary">{children}</th>,
+                                                td: ({ children }) => <td className="px-4 py-3 text-sm text-maintext leading-relaxed">{children}</td>,
+                                                mark: ({ children }) => <mark className="bg-[#5555ff] text-white px-1 py-0.5 rounded-sm">{children}</mark>,
+                                                code: ({ node, inline, className, children, ...props }) => {
+                                                  const match = /language-(\w+)/.exec(className || '');
+                                                  const lang = match ? match[1] : '';
+                                                  const codeValue = String(children).replace(/\n$/, '');
+                                                  const isUser = msg.role === 'user';
+
+                                                  if (!inline) {
+                                                    return (
+                                                      <div className={`rounded-xl overflow-hidden my-3 border ${isUser ? 'border-white/10 bg-[#282a36]/50' : 'border-[#191a21] bg-[#282a36]'} shadow-2xl w-full max-w-full group/code`}>
+                                                        {!isUser && (
+                                                          <div className="flex items-center justify-between px-4 py-3 bg-[#21222c] border-b border-[#191a21]">
+                                                            <div className="flex items-center gap-2">
+                                                              <div className="flex items-center gap-1.5 mr-2">
+                                                                <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                                                                <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                                                                <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+                                                              </div>
+                                                              <span className="text-[10px] font-black uppercase tracking-widest text-[#6272a4]">{lang || 'plain text'}</span>
+                                                            </div>
+                                                            <button
+                                                              onClick={() => {
+                                                                copyText(codeValue);
+                                                                toast.success("Code copied!");
+                                                              }}
+                                                              className="flex items-center gap-1.5 text-[11px] font-bold text-[#6272a4] hover:text-[#f8f8f2] transition-all bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg border border-transparent hover:border-white/10 active:scale-95"
+                                                            >
+                                                              <Copy className="w-3.5 h-3.5" />
+                                                              Copy
+                                                            </button>
+                                                          </div>
+                                                        )}
+                                                        <div className={`w-full ${isUser ? 'bg-transparent' : 'bg-[#282a36]'}`}>
+                                                          <SyntaxHighlighter
+                                                            className="custom-scrollbar"
+                                                            language={lang || 'text'}
+                                                            style={highlighterTheme}
+                                                            PreTag="div"
+                                                            customStyle={{
+                                                              margin: 0,
+                                                              padding: isUser ? '16px' : '20px',
+                                                              fontSize: isUser ? '13px' : '14px',
+                                                              lineHeight: '1.7',
+                                                              background: 'transparent',
+                                                              borderRadius: 0,
+                                                              border: 'none',
+                                                              color: '#f8f8f2',
+                                                              fontFamily: '"Fira Code", "JetBrains Mono", source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace',
+                                                              overflowX: 'auto',
+                                                              overflowY: 'auto',
+                                                              maxHeight: isUser ? '500px' : '600px',
+                                                              WebkitOverflowScrolling: 'touch'
+                                                            }}
+                                                            codeTagProps={{
+                                                              style: {
+                                                                fontFamily: 'inherit',
+                                                                background: 'transparent',
+                                                                color: 'inherit',
+                                                                display: 'block',
+                                                                minWidth: 'max-content'
+                                                              }
+                                                            }}
+                                                            {...props}
+                                                          >
+                                                            {codeValue}
+                                                          </SyntaxHighlighter>
                                                         </div>
                                                       </div>
-                                                    )}
-                                                    <ImageViewer
-                                                      src={props.src}
-                                                      alt={props.alt || "AI Image"}
-                                                    />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover/img-container:opacity-100 transition-opacity duration-500 ease-in-out pointer-events-none" />
-                                                  </div>
-                                                  <button
-                                                    onClick={() => handleDownload(props.src, `AISA_gen_${Date.now()}.png`)}
-                                                    disabled={isDownloading}
-                                                    className="absolute bottom-4 right-4 z-20 flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl border border-white/20 text-white shadow-lg transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 disabled:opacity-50"
-                                                  >
-                                                    <div className="flex items-center gap-2">
-                                                      {isDownloading ? (
-                                                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                      ) : (
-                                                        <Download className="w-4 h-4" />
-                                                      )}
-                                                      <span className="text-[10px] font-bold uppercase">
-                                                        {isDownloading ? 'Downloading...' : 'Download'}
-                                                      </span>
+                                                    );
+                                                  }
+                                                  return (
+                                                    <code className="bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-md font-mono text-primary font-bold mx-0.5 text-xs translate-y-[-1px] inline-block" {...props}>
+                                                      {children}
+                                                    </code>
+                                                  );
+                                                },
+                                                img: ({ node, ...props }) => {
+                                                  const isDownloading = isDownloadingUrl === props.src;
+                                                  return (
+                                                    <div className="relative my-4 group/img-container max-w-full">
+                                                      <div className="relative group/image overflow-hidden aspect-auto max-w-[500px] cursor-zoom-in w-fit" onClick={() => setViewingDoc({ url: props.src, type: 'image', name: 'AI Image' })}>
+                                                        {msg.role === 'model' && (
+                                                          <div className="absolute top-0 left-0 right-0 p-3 bg-gradient-to-b from-black/60 to-transparent z-10 flex justify-between items-center opacity-100 sm:opacity-0 sm:group-hover/img-container:opacity-100 transition-opacity duration-500 ease-in-out">
+                                                            <div className="flex items-center gap-2">
+                                                              <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                                                              <span className="text-[10px] font-bold text-white uppercase tracking-widest">AISA™ Generated Asset</span>
+                                                            </div>
+                                                          </div>
+                                                        )}
+                                                        <ImageViewer
+                                                          src={props.src}
+                                                          alt={props.alt || "AI Image"}
+                                                        />
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover/img-container:opacity-100 transition-opacity duration-500 ease-in-out pointer-events-none" />
+                                                      </div>
+                                                      <button
+                                                        onClick={() => handleDownload(props.src, `AISA_gen_${Date.now()}.png`)}
+                                                        disabled={isDownloading}
+                                                        className="absolute bottom-4 right-4 z-20 flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl border border-white/20 text-white shadow-lg transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 disabled:opacity-50"
+                                                      >
+                                                        <div className="flex items-center gap-2">
+                                                          {isDownloading ? (
+                                                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                          ) : (
+                                                            <Download className="w-4 h-4" />
+                                                          )}
+                                                          <span className="text-[10px] font-bold uppercase">
+                                                            {isDownloading ? 'Downloading...' : 'Download'}
+                                                          </span>
+                                                        </div>
+                                                      </button>
                                                     </div>
-                                                  </button>
-                                                </div>
-                                              )
-                                            },
-                                          }}
-                                        >
-                                          {transformLegalActions(msg.content || msg.text || "")}
+                                                  )
+                                                },
+                                              }}
+                                            >
+                                              {transformLegalActions(msg.content || msg.text || "")}
                                             </ReactMarkdown>
                                           </div>
+
+                                          {(msg.content || msg.text) && (msg.content || msg.text).length > 350 && msg.id !== typingMessageId && (
+                                            <div className="flex justify-start w-full mt-2">
+                                              <button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setExpandedMessages(prev => ({ ...prev, [msg.id]: !prev[msg.id] }));
+                                                }}
+                                                className="read-more-btn"
+                                                title={expandedMessages[msg.id] ? 'Show less' : 'Read full response'}
+                                                aria-expanded={!!expandedMessages[msg.id]}
+                                              >
+                                                <span className="read-more-btn__text">
+                                                  {expandedMessages[msg.id]
+                                                    ? 'Show less'
+                                                    : `Read Full Response ↓`}
+                                                </span>
+                                                <ChevronDown
+                                                  className={`read-more-btn__icon ${expandedMessages[msg.id] ? 'rotated' : ''}`}
+                                                />
+                                              </button>
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                       {msg.cashflowData && (
@@ -7491,20 +7514,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                           </span>
                                         </div>
 
-                                        {(msg.content || msg.text) && (msg.content || msg.text).length > 350 && msg.id !== typingMessageId && (
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setExpandedMessages(prev => ({ ...prev, [msg.id]: !prev[msg.id] }));
-                                            }}
-                                            className="p-1 text-slate-400 dark:text-zinc-500 hover:text-primary rounded transition-colors flex items-center justify-center active:scale-95"
-                                            title={expandedMessages[msg.id] ? 'Show Less' : 'Show More'}
-                                          >
-                                            <ChevronDown
-                                              className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedMessages[msg.id] ? 'rotate-180 text-primary' : ''}`}
-                                            />
-                                          </button>
-                                        )}
+
                                       </div>
                                     ) : (
                                       /* AI Feedback Actions inside bubble - Strictly hide for media and processing */
@@ -7527,20 +7537,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                             })()}
                                             <div className="flex flex-col items-end gap-2 self-end sm:self-auto">
                                               <div className="flex items-center gap-2">
-                                                {(msg.content || msg.text) && (msg.content || msg.text).length > 350 && msg.id !== typingMessageId && (
-                                                  <button
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      setExpandedMessages(prev => ({ ...prev, [msg.id]: !prev[msg.id] }));
-                                                    }}
-                                                    className="p-1 text-subtext hover:text-primary hover:bg-surface-hover rounded transition-colors flex items-center justify-center active:scale-95"
-                                                    title={expandedMessages[msg.id] ? 'Show Less' : 'Show More'}
-                                                  >
-                                                    <ChevronDown
-                                                      className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedMessages[msg.id] ? 'rotate-180 text-primary' : ''}`}
-                                                    />
-                                                  </button>
-                                                )}
+
                                                 {!isMediaFeature && (() => {
                                                   const msgIdentifier = (msg.id || msg._id || idx).toString();
                                                   const isSpeaking = speakingMessageId === msgIdentifier;
@@ -7926,7 +7923,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                 className="absolute inset-0 z-[50] pointer-events-none flex flex-col items-center justify-start sm:justify-start overflow-hidden sm:overflow-y-auto sm:overflow-x-hidden sm:pb-32 md:pb-48 scrollbar-hide pt-20 sm:pt-6 aisa-welcome-screen-overlay"
               >
                 <div className="relative z-10 flex flex-col items-center w-full max-w-7xl mx-auto px-3 sm:px-6 h-max mt-0 sm:mt-0 pointer-events-auto">
-                  <ModernDashboard 
+                  <ModernDashboard
                     userName={user?.name || user?.email?.split('@')[0]}
                     activeCategory={dashboardCategory}
                     onCategoryChange={setDashboardCategory}

@@ -1919,6 +1919,74 @@ body.modal-open-hide-navbar {
   background: linear-gradient(to bottom, rgba(20, 20, 40, 0) 0%, hsl(var(--primary-bg)) 100%) !important;
 }
 
+/* Upgraded Read More Button Styles */
+.read-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9999px;
+  cursor: pointer;
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(139, 92, 246, 0.06) 100%);
+  color: #5154ff;
+  box-shadow: 0 2px 5px rgba(99, 102, 241, 0.04);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 10px;
+  user-select: none;
+  outline: none;
+}
+
+.read-more-btn:hover {
+  background: linear-gradient(135deg, #5154ff 0%, #7c3aed 100%);
+  color: #ffffff;
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.read-more-btn:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.15);
+}
+
+.read-more-btn__icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.read-more-btn__icon.rotated {
+  transform: rotate(180deg);
+}
+
+.read-more-btn:hover .read-more-btn__icon {
+  transform: translateY(1px);
+}
+
+.read-more-btn:hover .read-more-btn__icon.rotated {
+  transform: rotate(180deg) translateY(-1px);
+}
+
+/* Dark mode theme overrides */
+.dark .read-more-btn {
+  border-color: rgba(165, 180, 252, 0.15);
+  background: linear-gradient(135deg, rgba(165, 180, 252, 0.08) 0%, rgba(196, 181, 253, 0.08) 100%);
+  color: #a5b4fc;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.dark .read-more-btn:hover {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════
    MOBILE KEYBOARD FIX v3 — Definitive stable layout solution

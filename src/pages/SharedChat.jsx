@@ -5,8 +5,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus as highlighterTheme } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { 
-  Globe, MessageCircle, Bot, User, Sparkles, ExternalLink, Calendar, Rocket, ChevronDown, 
+import {
+  Globe, MessageCircle, Bot, User, Sparkles, ExternalLink, Calendar, Rocket, ChevronDown,
   X, Download, FileSpreadsheet, Presentation, FileText, File as FileIcon,
   Sun, Moon, Minus, Plus, RotateCcw, Copy, Search, ImagePlus, Video, Wand2, Scale, TrendingUp
 } from 'lucide-react';
@@ -360,7 +360,7 @@ const SharedChat = () => {
         </div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Oops!</h1>
         <p className="text-subtext mb-6">{error}</p>
-        <button 
+        <button
           onClick={() => navigate('/')}
           className="px-6 py-2.5 bg-primary text-white rounded-xl font-bold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
         >
@@ -371,7 +371,7 @@ const SharedChat = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-transparent">
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-transparent">
       {/* ─── Animated Atmospheric Background ─── */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-white dark:opacity-0 transition-opacity duration-500" />
@@ -426,14 +426,14 @@ const SharedChat = () => {
             >
               {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
             </motion.button>
-            <button 
+            <button
               onClick={handleDuplicate}
               className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold rounded-xl shadow-lg transition-all hover:scale-105 active:scale-95"
             >
               <MessageCircle size={14} />
               <span>Continue this Chat</span>
             </button>
-            <button 
+            <button
               onClick={() => navigate('/')}
               className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
             >
@@ -481,8 +481,8 @@ const SharedChat = () => {
                   {/* Mode Indicator for Model */}
                   {msg.role === 'model' && (msg.mode === MODES.WEB_SEARCH || msg.isRealTime) && (
                     <div className="flex items-center gap-2 mb-4 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full w-fit">
-                       <Globe className="w-3.5 h-3.5 text-primary animate-pulse" />
-                       <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none">Web Search Mode</span>
+                      <Globe className="w-3.5 h-3.5 text-primary animate-pulse" />
+                      <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none">Web Search Mode</span>
                     </div>
                   )}
 
@@ -564,7 +564,7 @@ const SharedChat = () => {
                     <div className={`chat-bubble-text break-words overflow-wrap-anywhere ${msg.role === 'model' ? 'prose prose-sm max-w-none' : ''}`}>
                       <div className="flex flex-col">
                         <div className={`collapsible-container ${msg.content && msg.content.length > 350 && !expandedMessages[idx] ? 'collapsed-message' : ''}`}>
-                          <ReactMarkdown 
+                          <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
                               a: ({ href, children }) => {
@@ -715,8 +715,8 @@ const SharedChat = () => {
                               img: ({ node, ...props }) => {
                                 return (
                                   <div className="relative my-4 group/img-container max-w-full">
-                                    <div 
-                                      className="relative group/image overflow-hidden aspect-auto max-w-[500px] cursor-zoom-in w-fit rounded-xl border border-zinc-200 dark:border-zinc-800" 
+                                    <div
+                                      className="relative group/image overflow-hidden aspect-auto max-w-[500px] cursor-zoom-in w-fit rounded-xl border border-zinc-200 dark:border-zinc-800"
                                       onClick={() => setViewingDoc({ url: props.src, type: 'image', name: props.alt || 'AI Image' })}
                                     >
                                       {msg.role === 'model' && (
@@ -754,17 +754,23 @@ const SharedChat = () => {
 
                         {/* Expand/Collapse Button */}
                         {(msg.content || msg.text) && (msg.content || msg.text).length > 350 && (
-                          <div className="flex justify-end w-full mt-3">
+                          <div className="flex justify-start w-full mt-2">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setExpandedMessages(prev => ({ ...prev, [idx]: !prev[idx] }));
                               }}
-                              className="p-1.5 text-zinc-400 hover:text-primary hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex items-center justify-center active:scale-95"
-                              title={expandedMessages[idx] ? 'Show Less' : 'Show More'}
+                              className="read-more-btn"
+                              title={expandedMessages[idx] ? 'Show less' : 'Read full response'}
+                              aria-expanded={!!expandedMessages[idx]}
                             >
+                              <span className="read-more-btn__text">
+                                {expandedMessages[idx]
+                                  ? 'Show less'
+                                  : `Read Full Response ↓`}
+                              </span>
                               <ChevronDown
-                                className={`w-4 h-4 transition-transform duration-200 ${expandedMessages[idx] ? 'rotate-180 text-primary' : ''}`}
+                                className={`read-more-btn__icon ${expandedMessages[idx] ? 'rotated' : ''}`}
                               />
                             </button>
                           </div>
@@ -828,19 +834,19 @@ const SharedChat = () => {
 
                   {/* Sources List */}
                   {msg.role === 'model' && msg.sources && msg.sources.length > 0 && (
-                     <div className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-                        <p className="text-[10px] font-bold uppercase text-subtext mb-3 flex items-center gap-2 tracking-widest">
-                          <ExternalLink className="w-3 h-3" />
-                          Shared Sources
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {msg.sources.map((source, sIdx) => (
-                             <a key={sIdx} href={source.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-primary/10 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs font-medium text-maintext transition-all truncate max-w-[140px]">
-                                {source.title}
-                             </a>
-                          ))}
-                        </div>
-                     </div>
+                    <div className="mt-6 pt-6 border-t border-zinc-100 dark:border-zinc-800">
+                      <p className="text-[10px] font-bold uppercase text-subtext mb-3 flex items-center gap-2 tracking-widest">
+                        <ExternalLink className="w-3 h-3" />
+                        Shared Sources
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {msg.sources.map((source, sIdx) => (
+                          <a key={sIdx} href={source.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-primary/10 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs font-medium text-maintext transition-all truncate max-w-[140px]">
+                            {source.title}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
                   )}
 
                   {/* Timestamp below bubble */}
@@ -864,31 +870,31 @@ const SharedChat = () => {
 
       {/* Floating CTA for Mobile */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 sm:hidden z-[60]">
-         <button 
-           onClick={handleDuplicate}
-           className="flex items-center gap-2 px-6 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95"
-         >
-           <MessageCircle size={18} />
-           <span>Continue Chat</span>
-         </button>
+        <button
+          onClick={handleDuplicate}
+          className="flex items-center gap-2 px-6 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-bold rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95"
+        >
+          <MessageCircle size={18} />
+          <span>Continue Chat</span>
+        </button>
       </div>
 
       {/* Document/Image Viewer Modal (Lightbox popup) */}
       {viewingDoc && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
           <div className="absolute top-4 right-4 flex items-center gap-2 z-[110]">
-            <a 
-              href={viewingDoc.url} 
-              download 
-              target="_blank" 
+            <a
+              href={viewingDoc.url}
+              download
+              target="_blank"
               rel="noopener noreferrer"
               className="p-2.5 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
               title="Open in new tab"
             >
               <ExternalLink size={20} />
             </a>
-            <button 
-              onClick={() => setViewingDoc(null)} 
+            <button
+              onClick={() => setViewingDoc(null)}
               className="p-2.5 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
               title="Close"
             >
