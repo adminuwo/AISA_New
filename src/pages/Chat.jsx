@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, Fragment } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Send, SendHorizontal, Bot, User, Sparkles, Plus, Monitor, ChevronDown, History, Paperclip, X, FileText, Image as ImageIcon, Cloud, HardDrive, Edit2, Download, Mic, Wand2, Eye, FileSpreadsheet, Presentation, File as FileIcon, MoreVertical, Trash2, Check, Camera, Video, Copy, ThumbsUp, ThumbsDown, Share, Search, Undo2, Menu as MenuIcon, Volume2, Pause, Headphones, MessageCircle, ExternalLink, ZoomIn, ZoomOut, RotateCcw, Minus, Code, Globe, Sliders, PlayCircle, Brain, ImagePlus, PlaySquare, RefreshCcw, TrendingUp, Zap, Gavel, Navigation, Rocket, Megaphone, Scale, ArrowLeft, ChevronRight, Briefcase, Calendar, Users, FolderOpen, Save, Sun, Moon, LayoutDashboard } from 'lucide-react';
+import { Send, SendHorizontal, Bot, User, Sparkles, Plus, Monitor, ChevronDown, History, Paperclip, X, AlertCircle, FileText, Image as ImageIcon, Cloud, HardDrive, Edit2, Download, Mic, Wand2, Eye, FileSpreadsheet, Presentation, File as FileIcon, MoreVertical, Trash2, Check, Camera, Video, Copy, ThumbsUp, ThumbsDown, Share, Search, Undo2, Menu as MenuIcon, Volume2, Pause, Headphones, MessageCircle, ExternalLink, ZoomIn, ZoomOut, RotateCcw, Minus, Code, Globe, Sliders, PlayCircle, Brain, ImagePlus, PlaySquare, RefreshCcw, TrendingUp, Zap, Gavel, Navigation, Rocket, Megaphone, Scale, ArrowLeft, ChevronRight, Briefcase, Calendar, Users, FolderOpen, Save, Sun, Moon, LayoutDashboard } from 'lucide-react';
 import LegalLogo from '../Tools/AI_Legal/components/LegalLogo';
 import CaseIntelligencePanel from '../Tools/AI_Legal/components/CaseIntelligencePanel';
 import { logo } from '../constants';
@@ -8159,29 +8159,37 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
 
 
                     {/* AI CashFlow Search Results Dropdown */}
-                    {isCashFlowMode && Array.isArray(stockSearchResults) && stockSearchResults.length > 0 && (
+                    {isCashFlowMode && inputValue.trim().length >= 2 && !isSearchingStocks && (
                       <div className="absolute bottom-full left-0 right-0 mb-3 px-2 z-[1020] pointer-events-auto max-h-[300px] overflow-y-auto custom-scrollbar">
                         <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
-                          {stockSearchResults.map((stock) => (
-                            <button
-                              key={stock.symbol}
-                              type="button"
-                              onClick={() => {
-                                setSelectedStock(stock);
-                                setInputValue(stock.name);
-                                setStockSearchResults([]);
-                              }}
-                              className="w-full text-left px-4 py-3 hover:bg-primary/10 border-b border-slate-100 dark:border-zinc-800 last:border-0 flex items-center justify-between group transition-colors"
-                            >
-                              <div className="flex flex-col">
-                                <span className="font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">{stock.symbol}</span>
-                                <span className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-1">{stock.name}</span>
-                              </div>
-                              <div className="text-right shrink-0">
-                                <span className="text-[10px] px-2 py-0.5 bg-slate-100 dark:bg-white/5 rounded text-slate-500 dark:text-zinc-400 font-bold uppercase">{stock.region}</span>
-                              </div>
-                            </button>
-                          ))}
+                          {stockSearchResults.length === 0 ? (
+                            <div className="px-4 py-6 text-center text-rose-500">
+                              <AlertCircle className="w-6 h-6 mx-auto mb-1.5 opacity-80" />
+                              <p className="text-xs font-bold uppercase tracking-wider">This stock is not supported by the selected market.</p>
+                              <p className="text-[10px] text-slate-500 dark:text-zinc-500 font-medium mt-0.5">Only Indian stocks are currently available.</p>
+                            </div>
+                          ) : (
+                            stockSearchResults.map((stock) => (
+                              <button
+                                key={stock.symbol}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedStock(stock);
+                                  setInputValue(stock.name);
+                                  setStockSearchResults([]);
+                                }}
+                                className="w-full text-left px-4 py-3 hover:bg-primary/10 border-b border-slate-100 dark:border-zinc-800 last:border-0 flex items-center justify-between group transition-colors"
+                              >
+                                <div className="flex flex-col">
+                                  <span className="font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">{stock.symbol}</span>
+                                  <span className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-1">{stock.name}</span>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="text-[10px] px-2 py-0.5 bg-slate-100 dark:bg-white/5 rounded text-slate-500 dark:text-zinc-400 font-bold uppercase">{stock.region}</span>
+                                </div>
+                              </button>
+                            ))
+                          )}
                         </div>
                       </div>
                     )}

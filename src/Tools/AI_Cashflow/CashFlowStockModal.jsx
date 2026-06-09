@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, TrendingUp, BarChart3, Globe, Zap, Loader2, Check, ExternalLink, ChevronDown, Activity, Sparkles, AlertCircle, Maximize, BookOpen, Shield, TrendingDown, Award, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
+import { X, Search, TrendingUp, BarChart3, Globe, Zap, Loader2, Check, ExternalLink, ChevronDown, Activity, Sparkles, AlertCircle, Maximize, BookOpen, Shield, TrendingDown, Award, ChevronRight, Maximize2, Minimize2, Lock, Unlock } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
@@ -109,17 +109,24 @@ const TradingViewWidget = ({ symbol, interval = "D", containerId = "tv_chart_con
 };
 
 const COUNTRIES = [
-   { code: 'IN', name: 'India', flag: '🇮🇳' },
-   { code: 'US', name: 'United States', flag: '🇺🇸' },
-   { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
-   { code: 'DE', name: 'Germany', flag: '🇩🇪' },
-   { code: 'JP', name: 'Japan', flag: '🇯🇵' },
-   { code: 'CN', name: 'China', flag: '🇨🇳' },
-   { code: 'AU', name: 'Australia', flag: '🇦🇺' },
-   { code: 'CA', name: 'Canada', flag: '🇨🇦' },
-   { code: 'SG', name: 'Singapore', flag: '🇸🇬' },
-   { code: 'HK', name: 'Hong Kong', flag: '🇭🇰' },
+   { code: 'IN', name: 'India', flag: '🇮🇳', supported: true },
+   { code: 'US', name: 'United States', flag: '🇺🇸', supported: false },
+   { code: 'GB', name: 'United Kingdom', flag: '🇬🇧', supported: false },
+   { code: 'DE', name: 'Germany', flag: '🇩🇪', supported: false },
+   { code: 'JP', name: 'Japan', flag: '🇯🇵', supported: false },
+   { code: 'CN', name: 'China', flag: '🇨🇳', supported: false },
+   { code: 'AU', name: 'Australia', flag: '🇦🇺', supported: false },
+   { code: 'CA', name: 'Canada', flag: '🇨🇦', supported: false },
+   { code: 'SG', name: 'Singapore', flag: '🇸🇬', supported: false },
+   { code: 'HK', name: 'Hong Kong', flag: '🇭🇰', supported: false },
 ];
+
+const isIndianSymbol = (symbol) => {
+   if (!symbol) return false;
+   const upper = symbol.toUpperCase();
+   return upper.endsWith('.BSE') || upper.endsWith('.NSE') || upper.endsWith('.BO') || upper.endsWith('.NS') ||
+          ['TCS', 'RELIANCE', 'HDFCBANK', 'INFY', 'SBIN', 'ICICIBANK'].includes(upper);
+};
 
 const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStock }) => {
    const [searchTerm, setSearchTerm] = useState('');
@@ -197,25 +204,90 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
       if (isOpen) fetchCost();
    }, [isOpen]);
 
-   // Clear data only when symbol changes to prevent jarring UI
+   const [unlockedTabs, setUnlockedTabs] = useState([]);
+
+   const fetchUnlockedTabs = async (symbol) => {
+      try {
+         const token = JSON.parse(localStorage.getItem('user') || '{}')?.token;
+         const res = await axios.get(`${baseURL}/stock/unlocked-tabs`, {
+            params: { symbol },
+            headers: { 'Authorization': `Bearer ${token}` }
+         });
+         if (res.data && Array.isArray(res.data.unlockedTabs)) {
+            setUnlockedTabs(prev => {
+               const combined = new Set([...prev, ...res.data.unlockedTabs]);
+               return Array.from(combined);
+            });
+         }
+      } catch (err) {
+         console.error("Failed to fetch unlocked tabs:", err);
+      }
+   };
+
+   // Load stock data cache and fetch unlocked tabs when selectedStock changes
    useEffect(() => {
       if (isOpen && selectedStock) {
-         setTabData({
-            'Realtime chart': null,
-            'News': null,
-            'Historical chart': null,
-            'Advisory': null,
-            'Research and recommendation': null
-         });
+         const symbol = selectedStock.symbol.toUpperCase().trim();
+         
+         // 1. Fetch unlocked tabs from backend
+         fetchUnlockedTabs(symbol);
+
+         // 2. Load cached data from sessionStorage if exists
+         const cacheKey = `aisa_cashflow_cache_${symbol}`;
+         const cached = sessionStorage.getItem(cacheKey);
+         if (cached) {
+            try {
+               const parsed = JSON.parse(cached);
+               setTabData(parsed.tabData || {
+                  'Realtime chart': null,
+                  'News': null,
+                  'Historical chart': null,
+                  'Advisory': null,
+                  'Research and recommendation': null
+               });
+               setGrahamData(parsed.grahamData || null);
+               setKiyosakiData(parsed.kiyosakiData || null);
+               setUnlockedTabs(parsed.unlockedTabs || []);
+               setShowGrahamPanel(!!parsed.grahamData);
+               setShowKiyosakiPanel(!!parsed.kiyosakiData);
+            } catch (e) {
+               console.error("Failed to parse cached data for symbol " + symbol, e);
+            }
+         } else {
+            // Reset to empty
+            setTabData({
+               'Realtime chart': null,
+               'News': null,
+               'Historical chart': null,
+               'Advisory': null,
+               'Research and recommendation': null
+            });
+            setGrahamData(null);
+            setKiyosakiData(null);
+            setShowGrahamPanel(false);
+            setShowKiyosakiPanel(false);
+            setUnlockedTabs([]);
+         }
+         
          setActiveTab('Realtime chart');
-         // Reset Graham panel when stock changes
-         setGrahamData(null);
-         setShowGrahamPanel(false);
-         // Reset Kiyosaki panel when stock changes
-         setKiyosakiData(null);
-         setShowKiyosakiPanel(false);
+         setTabError(null);
       }
    }, [isOpen, selectedStock]);
+
+   // Save/Sync state updates to sessionStorage for the active stock
+   useEffect(() => {
+      if (isOpen && selectedStock) {
+         const symbol = selectedStock.symbol.toUpperCase().trim();
+         const cacheKey = `aisa_cashflow_cache_${symbol}`;
+         const dataToCache = {
+            tabData,
+            grahamData,
+            kiyosakiData,
+            unlockedTabs
+         };
+         sessionStorage.setItem(cacheKey, JSON.stringify(dataToCache));
+      }
+   }, [tabData, grahamData, kiyosakiData, unlockedTabs, selectedStock, isOpen]);
 
    // Search debounce
    useEffect(() => {
@@ -234,14 +306,17 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
       try {
          const token = JSON.parse(localStorage.getItem('user') || '{}')?.token;
          const res = await axios.get(`${baseURL}/cashflow/search`, {
-            params: { keywords: searchTerm },
+            params: { keywords: searchTerm, country: selectedCountry },
             headers: { 'Authorization': `Bearer ${token}` }
          });
          if (Array.isArray(res.data)) {
             setSearchResults(res.data);
+         } else {
+            setSearchResults([]);
          }
       } catch (error) {
          console.error("Search Error:", error);
+         setSearchResults([]);
       } finally {
          setIsSearching(false);
       }
@@ -251,13 +326,20 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
     useEffect(() => {
        if (!isOpen || !selectedStock) return;
  
+       if (!isIndianSymbol(selectedStock.symbol)) {
+          setTabError("Only Indian stocks are currently available.");
+          setIsLoadingTab(false);
+          return;
+       }
+
        const token = JSON.parse(localStorage.getItem('user') || '{}')?.token;
        const headers = { 'Authorization': `Bearer ${token}` };
        
        const params = { symbol: selectedStock.symbol };
-       if (!window.hasAICashFlowLoaded) {
+       const hasLoadedSession = sessionStorage.getItem('aisa_has_cashflow_loaded');
+       if (!hasLoadedSession) {
           params.isInitialLoad = 'true';
-          window.hasAICashFlowLoaded = true;
+          sessionStorage.setItem('aisa_has_cashflow_loaded', 'true');
        }
  
        if (activeTab === 'Realtime chart') {
@@ -286,13 +368,15 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
              .then(res => {
                 setTabData(prev => ({ ...prev, 'Realtime chart': { quote: prev['Realtime chart']?.quote, intraday: res.data.intraday } }));
                 setIsLoadingTab(false);
+                setUnlockedTabs(prev => prev.includes('intraday') ? prev : [...prev, 'intraday']);
              })
              .catch((err) => { 
                  setIsLoadingTab(false);
                  if (err.response?.status === 403 && err.response?.data?.code === 'OUT_OF_CREDITS') {
                     setTabError(`Insufficient Credits (Required: ${cashflowCost})`);
                  } else {
-                    setTabError(`Failed to load intraday data.`);
+                    const errMsg = err.response?.data?.error || `Failed to load intraday data.`;
+                    setTabError(errMsg);
                  }
              });
  
@@ -316,15 +400,24 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
           if (socket) {
              setIsLoadingTab(true);
              setTabError(null);
-             socket.emit('request_historical', { symbol: selectedStock.symbol });
- 
+             const token = JSON.parse(localStorage.getItem('user') || '{}')?.token;
+             socket.emit('request_historical', { symbol: selectedStock.symbol, token });
+  
              const handleHistorical = (data) => {
                 setIsLoadingTab(false);
-                if (data.error) setTabError(data.error);
-                else setTabData(prev => ({ ...prev, 'Historical chart': { historical: data.historical } }));
+                if (data.error) {
+                   if (data.code === 'OUT_OF_CREDITS') {
+                      setTabError(`Insufficient Credits (Required: ${cashflowCost})`);
+                   } else {
+                      setTabError(data.error);
+                   }
+                } else {
+                   setTabData(prev => ({ ...prev, 'Historical chart': { historical: data.historical } }));
+                   setUnlockedTabs(prev => prev.includes('historical') ? prev : [...prev, 'historical']);
+                }
              };
              socket.on('historical_data_response', handleHistorical);
- 
+  
              return () => socket.off('historical_data_response', handleHistorical);
           }
        } else {
@@ -341,11 +434,14 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
           if (promise) {
              promise.then(result => {
                 setTabData(prev => ({ ...prev, [activeTab]: result }));
+                const mappedTab = activeTab === 'News' ? 'news' : activeTab === 'Advisory' ? 'advisory' : 'research';
+                setUnlockedTabs(prev => prev.includes(mappedTab) ? prev : [...prev, mappedTab]);
              }).catch(err => {
                 if (err.response?.status === 403 && err.response?.data?.code === 'OUT_OF_CREDITS') {
                    setTabError(`Insufficient Credits (Required: ${cashflowCost})`);
                 } else {
-                   setTabError(`Failed to load ${activeTab}.`);
+                   const errMsg = err.response?.data?.error || `Failed to load ${activeTab}.`;
+                   setTabError(errMsg);
                 }
              }).finally(() => setIsLoadingTab(false));
           }
@@ -359,6 +455,10 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
 
    const fetchGrahamAnalysis = async () => {
       if (grahamData || isGrahamLoading) return;
+      if (!isIndianSymbol(selectedStock?.symbol)) {
+         setTabError("Only Indian stocks are currently available.");
+         return;
+      }
       setIsGrahamLoading(true);
       setShowGrahamPanel(true);
       try {
@@ -369,6 +469,7 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
             headers: { 'Authorization': `Bearer ${token}` }
          });
          setGrahamData(res.data.graham);
+         setUnlockedTabs(prev => prev.includes('graham-analysis') ? prev : [...prev, 'graham-analysis']);
       } catch (err) {
          console.error('[Graham] Analysis failed:', err);
       } finally {
@@ -378,6 +479,10 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
 
    const fetchKiyosakiAnalysis = async () => {
       if (kiyosakiData || isKiyosakiLoading) return;
+      if (!isIndianSymbol(selectedStock?.symbol)) {
+         setTabError("Only Indian stocks are currently available.");
+         return;
+      }
       setIsKiyosakiLoading(true);
       setShowKiyosakiPanel(true);
       try {
@@ -388,6 +493,7 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
             headers: { 'Authorization': `Bearer ${token}` }
          });
          setKiyosakiData(res.data.kiyosaki);
+         setUnlockedTabs(prev => prev.includes('kiyosaki-analysis') ? prev : [...prev, 'kiyosaki-analysis']);
       } catch (err) {
          console.error('[Kiyosaki] Analysis failed:', err);
       } finally {
@@ -513,7 +619,7 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
                               className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white dark:bg-[#1E2438] border border-black/5 dark:border-white/8 rounded-[18px] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.6)] overflow-hidden z-[110]"
                            >
                               <div className="py-2 max-h-64 overflow-y-auto custom-scrollbar">
-                                 {COUNTRIES.map(country => (
+                                 {COUNTRIES.filter(c => c.supported).map(country => (
                                     <button
                                        key={country.code}
                                        onClick={() => {
@@ -573,23 +679,31 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
                                  />
                               </div>
                               <div className="py-2">
-                                 {(searchTerm.length >= 2 ? searchResults : PRESET_STOCKS).map((stock) => (
-                                    <button
-                                       key={stock.symbol}
-                                       onClick={() => {
-                                          setSelectedStock(stock);
-                                          setIsStockSelectOpen(false);
-                                          setSearchTerm('');
-                                       }}
-                                       className="w-full text-left px-6 py-4 hover:bg-[#fdfaf5] dark:hover:bg-white/5 transition-colors border-b border-gray-50/50 dark:border-white/5 last:border-0 flex items-center justify-between group"
-                                    >
-                                       <div>
-                                          <div className="text-[14px] font-black text-[#111] dark:text-white group-hover:text-[#5154ff]">{stock.symbol}</div>
-                                          <div className="text-[11px] text-[#888] dark:text-zinc-500 font-bold uppercase tracking-wider">{stock.name}</div>
-                                       </div>
-                                       {selectedStock?.symbol === stock.symbol && <Check className="w-5 h-5 text-[#5154ff]" />}
-                                    </button>
-                                 ))}
+                                 {searchTerm.length >= 2 && searchResults.length === 0 ? (
+                                    <div className="px-6 py-8 text-center text-rose-500">
+                                       <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-80" />
+                                       <p className="text-sm font-black uppercase tracking-wider">This stock is not supported by the selected market.</p>
+                                       <p className="text-xs text-gray-500 dark:text-zinc-500 font-bold mt-1">Only Indian stocks are currently available.</p>
+                                    </div>
+                                 ) : (
+                                    (searchTerm.length >= 2 ? searchResults : PRESET_STOCKS).map((stock) => (
+                                       <button
+                                          key={stock.symbol}
+                                          onClick={() => {
+                                             setSelectedStock(stock);
+                                             setIsStockSelectOpen(false);
+                                             setSearchTerm('');
+                                          }}
+                                          className="w-full text-left px-6 py-4 hover:bg-[#fdfaf5] dark:hover:bg-white/5 transition-colors border-b border-gray-50/50 dark:border-white/5 last:border-0 flex items-center justify-between group"
+                                       >
+                                          <div>
+                                             <div className="text-[14px] font-black text-[#111] dark:text-white group-hover:text-[#5154ff]">{stock.symbol}</div>
+                                             <div className="text-[11px] text-[#888] dark:text-zinc-500 font-bold uppercase tracking-wider">{stock.name}</div>
+                                          </div>
+                                          {selectedStock?.symbol === stock.symbol && <Check className="w-5 h-5 text-[#5154ff]" />}
+                                       </button>
+                                    ))
+                                 )}
                               </div>
                            </motion.div>
                         )}
@@ -599,15 +713,30 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
 
                {/* Tab Navigation */}
                <div className="px-2 sm:px-8 border-b border-gray-100 dark:border-white/5 flex items-center gap-3 sm:gap-10 overflow-x-auto no-scrollbar bg-white dark:bg-[#161B2E] shrink-0">
-                  {['Realtime chart', 'News', 'Historical chart', 'Advisory', 'Research and recommendation'].map(tab => (
-                     <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`py-3 sm:py-5 text-[10px] sm:text-[14px] font-black whitespace-nowrap transition-all border-b-2 tracking-wide uppercase ${activeTab === tab ? 'text-[#5154ff] border-[#5154ff]' : 'text-gray-400 dark:text-zinc-500 border-transparent hover:text-gray-600 dark:hover:text-zinc-300'}`}
-                     >
-                        {tab}
-                     </button>
-                  ))}
+                  {['Realtime chart', 'News', 'Historical chart', 'Advisory', 'Research and recommendation'].map(tab => {
+                     const tabMap = {
+                        'Realtime chart': 'intraday',
+                        'News': 'news',
+                        'Historical chart': 'historical',
+                        'Advisory': 'advisory',
+                        'Research and recommendation': 'research'
+                     };
+                     const isUnlocked = unlockedTabs.includes(tabMap[tab]);
+                     return (
+                        <button
+                           key={tab}
+                           onClick={() => setActiveTab(tab)}
+                           className={`py-3 sm:py-5 text-[10px] sm:text-[14px] font-black whitespace-nowrap transition-all border-b-2 tracking-wide uppercase flex items-center gap-1.5 ${activeTab === tab ? 'text-[#5154ff] border-[#5154ff]' : 'text-gray-400 dark:text-zinc-500 border-transparent hover:text-gray-600 dark:hover:text-zinc-300'}`}
+                        >
+                           {tab}
+                           {isUnlocked ? (
+                              <Unlock className="w-3.5 h-3.5 text-emerald-500" />
+                           ) : (
+                              <Lock className="w-3.5 h-3.5 text-gray-400/80" />
+                           )}
+                        </button>
+                     );
+                  })}
                </div>
 
                {/* Main Content Area */}
@@ -917,8 +1046,13 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
                                        }`}
                                  >
                                     <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                                       <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-amber-700/40 border border-amber-600/30 flex items-center justify-center shadow-inner shrink-0">
+                                       <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-amber-700/40 border border-amber-600/30 flex items-center justify-center shadow-inner shrink-0 relative">
                                           <BookOpen className="w-4 h-4 sm:w-6 sm:h-6 text-amber-300" />
+                                          {unlockedTabs.includes('graham-analysis') ? (
+                                             <Unlock className="w-3 h-3 text-emerald-400 absolute -bottom-1 -right-1" />
+                                          ) : (
+                                             <Lock className="w-3 h-3 text-amber-400/80 absolute -bottom-1 -right-1" />
+                                          )}
                                        </div>
                                        <div className="text-left min-w-0">
                                           <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.15em] sm:tracking-[0.25em] text-amber-400/70 mb-0.5 truncate">Value Investing Analysis</p>
@@ -1041,8 +1175,13 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
                                        }`}
                                  >
                                     <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                                       <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-blue-700/40 border border-blue-600/30 flex items-center justify-center shadow-inner shrink-0">
+                                       <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-blue-700/40 border border-blue-600/30 flex items-center justify-center shadow-inner shrink-0 relative">
                                           <Globe className="w-4 h-4 sm:w-6 sm:h-6 text-blue-300" />
+                                          {unlockedTabs.includes('kiyosaki-analysis') ? (
+                                             <Unlock className="w-3 h-3 text-emerald-400 absolute -bottom-1 -right-1" />
+                                          ) : (
+                                             <Lock className="w-3 h-3 text-blue-400/80 absolute -bottom-1 -right-1" />
+                                          )}
                                        </div>
                                        <div className="text-left min-w-0">
                                           <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.15em] sm:tracking-[0.25em] text-blue-400/70 mb-0.5 truncate">Finance IQ & Cashflow</p>

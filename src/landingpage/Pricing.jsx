@@ -567,6 +567,10 @@ const Pricing = () => {
                             amount={billingCycle === 'yearly' ? totalYearlyAmount : displayPrice}
                             currency="INR"
                             onSuccess={(data) => {
+                              if (data.isTest) {
+                                toast.success(data.message || "Test Payment Successful – No credits or subscription have been applied because the system is running in test mode.");
+                                return;
+                              }
                               toast.success(`✅ Google Pay successful! ${getDisplayPlanName(plan.planName)} activated.`);
                               if (data.credits !== undefined) {
                                 const updatedUser = updateUser({
