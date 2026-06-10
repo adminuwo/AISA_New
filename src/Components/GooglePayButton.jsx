@@ -202,18 +202,12 @@ const GooglePayButton = ({
                         </>
                     ) : (
                         <>
-                            {/* Official Google Pay logo (SVG inline — no external image needed) */}
-                            <svg className="gpay-logo" viewBox="0 0 41 17" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path d="M19.526 2.635v4.083h2.518c.6 0 1.096-.202 1.488-.605.403-.402.605-.882.605-1.437 0-.544-.202-1.018-.605-1.422-.392-.413-.888-.62-1.488-.62h-2.518zm0 5.52v4.736h-1.504V1.198h3.99c1.013 0 1.873.337 2.582 1.012.72.675 1.08 1.497 1.08 2.466 0 .991-.36 1.819-1.08 2.482-.697.652-1.559.978-2.583.978h-2.485zm7.668 2.287c0 .566.178 1.034.535 1.404.357.37.82.555 1.39.555.826 0 1.469-.392 1.927-1.176l1.317.88c-.676 1.045-1.692 1.568-3.048 1.568-1.016 0-1.83-.317-2.44-.95-.61-.644-.915-1.476-.915-2.496 0-.99.312-1.814.937-2.47.625-.657 1.428-.985 2.408-.985 1.016 0 1.832.38 2.448 1.14.627.76.94 1.657.94 2.69l-5.499 1.84zm3.702-3.41c-.35-.398-.82-.597-1.41-.597-.566 0-1.062.202-1.488.606-.414.404-.636.924-.663 1.558l3.56-1.567z" fill="#fff"/>
-                                <path d="M5.9 8.51v2.96H4.397V1.198h3.875c.93 0 1.724.312 2.385.937.672.625 1.008 1.39 1.008 2.297 0 .928-.336 1.7-1.008 2.314-.65.604-1.444.906-2.385.906H5.9zm0-5.876V7.07h2.407c.566 0 1.04-.19 1.42-.57.392-.38.588-.852.588-1.415 0-.555-.196-1.022-.588-1.402-.38-.39-.854-.584-1.42-.584H5.9z" fill="#fff"/>
-                                <path d="M17.502 5.674c-.37-.35-.886-.527-1.55-.527-.795 0-1.44.308-1.935.924L12.71 5.19c.718-.938 1.738-1.407 3.06-1.407.977 0 1.796.265 2.454.794.668.53 1.002 1.268 1.002 2.215v4.685h-1.432v-.993h-.057c-.586.827-1.397 1.24-2.434 1.24-.827 0-1.518-.247-2.074-.74-.545-.494-.817-1.117-.817-1.87 0-.793.3-1.42.9-1.88.61-.47 1.424-.706 2.443-.706.874 0 1.593.157 2.157.47l-.41-.324zm-3.498 3.61c0 .38.16.696.48.948.32.253.696.38 1.13.38.61 0 1.15-.227 1.62-.683.48-.456.72-.99.72-1.604-.45-.357-1.08-.535-1.885-.535-.587 0-1.076.142-1.467.426-.38.284-.57.644-.57 1.068z" fill="#fff"/>
-                                <path d="M26.248 3.998l-4.757 10.99H20.01l1.765-3.818-3.14-7.172h1.59l2.258 5.506h.033l2.193-5.506z" fill="#fff"/>
-                                <g>
-                                    <path d="M38.71 8.42c0 2.57-2.25 4.665-5.04 4.665-2.78 0-5.04-2.094-5.04-4.665s2.26-4.664 5.04-4.664c2.79 0 5.04 2.094 5.04 4.664z" fill="#4285F4"/>
-                                    <path d="M38.71 8.42c0 2.57-1.95 4.664-4.34 4.664V3.756c2.39 0 4.34 2.094 4.34 4.664z" fill="#34A853"/>
-                                    <path d="M33.67 12.17c-2.38 0-4.34-1.66-4.34-3.75 0-2.08 1.96-3.75 4.34-3.75v7.5z" fill="#EA4335"/>
-                                    <path d="M29.33 8.42c0-2.08 1.96-3.75 4.34-3.75v3.75H29.33z" fill="#FBBC05"/>
-                                </g>
+                            {/* Official Google G Logo SVG */}
+                            <svg className="gpay-logo" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18c-.78 1.55-1.22 3.3-1.22 5.14s.44 3.59 1.22 5.14l3.66-2.84z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                             </svg>
                             <span className="gpay-btn-label">Pay</span>
                         </>
@@ -238,34 +232,35 @@ const GooglePayButton = ({
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 10px;
+                    gap: 8px;
                     width: 100%;
-                    min-height: 48px;
-                    padding: 10px 20px;
+                    min-height: 40px;
+                    padding: 10px 14px;
                     background: #000;
                     border: none;
-                    border-radius: 10px;
+                    border-radius: 12px;
                     cursor: pointer;
-                    font-family: 'Google Sans', 'Roboto', sans-serif;
-                    font-size: 15px;
-                    font-weight: 600;
+                    font-family: inherit;
+                    font-size: 0.8rem;
+                    font-weight: 700;
                     color: #fff;
                     letter-spacing: 0.25px;
                     transition: background 0.2s, box-shadow 0.2s, opacity 0.2s, transform 0.1s;
-                    box-shadow: 0 2px 12px rgba(0,0,0,0.28);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
                     position: relative;
                     overflow: hidden;
+                    box-sizing: border-box;
                 }
 
                 .gpay-btn:hover:not(:disabled) {
                     background: #1a1a1a;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+                    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
                     transform: translateY(-1px);
                 }
 
                 .gpay-btn:active:not(:disabled) {
                     transform: translateY(0);
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
                 }
 
                 .gpay-btn:disabled {
@@ -283,19 +278,20 @@ const GooglePayButton = ({
                 }
 
                 .gpay-logo {
-                    width: 60px;
-                    height: auto;
+                    width: 18px;
+                    height: 18px;
                     flex-shrink: 0;
                 }
 
                 .gpay-btn-label {
-                    font-size: 15px;
+                    font-size: 0.85rem;
+                    font-weight: 700;
                     color: #fff;
                 }
 
                 .gpay-spinner {
-                    width: 18px;
-                    height: 18px;
+                    width: 16px;
+                    height: 16px;
                     border: 2px solid rgba(255,255,255,0.3);
                     border-top-color: #fff;
                     border-radius: 50%;
@@ -304,12 +300,12 @@ const GooglePayButton = ({
                 }
 
                 .gpay-icon-error {
-                    font-size: 16px;
+                    font-size: 14px;
                     font-weight: 700;
                 }
 
                 .gpay-error-text {
-                    font-size: 12px;
+                    font-size: 11px;
                     color: #e74c3c;
                     text-align: center;
                     margin: 0;
@@ -318,8 +314,8 @@ const GooglePayButton = ({
 
                 .gpay-skeleton {
                     width: 100%;
-                    min-height: 48px;
-                    border-radius: 10px;
+                    min-height: 40px;
+                    border-radius: 12px;
                     overflow: hidden;
                     background: rgba(255,255,255,0.06);
                 }
@@ -330,7 +326,7 @@ const GooglePayButton = ({
                     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
                     background-size: 200% 100%;
                     animation: gpay-shimmer 1.4s infinite;
-                    min-height: 48px;
+                    min-height: 40px;
                 }
 
                 @keyframes gpay-spin {
