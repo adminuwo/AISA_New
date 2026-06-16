@@ -931,14 +931,10 @@ export const apiService = {
   async getAllUsers() {
     try {
       const response = await apiClient.get('/user/all');
-      return response.data;
+      return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
-      console.warn('Backend get users failed, falling back to mock:', error.message);
-      // Mock fallback
-      return [
-        { id: '1', name: 'Mock User 1', email: 'user1@example.com', role: 'user', status: 'Active', agents: [], spent: 120 },
-        { id: '2', name: 'Mock User 2', email: 'user2@example.com', role: 'user', status: 'Active', agents: [], spent: 250 }
-      ];
+      console.error('Failed to fetch users from backend:', error.response?.data || error.message);
+      return []; // Return empty array instead of mock data
     }
   },
 
