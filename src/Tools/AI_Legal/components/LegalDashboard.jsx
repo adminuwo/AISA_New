@@ -555,309 +555,348 @@ const CaseDetailView = ({ item, isDark, onBack, onDelete, onAskStrategy, onViewR
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8 pb-20 space-y-5">
-          {/* Back + Delete Row */}
-          <div className="flex items-center justify-between">
-            <button onClick={() => {
-              console.log("Button Clicked: Back To Dashboard");
-              console.log("Icon Clicked: Back To Dashboard");
-              console.log("Navigation Success: Returned to Dashboard");
-              onBack();
-            }} className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 hover:underline text-xs font-black uppercase tracking-widest">
-              <ChevronRight size={14} className="rotate-180" /> Back to Dashboard
-            </button>
-            <button onClick={() => {
-              console.log("Button Clicked: Delete Case");
-              console.log("Icon Clicked: Delete Case");
-              if (confirm('Delete this case permanently?')) {
-                onDelete(caseData.id);
-                console.log("Action Completed: Case Deleted");
-              }
-            }} className="p-2 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl text-red-500 transition-colors">
-              <Trash2 size={18} />
-            </button>
-          </div>
+      <div className="flex-1 overflow-y-auto custom-scrollbar w-full">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-6 pb-20 space-y-6">
 
           {/* Case Header */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 border-b border-slate-200/60 dark:border-white/5 pb-5">
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">{caseData.title}</h2>
-              <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 font-bold">
-                <User size={12} /> Client: {caseData.clientName || 'N/A'}
-              </div>
-              {caseData.opponentName && (
-                <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500 font-bold">
-                  <Users size={12} /> Opponent: {caseData.opponentName}
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">{caseData.title}</h2>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2">
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-bold">
+                  <User size={14} className="text-indigo-500" /> Client: <span className="text-slate-700 dark:text-slate-200 font-black">{caseData.clientName || 'N/A'}</span>
                 </div>
-              )}
-            </div>
-            <StatusBadge status={caseData.status || 'Active'} />
-          </div>
-
-          {/* AI Intelligence Card */}
-          <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl p-5 sm:p-6 text-white shadow-xl shadow-indigo-500/20">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Sparkles size={14} />
-                <span className="text-[10px] font-black uppercase tracking-widest opacity-90">AI Case Intelligence</span>
+                {caseData.opponentName && (
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-bold">
+                    <Users size={14} className="text-violet-500" /> Opponent: <span className="text-slate-700 dark:text-slate-200 font-black">{caseData.opponentName}</span>
+                  </div>
+                )}
               </div>
-              {caseData.probability && <span className="text-xs font-black opacity-80">{caseData.probability}% Win Prob.</span>}
             </div>
-            <p className="text-sm font-semibold leading-relaxed opacity-90 mb-4">
-              {caseData.aiSummary || `Strategic assessment for ${caseData.title} is pending. Complete case details and documentation to generate precise AI intelligence.`}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => {
-                console.log("Button Clicked: Ask AI Strategy");
-                console.log("Icon Clicked: Ask AI Strategy");
-                onAskStrategy?.(caseData);
-              }} className="flex items-center gap-1.5 px-3 py-2 bg-white/15 hover:bg-white/25 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">
-                <MessageSquare size={12} /> Ask AI Strategy
-              </button>
-              <button onClick={() => {
-                console.log("Button Clicked: View Roadmap");
-                console.log("Icon Clicked: View Roadmap");
-                onViewRoadmap?.(caseData);
-              }} className="flex items-center gap-1.5 px-3 py-2 bg-white/15 hover:bg-white/25 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">
-                <Eye size={12} /> View Roadmap
-              </button>
-              <button onClick={() => {
-                console.log("Button Clicked: Open Case In");
-                console.log("Icon Clicked: Open Case In");
-                setIsRouterVisible(true);
-              }} className="flex items-center gap-1.5 px-3 py-2 bg-white/25 hover:bg-white/35 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all">
-                <ExternalLink size={12} /> Open Case In...
-              </button>
+            <div className="mt-2 sm:mt-0">
+              <StatusBadge status={caseData.status || 'Active'} />
             </div>
           </div>
 
-          {/* Case Info Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { icon: Calendar, label: 'NEXT HEARING', value: caseData.hearingDate || 'TBD', color: 'text-indigo-600 dark:text-indigo-400' },
-              { icon: Gavel, label: 'COURT', value: caseData.courtName || 'General', color: 'text-violet-600 dark:text-violet-400' },
-              { icon: Scale, label: 'CASE TYPE', value: caseData.caseType || 'General', color: 'text-amber-600 dark:text-amber-400' },
-              { icon: Paperclip, label: 'EVIDENCE', value: `${(caseData.documents || []).length} Files`, color: 'text-emerald-600 dark:text-emerald-400' }
-            ].map(({ icon: Icon, label, value, color }) => (
-              <div key={label} className="flex items-center gap-3 p-3.5 bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-xl">
-                <Icon size={16} className={color} />
-                <div className="min-w-0">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">{label}</p>
-                  <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{value}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            {/* Left Main Content Column */}
+            <div className="lg:col-span-2 space-y-6">
+
+              {/* AI Intelligence Card */}
+              <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 rounded-2xl p-6 text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden border border-indigo-400/25">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-white/10 rounded-lg">
+                      <Sparkles size={16} className="text-amber-300" />
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-widest opacity-95">AI Case Intelligence</span>
+                  </div>
+                  {caseData.probability && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/15 dark:bg-white/10 rounded-full border border-white/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-[10px] font-black uppercase tracking-wider text-white">{caseData.probability}% Win Probability</span>
+                    </div>
+                  )}
+                </div>
+                
+                <p className="text-sm sm:text-base font-semibold leading-relaxed opacity-95 mb-6 relative z-10">
+                  {caseData.aiSummary || `Strategic assessment for ${caseData.title} is pending. Complete case details and documentation to generate precise AI intelligence.`}
+                </p>
+                
+                <div className="flex flex-wrap gap-2.5 relative z-10">
+                  <button onClick={() => {
+                    console.log("Button Clicked: Ask AI Strategy");
+                    console.log("Icon Clicked: Ask AI Strategy");
+                    onAskStrategy?.(caseData);
+                  }} className="flex items-center gap-1.5 px-4 py-2.5 bg-white text-indigo-900 hover:bg-slate-100 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-md hover:shadow-lg active:scale-95 duration-150">
+                    <MessageSquare size={14} /> Ask AI Strategy
+                  </button>
+                  <button onClick={() => {
+                    console.log("Button Clicked: View Roadmap");
+                    console.log("Icon Clicked: View Roadmap");
+                    onViewRoadmap?.(caseData);
+                  }} className="flex items-center gap-1.5 px-4 py-2.5 bg-white/15 hover:bg-white/25 border border-white/10 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-95 duration-150">
+                    <Eye size={14} /> View Roadmap
+                  </button>
+                  <button onClick={() => {
+                    console.log("Button Clicked: Open Case In");
+                    console.log("Icon Clicked: Open Case In");
+                    setIsRouterVisible(true);
+                  }} className="flex items-center gap-1.5 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-95 duration-150">
+                    <ExternalLink size={14} /> Open Case In...
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Client Contact */}
-          <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <User size={16} className="text-indigo-600 dark:text-indigo-400" />
-              <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Client Contact</h4>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white font-black text-sm shrink-0">
-                {caseData.clientName?.charAt(0)?.toUpperCase() || 'C'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{caseData.clientName || 'Unnamed Client'}</p>
-                <p className="text-xs text-slate-400 font-semibold">{caseData.clientPhone ? `${caseData.countryCode || '+91'} ${caseData.clientPhone}` : 'No contact added'}</p>
-              </div>
-              <button onClick={() => {
-                console.log("Button Clicked: Call Client");
-                console.log("Icon Clicked: Call Client");
-                setQuickActionsPhone(caseData.clientPhone || null);
-              }}
-                className="p-2.5 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl hover:scale-105 transition-all">
-                <Phone size={18} className="text-indigo-600 dark:text-indigo-400" />
-              </button>
-            </div>
-          </div>
-
-          {/* Action Items & Reminders */}
-          <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Bell size={16} className="text-red-500" />
-              <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Action Items & Reminders</h4>
-            </div>
-            {tasks.length > 0 ? (
-              <div className="space-y-2.5 mb-3">
-                {tasks.map(task => (
-                  <div key={task.id} className="flex items-start gap-3 py-2 border-b border-slate-50 dark:border-white/5 last:border-0">
-                    <button onClick={() => handleToggleTask(task)}
-                      className={`w-5 h-5 mt-0.5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${task.completed ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 dark:border-slate-600'}`}>
-                      {task.completed && <Check size={12} className="text-white" strokeWidth={3} />}
-                    </button>
-                    <button onClick={() => {
-                      console.log("Button Clicked: Edit Task");
-                      console.log("Icon Clicked: Edit Task");
-                      setEditingTask(task);
-                      setIsTaskModalVisible(true);
-                    }} className="flex-1 text-left min-w-0">
-                      <p className={`text-sm font-semibold truncate ${task.completed ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>{task.title || task.text}</p>
-                      <p className="text-[10px] text-slate-400 font-bold">{task.date}{task.priority ? ` • ${task.priority}` : ''}</p>
-                    </button>
-                    {task.completed && <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />}
-                    {!task.completed && <button onClick={() => {
-                      console.log("Button Clicked: Edit Task");
-                      console.log("Icon Clicked: Edit Task");
-                      setEditingTask(task);
-                      setIsTaskModalVisible(true);
-                    }} className="p-1 shrink-0"><Edit2 size={14} className="text-slate-400" /></button>}
-                    <button onClick={() => handleDeleteTask(task.id)} className="p-1 shrink-0"><Trash2 size={14} className="text-red-400" /></button>
+              {/* Case Info Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { icon: Calendar, label: 'NEXT HEARING', value: caseData.hearingDate || 'TBD', color: 'text-indigo-600 dark:text-indigo-400' },
+                  { icon: Gavel, label: 'COURT', value: caseData.courtName || 'General', color: 'text-violet-600 dark:text-violet-400' },
+                  { icon: Scale, label: 'CASE TYPE', value: caseData.caseType || 'General', color: 'text-amber-600 dark:text-amber-400' },
+                  { icon: Paperclip, label: 'EVIDENCE', value: `${(caseData.documents || []).length} Files`, color: 'text-emerald-600 dark:text-emerald-400' }
+                ].map(({ icon: Icon, label, value, color }) => (
+                  <div key={label} className="flex items-center gap-3.5 p-4 bg-white dark:bg-[#1A2540] border border-slate-200/80 dark:border-white/10 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-500/30 dark:hover:border-indigo-500/30 transition-all duration-300">
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                      <Icon size={18} className={color} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">{label}</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-white truncate mt-0.5">{value}</p>
+                    </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-xs text-slate-400 font-semibold">No action items yet</p>
-                <p className="text-[10px] text-slate-300 mt-0.5">Create your first reminder</p>
-              </div>
-            )}
-            <button onClick={() => {
-              console.log("Button Clicked: Add New Task");
-              console.log("Icon Clicked: Add New Task");
-              setEditingTask(null);
-              setIsTaskModalVisible(true);
-            }}
-              className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 text-xs font-black hover:underline mt-1">
-              <Plus size={14} /> Add New Task
-            </button>
-          </div>
 
-          {/* Case Timeline */}
-          <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Clock size={16} className="text-violet-600 dark:text-violet-400" />
-              <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Case Timeline</h4>
-            </div>
-            {timelineEvents.length > 0 ? (
-              <div className="space-y-0 mb-3">
-                {timelineEvents.map((evt, i) => {
-                  const isCompleted = (evt.status || '').toLowerCase() === 'completed';
-                  return (
-                    <div key={evt.id || i} className="flex gap-3">
-                      <div className="flex flex-col items-center shrink-0">
-                        <div className={`w-3 h-3 rounded-full border-2 ${isCompleted ? 'bg-red-500 border-red-500' : 'bg-emerald-500 border-emerald-500'}`} />
-                        {i < timelineEvents.length - 1 && <div className="w-0.5 flex-1 bg-slate-200 dark:bg-slate-700 min-h-[32px]" />}
+              {/* Action Items & Reminders */}
+              <div className="bg-white dark:bg-[#1A2540] border border-slate-200/80 dark:border-white/10 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-red-50 dark:bg-red-950/20 rounded-lg">
+                      <Bell size={16} className="text-red-500" />
+                    </div>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Action Items & Reminders</h4>
+                  </div>
+                  <span className="px-2.5 py-0.5 text-[9px] font-black uppercase bg-red-50 dark:bg-red-950/20 text-red-600 rounded-md">
+                    {tasks.filter(t => !t.completed).length} Pending
+                  </span>
+                </div>
+                {tasks.length > 0 ? (
+                  <div className="space-y-3 mb-4">
+                    {tasks.map(task => (
+                      <div key={task.id} className="flex items-start gap-3 py-2.5 border-b border-slate-100 dark:border-white/5 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-900/10 px-2 rounded-xl transition-all">
+                        <button onClick={() => handleToggleTask(task)}
+                          className={`w-5 h-5 mt-0.5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${task.completed ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 dark:border-slate-600 hover:border-indigo-500'}`}>
+                          {task.completed && <Check size={12} className="text-white" strokeWidth={3} />}
+                        </button>
+                        <button onClick={() => {
+                          console.log("Button Clicked: Edit Task");
+                          console.log("Icon Clicked: Edit Task");
+                          setEditingTask(task);
+                          setIsTaskModalVisible(true);
+                        }} className="flex-1 text-left min-w-0">
+                          <p className={`text-sm font-semibold truncate ${task.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>{task.title || task.text}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-0.5">{task.date}{task.priority ? ` • ${task.priority}` : ''}</p>
+                        </button>
+                        {task.completed && <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />}
+                        {!task.completed && <button onClick={() => {
+                          console.log("Button Clicked: Edit Task");
+                          console.log("Icon Clicked: Edit Task");
+                          setEditingTask(task);
+                          setIsTaskModalVisible(true);
+                        }} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg shrink-0 transition-colors"><Edit2 size={13} className="text-slate-400 hover:text-indigo-500" /></button>}
+                        <button onClick={() => handleDeleteTask(task.id)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg shrink-0 transition-colors"><Trash2 size={13} className="text-red-400 hover:text-red-500" /></button>
                       </div>
-                      <div className="flex-1 pb-4 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 border border-dashed border-slate-200 dark:border-white/5 rounded-2xl mb-4 bg-slate-50/50 dark:bg-slate-900/10">
+                    <p className="text-xs text-slate-400 font-bold">No action items yet</p>
+                    <p className="text-[10px] text-slate-300 dark:text-slate-600 mt-0.5 font-bold">Create your first reminder</p>
+                  </div>
+                )}
+                <button onClick={() => {
+                  console.log("Button Clicked: Add New Task");
+                  console.log("Icon Clicked: Add New Task");
+                  setEditingTask(null);
+                  setIsTaskModalVisible(true);
+                }}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 rounded-xl text-xs font-black transition-all">
+                  <Plus size={14} /> Add New Task
+                </button>
+              </div>
+
+              {/* Case Timeline */}
+              <div className="bg-white dark:bg-[#1A2540] border border-slate-200/80 dark:border-white/10 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-1.5 bg-violet-50 dark:bg-violet-950/20 rounded-lg">
+                    <Clock size={16} className="text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Case Timeline</h4>
+                </div>
+                {timelineEvents.length > 0 ? (
+                  <div className="space-y-0 mb-4 px-1">
+                    {timelineEvents.map((evt, i) => {
+                      const isCompleted = (evt.status || '').toLowerCase() === 'completed';
+                      return (
+                        <div key={evt.id || i} className="flex gap-4">
+                          <div className="flex flex-col items-center shrink-0">
+                            <div className={`w-3.5 h-3.5 rounded-full border-2 ${isCompleted ? 'bg-red-500 border-red-200 dark:border-red-950' : 'bg-emerald-500 border-emerald-200 dark:border-emerald-950'} z-10 shadow-sm`} />
+                            {i < timelineEvents.length - 1 && <div className="w-0.5 flex-1 bg-slate-200 dark:bg-slate-700/60 min-h-[36px]" />}
+                          </div>
+                          <div className="flex-1 pb-5 min-w-0">
+                            <div className="flex items-start justify-between gap-3 p-3 bg-slate-50/50 dark:bg-slate-900/10 border border-slate-200/30 dark:border-white/5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-all">
+                              <button onClick={() => {
+                                console.log("Button Clicked: Edit Event");
+                                console.log("Icon Clicked: Edit Event");
+                                setEditingTimeline(evt);
+                                setIsTimelineModalVisible(true);
+                              }} className="text-left min-w-0 flex-1">
+                                <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{evt.title}</p>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-0.5">{evt.date}{evt.court ? ` • ${evt.court}` : ''}</p>
+                                <span className={`inline-block mt-2 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider ${isCompleted ? 'bg-red-50 dark:bg-red-950/20 text-red-500' : 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600'}`}>
+                                  {evt.status}
+                                </span>
+                              </button>
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => {
+                                  console.log("Button Clicked: Edit Event");
+                                  console.log("Icon Clicked: Edit Event");
+                                  setEditingTimeline(evt);
+                                  setIsTimelineModalVisible(true);
+                                }} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg shrink-0 transition-colors"><Edit2 size={13} className="text-slate-400 hover:text-indigo-500" /></button>
+                                <button onClick={() => handleDeleteTimeline(evt.id)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg shrink-0 transition-colors"><Trash2 size={13} className="text-red-400 hover:text-red-500" /></button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 border border-dashed border-slate-200 dark:border-white/5 rounded-2xl mb-4 bg-slate-50/50 dark:bg-slate-900/10">
+                    <p className="text-xs text-slate-400 font-bold">No timeline events</p>
+                    <p className="text-[10px] text-slate-300 dark:text-slate-600 mt-0.5 font-bold">Create your first event</p>
+                  </div>
+                )}
+                <button onClick={() => {
+                  console.log("Button Clicked: Add Event");
+                  console.log("Icon Clicked: Add Event");
+                  setEditingTimeline(null);
+                  setIsTimelineModalVisible(true);
+                }}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 rounded-xl text-xs font-black transition-all">
+                  <Plus size={14} /> Add Event
+                </button>
+              </div>
+
+            </div>
+
+            {/* Right Sidebar Column */}
+            <div className="lg:col-span-1 space-y-6">
+
+              {/* Client Contact */}
+              <div className="bg-white dark:bg-[#1A2540] border border-slate-200/80 dark:border-white/10 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/20 rounded-lg">
+                    <User size={16} className="text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Client Contact</h4>
+                </div>
+                <div className="flex items-center gap-3.5 p-3 bg-slate-50 dark:bg-slate-900/10 border border-slate-200/30 dark:border-white/5 rounded-xl">
+                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white font-black text-sm shrink-0 shadow-md">
+                    {caseData.clientName?.charAt(0)?.toUpperCase() || 'C'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{caseData.clientName || 'Unnamed Client'}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mt-0.5">{caseData.clientPhone ? `${caseData.countryCode || '+91'} ${caseData.clientPhone}` : 'No contact added'}</p>
+                  </div>
+                  <button onClick={() => {
+                    console.log("Button Clicked: Call Client");
+                    console.log("Icon Clicked: Call Client");
+                    setQuickActionsPhone(caseData.clientPhone || null);
+                  }}
+                    className="p-2.5 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl hover:scale-105 active:scale-95 transition-all text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/50">
+                    <Phone size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Private Case Notes */}
+              <div className="bg-white dark:bg-[#1A2540] border border-slate-200/80 dark:border-white/10 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-1.5 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
+                    <MessageSquare size={16} className="text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Private Case Notes</h4>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-900/10 border border-slate-200/30 dark:border-white/5 rounded-xl mb-4 min-h-[100px] flex flex-col justify-between">
+                  {caseData.description?.trim() ? (
+                    <p className="text-sm text-slate-600 dark:text-slate-300 font-semibold leading-relaxed whitespace-pre-wrap">{caseData.description}</p>
+                  ) : (
+                    <p className="text-xs text-slate-400 dark:text-slate-500 italic font-semibold text-center my-auto">No notes added yet</p>
+                  )}
+                </div>
+                <button onClick={() => {
+                  console.log("Button Clicked: Add or Edit Notes");
+                  console.log("Icon Clicked: Add or Edit Notes");
+                  setIsNotesModalVisible(true);
+                }}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 rounded-xl text-xs font-black transition-all">
+                  <Edit2 size={12} /> Add or Edit Notes
+                </button>
+              </div>
+
+              {/* Evidence Manager */}
+              <div className="bg-white dark:bg-[#1A2540] border border-slate-200/80 dark:border-white/10 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg">
+                      <Paperclip size={16} className="text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Evidence Manager</h4>
+                  </div>
+                  <span className="px-2.5 py-0.5 text-[9px] font-black uppercase bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 rounded-md">
+                    {(caseData.documents || []).length} Files
+                  </span>
+                </div>
+                {(caseData.documents || []).length > 0 ? (
+                  <div className="space-y-2.5 mb-4">
+                    {(caseData.documents || []).map(doc => (
+                      <div key={doc.id} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900/10 border border-slate-200/30 dark:border-white/5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-all">
+                        <div className="p-2 bg-indigo-50 dark:bg-indigo-950/20 rounded-lg shrink-0">
+                          <FileText size={18} className="text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{doc.name}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-0.5">{formatSize(doc.size)} • {formatDate(doc.uploadedAt)}</p>
+                        </div>
+                        <div className="flex items-center gap-0.5 shrink-0">
                           <button onClick={() => {
-                            console.log("Button Clicked: Edit Event");
-                            console.log("Icon Clicked: Edit Event");
-                            setEditingTimeline(evt);
-                            setIsTimelineModalVisible(true);
-                          }} className="text-left min-w-0">
-                            <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{evt.title}</p>
-                            <p className="text-[10px] text-slate-400 font-semibold">{evt.date}{evt.court ? ` • ${evt.court}` : ''}</p>
-                            <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[9px] font-black uppercase ${isCompleted ? 'bg-red-50 dark:bg-red-950/20 text-red-500' : 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600'}`}>
-                              {evt.status}
-                            </span>
+                            console.log("Button Clicked: View Evidence");
+                            console.log("Icon Clicked: View Evidence");
+                            handleOpenDoc(doc);
+                          }} className="p-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 rounded-lg text-indigo-600 dark:text-indigo-400 transition-colors" title="View Preview">
+                            <Eye size={13} />
                           </button>
-                          <button onClick={() => handleDeleteTimeline(evt.id)} className="p-1 shrink-0"><Trash2 size={14} className="text-red-400" /></button>
+                          <button onClick={() => {
+                            console.log("Button Clicked: Download Evidence");
+                            console.log("Icon Clicked: Download Evidence");
+                            handleDownloadDoc(doc);
+                          }} className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg text-emerald-600 dark:text-emerald-400 transition-colors" title="Download">
+                            <Download size={13} />
+                          </button>
+                          <button onClick={() => {
+                            console.log("Button Clicked: Delete Evidence");
+                            console.log("Icon Clicked: Delete Evidence");
+                            handleDeleteEvidence(doc);
+                          }} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg text-red-500 transition-colors" title="Delete">
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-xs text-slate-400 font-semibold">No timeline events</p>
-                <p className="text-[10px] text-slate-300 mt-0.5">Create your first event</p>
-              </div>
-            )}
-            <button onClick={() => {
-              console.log("Button Clicked: Add Event");
-              console.log("Icon Clicked: Add Event");
-              setEditingTimeline(null);
-              setIsTimelineModalVisible(true);
-            }}
-              className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 text-xs font-black hover:underline mt-1">
-              <Plus size={14} /> Add Event
-            </button>
-          </div>
-
-          {/* Evidence Manager */}
-          <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Paperclip size={16} className="text-indigo-600 dark:text-indigo-400" />
-              <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Evidence Manager</h4>
-            </div>
-            {(caseData.documents || []).length > 0 ? (
-              <div className="space-y-2 mb-3">
-                {(caseData.documents || []).map(doc => (
-                  <div key={doc.id} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-black/20 rounded-xl">
-                    <div className="p-2 bg-indigo-50 dark:bg-indigo-950/20 rounded-lg shrink-0">
-                      <FileText size={18} className="text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{doc.name}</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">{formatSize(doc.size)} • {formatDate(doc.uploadedAt)}</p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => {
-                        console.log("Button Clicked: View Evidence");
-                        console.log("Icon Clicked: View Evidence");
-                        handleOpenDoc(doc);
-                      }} className="p-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 rounded-lg text-indigo-600 dark:text-indigo-400" title="View Preview">
-                        <Eye size={14} />
-                      </button>
-                      <button onClick={() => {
-                        console.log("Button Clicked: Download Evidence");
-                        console.log("Icon Clicked: Download Evidence");
-                        handleDownloadDoc(doc);
-                      }} className="p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg text-emerald-600 dark:text-emerald-400" title="Download">
-                        <Download size={14} />
-                      </button>
-                      <button onClick={() => {
-                        console.log("Button Clicked: Delete Evidence");
-                        console.log("Icon Clicked: Delete Evidence");
-                        handleDeleteEvidence(doc);
-                      }} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg text-red-500" title="Delete">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <div className="text-center py-6 border border-dashed border-slate-200 dark:border-white/5 rounded-2xl mb-4 bg-slate-50/50 dark:bg-slate-900/10">
+                    <p className="text-xs text-slate-400 font-bold">No evidence uploaded yet</p>
+                    <p className="text-[10px] text-slate-300 dark:text-slate-600 mt-0.5 font-bold">Support PDF, DOC, PNG, JPG</p>
+                  </div>
+                )}
+                <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onChange={handleUploadEvidence} className="hidden" />
+                <button onClick={() => {
+                  console.log("Button Clicked: Upload Evidence");
+                  console.log("Icon Clicked: Upload Evidence");
+                  fileInputRef.current?.click();
+                }}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg hover:shadow-indigo-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all">
+                  <Plus size={16} /> Upload Evidence
+                </button>
               </div>
-            ) : (
-              <p className="text-center text-xs text-slate-400 py-3">No evidence uploaded yet.</p>
-            )}
-            <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onChange={handleUploadEvidence} className="hidden" />
-            <button onClick={() => {
-              console.log("Button Clicked: Upload Evidence");
-              console.log("Icon Clicked: Upload Evidence");
-              fileInputRef.current?.click();
-            }}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg transition-all">
-              <Plus size={16} /> Upload Evidence
-            </button>
-          </div>
 
-          {/* Private Case Notes */}
-          <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <MessageSquare size={16} className="text-indigo-600 dark:text-indigo-400" />
-              <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Private Case Notes</h4>
             </div>
-            <div className="p-4 bg-slate-50 dark:bg-black/20 rounded-xl mb-3 min-h-[60px]">
-              {caseData.description?.trim() ? (
-                <p className="text-sm text-slate-600 dark:text-slate-300 font-semibold leading-relaxed whitespace-pre-wrap">{caseData.description}</p>
-              ) : (
-                <p className="text-sm text-slate-400 italic text-center">No notes added</p>
-              )}
-            </div>
-            <button onClick={() => {
-              console.log("Button Clicked: Add or Edit Notes");
-              console.log("Icon Clicked: Add or Edit Notes");
-              setIsNotesModalVisible(true);
-            }}
-              className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 text-xs font-black hover:underline">
-              <Edit2 size={12} /> Add or Edit Notes
-            </button>
           </div>
         </div>
       </div>

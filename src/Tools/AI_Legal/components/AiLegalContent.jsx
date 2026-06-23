@@ -56,6 +56,7 @@ const AiLegalContent = ({
   const [isRenamingCase, setIsRenamingCase] = useState(null);
   const [renameValue, setRenameValue] = useState('');
   const [editingCaseId, setEditingCaseId] = useState(null);
+  const [editingCase, setEditingCase] = useState(null);
   const [newCaseForm, setNewCaseForm] = useState({ clientName: '', caseType: '', otherCaseType: '', accused: '', summary: '' });
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
   const [localCases, setLocalCases] = useState([]);
@@ -71,19 +72,26 @@ const AiLegalContent = ({
     navigate(`/dashboard/case/${caseId}`, { replace: true });
   }, [setCurrentCase, setCurrentProjectId, setLegalView, setSelectedLegalTool, navigate]);
 
-  const handleOpenEditModal = useCallback((c) => {
+  const handleOpenEditModal = useCallback(async (c) => {
     const caseId = c.id || c._id;
-    const standardTypes = ['Civil Case', 'Criminal Case', 'Divorce Case', 'Property Dispute', 'Corporate Legal', 'Consumer Court', 'Labor Dispute'];
-    const isOther = c.caseType && !standardTypes.includes(c.caseType);
-    setEditingCaseId(caseId);
-    setNewCaseForm({
-      clientName: c.clientName || '',
-      caseType: isOther ? 'Other' : (c.caseType || ''),
-      otherCaseType: isOther ? c.caseType : '',
-      accused: c.accused || '',
-      summary: c.summary || c.caseSummary || c.description || ''
-    });
-    setIsNewCaseModalOpen(true);
+    console.log("Edit Case Clicked");
+    console.log("Case ID:", caseId);
+    console.log("Fetching Existing Case Data");
+    try {
+      const cases = await legalService.getCases();
+      const foundCase = cases.find(item => item.id === caseId || item._id === caseId);
+      if (!foundCase) {
+        throw new Error("Case data not found in storage");
+      }
+      console.log("Case Data Loaded:", foundCase);
+      setEditingCase(foundCase);
+      setEditingCaseId(caseId);
+      setIsNewCaseModalOpen(true);
+      console.log("Form Prefilled Successfully");
+    } catch (e) {
+      console.error("Failed to load case data for editing:", e);
+      alert("Failed to load case data: " + e.message);
+    }
   }, []);
 
   const handleDeleteCase = useCallback(async (id) => {
@@ -350,17 +358,41 @@ const AiLegalContent = ({
 
   const handleCreateCase = async (caseData) => {
     try {
-      const created = await legalService.createCase(caseData);
-      if (created?.id) {
-        if (setCurrentCase) setCurrentCase(created);
-        if (setCurrentProjectId) setCurrentProjectId(created.id);
+      if (editingCaseId) {
+        console.log("Updating Case ID:", editingCaseId);
+        await legalService.updateCase(editingCaseId, caseData);
+        console.log("Case Updated Successfully");
+        
+        if (currentCase?.id === editingCaseId || currentCase?._id === editingCaseId) {
+          const updatedCases = await legalService.getCases();
+          const refreshed = updatedCases.find(item => item.id === editingCaseId || item._id === editingCaseId);
+          if (refreshed && setCurrentCase) {
+            setCurrentCase(refreshed);
+          }
+        }
+        
+        await loadDashboardData();
+        setCaseRefreshKey(prev => prev + 1);
+        setIsNewCaseModalOpen(false);
+        setIsCreateCaseVisible(false);
+        setEditingCaseId(null);
+        setEditingCase(null);
+        showToast('Case updated successfully');
+      } else {
+        const created = await legalService.createCase(caseData);
+        if (created?.id) {
+          if (setCurrentCase) setCurrentCase(created);
+          if (setCurrentProjectId) setCurrentProjectId(created.id);
+        }
+        await loadDashboardData();
+        setCaseRefreshKey(prev => prev + 1);
+        setIsCreateCaseVisible(false);
+        setIsNewCaseModalOpen(false);
+        showToast('Case created successfully');
       }
-      await loadDashboardData();
-      setCaseRefreshKey(prev => prev + 1);
-      setIsCreateCaseVisible(false);
-      showToast('Case created successfully');
     } catch (e) {
-      console.error('[AiLegalContent] handleCreateCase failed:', e);
+      console.error('[AiLegalContent] handleCreateCase/Update failed:', e);
+      showToast('Action failed');
     }
   };
 
@@ -514,8 +546,11 @@ const AiLegalContent = ({
           onClose={() => {
             setIsCreateCaseVisible(false);
             setIsNewCaseModalOpen(false);
+            setEditingCase(null);
+            setEditingCaseId(null);
           }}
           onSave={handleCreateCase}
+          editingCase={editingCase}
         />
       </div>
     );
@@ -818,13 +853,27 @@ const AiLegalContent = ({
               <span className="text-xs font-bold">No templates match "{searchQuery}"</span>
             </div>
           ) : (
-            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {filteredTools.map(tool => {
                 const isSaved = savedTools.some(t => t.toolId === tool.id);
+                
+                // Tailored badge style mapping
+                const badge = (tool.badge || '').toUpperCase();
+                let badgeStyles = 'bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 border border-violet-500/20';
+                if (badge.includes('LIVE')) {
+                  badgeStyles = 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-650 dark:text-emerald-400 border border-emerald-500/20';
+                } else if (badge.includes('VERIFIED')) {
+                  badgeStyles = 'bg-blue-500/10 dark:bg-blue-500/20 text-blue-650 dark:text-blue-400 border border-blue-500/20';
+                } else if (badge.includes('PRO') || badge.includes('ACTIVE')) {
+                  badgeStyles = 'bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-650 dark:text-indigo-400 border border-indigo-500/20';
+                } else if (badge.includes('MOST USED') || badge.includes('RECOMMENDED')) {
+                  badgeStyles = 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-650 dark:text-amber-400 border border-amber-500/20';
+                }
+
                 return (
                   <div 
                     key={tool.id}
-                    className="group bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl p-4 flex flex-col justify-between gap-4 cursor-pointer hover:shadow-xl hover:shadow-indigo-500/10 hover:scale-[1.015] active:scale-[0.99] transition-all"
+                    className="group bg-gradient-to-b from-white to-slate-50/50 dark:from-[#1b254b] dark:to-[#111936] border border-slate-200/85 dark:border-white/[0.06] rounded-[24px] p-5 flex flex-col justify-between gap-5 cursor-pointer shadow-sm hover:-translate-y-1.5 hover:scale-[1.025] hover:shadow-2xl hover:shadow-indigo-550/15 dark:hover:shadow-indigo-500/10 hover:border-indigo-500/40 dark:hover:border-indigo-400/40 active:scale-[0.985] focus-within:ring-2 focus-within:ring-indigo-500/30 transition-all duration-300 ease-out"
                     onClick={() => handleToolPress(tool)}
                     onContextMenu={(e) => {
                       e.preventDefault();
@@ -834,45 +883,45 @@ const AiLegalContent = ({
                   >
                     <div>
                       {/* Badge / Accuracy */}
-                      <div className="flex items-center justify-between mb-3 shrink-0">
-                        <span className="bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tight">
+                      <div className="flex items-center justify-between mb-4 shrink-0">
+                        <span className={`text-[8px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${badgeStyles}`}>
                           {tool.badge}
                         </span>
-                        <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-500">
-                          <Zap size={12} className="fill-current" />
-                          <span>{tool.confidence}%</span>
+                        <div className="flex items-center gap-1 text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/10">
+                          <Zap size={11} className="fill-current animate-pulse text-emerald-500" />
+                          <span>{tool.confidence}% Match</span>
                         </div>
                       </div>
 
-                      {/* Icon */}
-                      <div className="w-10 h-10 bg-slate-50 dark:bg-[#131C31] text-indigo-650 dark:text-indigo-400 rounded-xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform duration-300 shrink-0">
+                      {/* Icon Container */}
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-[#1e295d] dark:to-[#131c46] text-indigo-650 dark:text-indigo-400 border border-slate-100 dark:border-white/[0.05] flex items-center justify-center mb-4 transition-all duration-350 shadow-inner group-hover:from-indigo-600 group-hover:to-violet-600 group-hover:text-white group-hover:border-transparent group-hover:shadow-lg group-hover:shadow-indigo-500/30 group-hover:scale-105">
                         {tool.icon}
                       </div>
 
                       {/* Info */}
-                      <div className="space-y-1">
-                        <h4 className="font-extrabold text-sm text-slate-800 dark:text-white leading-tight truncate">
+                      <div className="space-y-1.5">
+                        <h4 className="font-extrabold text-sm text-slate-800 dark:text-white tracking-tight leading-snug group-hover:text-indigo-650 dark:group-hover:text-indigo-400 transition-colors duration-300 truncate">
                           {tool.title}
                         </h4>
-                        <p className="text-xs text-subtext leading-relaxed font-semibold line-clamp-2">
+                        <p className="text-xs leading-relaxed font-semibold line-clamp-2 min-h-[32px] text-slate-500 dark:text-slate-400">
                           {tool.desc}
                         </p>
                       </div>
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-3.5 mt-1">
-                      <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                    <div className="flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-4 mt-2">
+                      <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-750 dark:group-hover:text-indigo-300 transition-colors duration-300">
                         <span>LAUNCH</span>
-                        <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                        <ChevronRight size={13} className="group-hover:translate-x-1.5 transition-transform duration-300" />
                       </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleSavedTool(tool);
                         }}
-                        className={`p-2 rounded-xl text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors ${
-                          isSaved ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20' : ''
+                        className={`p-2.5 rounded-xl text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-sm ${
+                          isSaved ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-500/10' : 'border border-transparent'
                         }`}
                         title="Bookmark Tool"
                       >
@@ -1017,8 +1066,13 @@ const AiLegalContent = ({
       <CreateCaseModal 
         isDark={isDark}
         isVisible={isCreateCaseVisible}
-        onClose={() => setIsCreateCaseVisible(false)}
+        onClose={() => {
+          setIsCreateCaseVisible(false);
+          setEditingCase(null);
+          setEditingCaseId(null);
+        }}
         onSave={handleCreateCase}
+        editingCase={editingCase}
       />
 
       {/* Save Toast popup */}

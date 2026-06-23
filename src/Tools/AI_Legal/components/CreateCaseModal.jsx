@@ -1,4 +1,4 @@
-import React, { useState, useMemo, Fragment } from 'react';
+import React, { useState, useEffect, useMemo, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { 
   X, Calendar, User, Users, Gavel, FileText, Upload, Plus, Shield, 
@@ -65,7 +65,7 @@ const ALL_CATEGORIES = [
 const CLIENT_ROLES = ['Petitioner', 'Appellant', 'Applicant', 'Plaintiff'];
 const OPPONENT_ROLES = ['Respondent', 'Non-Applicant', 'Opposite Party'];
 
-const CreateCaseModal = ({ isDark, isVisible, onClose, onSave }) => {
+const CreateCaseModal = ({ isDark, isVisible, onClose, onSave, editingCase }) => {
   const [caseData, setCaseData] = useState({
     title: '',
     regdNo: '',
@@ -96,6 +96,60 @@ const CreateCaseModal = ({ isDark, isVisible, onClose, onSave }) => {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showClientRolePicker, setShowClientRolePicker] = useState(false);
   const [showOpponentRolePicker, setShowOpponentRolePicker] = useState(false);
+
+  useEffect(() => {
+    if (editingCase) {
+      console.log("Fetching Existing Case Data");
+      console.log("Case Data Loaded:", editingCase);
+      const categories = editingCase.caseCategories || (editingCase.caseType ? editingCase.caseType.split(', ') : []);
+      setCaseData({
+        id: editingCase.id || editingCase._id || '',
+        title: editingCase.title || editingCase.name || '',
+        regdNo: editingCase.regdNo || '',
+        clientRole: editingCase.clientRole || '',
+        clientName: editingCase.clientName || '',
+        clientPhone: editingCase.clientPhone || '',
+        countryCode: editingCase.countryCode || '+91',
+        opponentRole: editingCase.opponentRole || '',
+        opponentName: editingCase.opponentName || '',
+        caseReceivedOn: editingCase.caseReceivedOn || '',
+        courtName: editingCase.courtName || '',
+        caseType: editingCase.caseType || '',
+        caseCategories: categories,
+        hearingDate: editingCase.hearingDate || '',
+        priority: editingCase.priority || 'Medium',
+        description: editingCase.description || editingCase.summary || '',
+        documents: editingCase.documents || [],
+        advocateName: editingCase.advocateName || ''
+      });
+      if (editingCase.countryCode) {
+        const foundCountry = COUNTRIES.find(c => c.dial === editingCase.countryCode);
+        if (foundCountry) setSelectedCountry(foundCountry);
+      }
+      console.log("Form Prefilled Successfully");
+    } else {
+      setCaseData({
+        title: '',
+        regdNo: '',
+        clientRole: '',
+        clientName: '',
+        clientPhone: '',
+        countryCode: '+91',
+        opponentRole: '',
+        opponentName: '',
+        caseReceivedOn: '',
+        courtName: '',
+        caseType: '',
+        caseCategories: [],
+        hearingDate: '',
+        priority: 'Medium',
+        description: '',
+        documents: [],
+        advocateName: ''
+      });
+      setSelectedCountry(COUNTRIES.find(c => c.dial === '+91') || COUNTRIES[0]);
+    }
+  }, [editingCase, isVisible]);
 
   const filteredCountries = useMemo(() => {
     const q = countrySearch.toLowerCase().trim();
@@ -225,9 +279,11 @@ const CreateCaseModal = ({ isDark, isVisible, onClose, onSave }) => {
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-4 mb-6">
                   <div>
                     <Dialog.Title as="h3" className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                      New Case Intelligence
+                      {editingCase ? 'Edit Case Intelligence' : 'New Case Intelligence'}
                     </Dialog.Title>
-                    <p className="text-[10px] sm:text-xs text-subtext font-semibold mt-0.5">Enter professional legal case details</p>
+                    <p className="text-[10px] sm:text-xs text-subtext font-semibold mt-0.5">
+                      {editingCase ? 'Modify professional legal case details' : 'Enter professional legal case details'}
+                    </p>
                   </div>
                   <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
                     <X size={20} className="text-slate-500 dark:text-slate-400" />
@@ -541,7 +597,7 @@ const CreateCaseModal = ({ isDark, isVisible, onClose, onSave }) => {
                     onClick={handleSave}
                     className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-black text-sm uppercase tracking-widest rounded-2xl hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-indigo-500/20"
                   >
-                    Initialize Case Engine
+                    {editingCase ? 'Update Case Record' : 'Initialize Case Engine'}
                   </button>
                 </div>
 

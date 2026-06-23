@@ -6867,7 +6867,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="flex-1 flex flex-col w-full select-text"
+                className="flex-1 flex flex-col w-full select-text min-h-0 h-full"
               >
                 {/* 🚀 MINI STICKY CASE BREADCRUMB (Lightweight & Non-obstructive) */}
                 <AnimatePresence>
@@ -6915,6 +6915,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                   <React.Suspense fallback={<div className="flex-1 flex items-center justify-center"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" /></div>}>
                     <LegalChatScreen
                       onBack={handleBackToDashboard}
+                      currentCase={currentCase}
                     />
                   </React.Suspense>
                 ) : selectedLegalTool?.id && selectedLegalTool.id !== 'legal_my_case' ? (
