@@ -28,7 +28,8 @@ import { createGooglePayOrder, verifyGooglePayment } from '../services/walletPay
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const GOOGLE_PAY_SDK_URL = 'https://pay.google.com/gp/p/js/pay.js';
-const GOOGLE_PAY_ENV = window._env_?.VITE_GOOGLE_PAY_ENV || import.meta.env.VITE_GOOGLE_PAY_ENV || 'TEST';
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const GOOGLE_PAY_ENV = isLocalhost ? 'TEST' : (window._env_?.VITE_GOOGLE_PAY_ENV || import.meta.env.VITE_GOOGLE_PAY_ENV || 'TEST');
 const MERCHANT_ID = window._env_?.VITE_GOOGLE_PAY_MERCHANT_ID || import.meta.env.VITE_GOOGLE_PAY_MERCHANT_ID;
 
 
@@ -82,13 +83,19 @@ const GooglePayButton = ({
     // ── 2. Initialize Google Pay client & check if supported ─────────────────
     const initializeGooglePay = useCallback(async () => {
         try {
-            const paymentsClient = new window.google.payments.api.PaymentsClient({
-                environment: GOOGLE_PAY_ENV // 'TEST' or 'PRODUCTION'
-            });
+            // In PRODUCTION, pass merchantInfo to PaymentsClient
+            const clientConfig = { environment: GOOGLE_PAY_ENV };
+            if (GOOGLE_PAY_ENV === 'PRODUCTION' && MERCHANT_ID) {
+                clientConfig.merchantInfo = {
+                    merchantId: MERCHANT_ID,
+                    merchantName: 'Unified Web Options and Services Private Limited'
+                };
+            }
 
+            const paymentsClient = new window.google.payments.api.PaymentsClient(clientConfig);
             paymentsClientRef.current = paymentsClient;
 
-            const isReadyToPay = await paymentsClient.isReadyToPay({
+            const isReadyToPayRequest = {
                 apiVersion: 2,
                 apiVersionMinor: 0,
                 allowedPaymentMethods: [{
@@ -98,7 +105,14 @@ const GooglePayButton = ({
                         allowedCardNetworks: ['AMEX', 'DISCOVER', 'INTERAC', 'JCB', 'MASTERCARD', 'VISA']
                     }
                 }]
-            });
+            };
+
+            // existingPaymentMethodRequired: false lets button show even if no saved cards
+            if (GOOGLE_PAY_ENV === 'PRODUCTION') {
+                isReadyToPayRequest.existingPaymentMethodRequired = false;
+            }
+
+            const isReadyToPay = await paymentsClient.isReadyToPay(isReadyToPayRequest);
 
             if (isReadyToPay.result) {
                 setStatus('ready');

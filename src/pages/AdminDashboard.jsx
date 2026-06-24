@@ -129,11 +129,10 @@ const OverviewTab = () => {
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard icon={Users} label={t('totalUsers')} value={stats?.totalUsers ?? 0} />
                 <StatCard icon={Activity} label={t('activeSubscriptions')} value={stats?.activeSubscriptions ?? 0} color="emerald-500" />
                 <StatCard icon={DollarSign} label={t('totalRevenue')} value={`₹${stats?.totalRevenue ?? 0}`} color="amber-500" />
-                <StatCard icon={Zap} label={t('creditsUsed')} value={stats?.totalCreditsUsed ?? 0} color="violet-500" />
                 <StatCard icon={Headphones} label={t('support')} value={stats?.pendingTickets ?? 0} color="primary" trend={stats?.pendingTickets > 0 ? "Action Required" : "All Clear"} />
             </div>
 
@@ -144,8 +143,7 @@ const OverviewTab = () => {
                             <div key={i} className="flex items-center justify-between p-3 bg-white/20 dark:bg-white/5 rounded-xl border border-white/10">
                                 <span className="font-semibold text-maintext text-sm">{tool._id || 'Unknown'}</span>
                                 <div className="flex items-center gap-4 text-xs text-subtext">
-                                    <span>{tool.count} uses</span>
-                                    <span className="font-bold text-primary">{tool.totalCredits} credits</span>
+                                    <span className="font-bold text-primary">{tool.count} uses</span>
                                 </div>
                             </div>
                         ))}
@@ -165,7 +163,6 @@ const UsersTab = () => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
-    const [creditAmount, setCreditAmount] = useState('');
     const [upgradeData, setUpgradeData] = useState({ planName: '', expiryDate: '' });
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, userId: null });
 
@@ -217,36 +214,6 @@ const UsersTab = () => {
         } catch (err) {
             toast.error('Failed to delete user');
             setDeleteModal({ isOpen: false, userId: null });
-        }
-    };
-
-    const handleAdjustCredits = async (userId, amount = null, absoluteCredits = null) => {
-        if (amount === null && absoluteCredits === null && !creditAmount) return;
-        
-        const payload = { userId };
-        if (amount !== null) payload.amount = amount;
-        else if (absoluteCredits !== null) payload.credits = absoluteCredits;
-        else payload.credits = parseInt(creditAmount);
-
-        try {
-            const response = await fetch(`${API}/admin/adjust-credits`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getUserData()?.token}`
-                },
-                body: JSON.stringify(payload)
-            });
-            const data = await response.json();
-            if (data.success) {
-                toast.success('Credits adjusted successfully!');
-                setCreditAmount('');
-                fetchUsers();
-            } else {
-                toast.error(data.message || 'Failed');
-            }
-        } catch (err) {
-            toast.error('Failed to adjust credits');
         }
     };
 
@@ -368,103 +335,40 @@ const UsersTab = () => {
                             </div>
                         </div>
 
-                        {/* Expanded Management Panel */}
-                        <AnimatePresence>
-                            {selectedUser === (user._id || user.id) && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden"
-                                >
-                                    <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* Adjust Credits */}
-                                        <div className="bg-white/10 dark:bg-black/10 rounded-xl p-4 space-y-3">
-                                            <h4 className="font-bold text-sm text-maintext flex items-center gap-2">
-                                                <Zap className="w-4 h-4 text-amber-500" /> {t('transferCredits')}
-                                            </h4>
-                                            <p className="text-xs text-subtext">{t('userBalance')}: <span className="font-bold text-maintext">{user.credits ?? 0}</span></p>
-                                            <div className="relative">
-                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-maintext font-black text-sm opacity-60">+</div>
-                                                <input
-                                                    type="number"
-                                                    placeholder={t('amountToSend')}
-                                                    value={creditAmount}
-                                                    onChange={e => setCreditAmount(e.target.value)}
-                                                    className="w-full bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-lg py-2 pl-7 pr-3 text-sm outline-none focus:border-amber-500/50 text-maintext font-bold"
-                                                    min="1"
-                                                />
-                                            </div>
-                                            {creditAmount && parseInt(creditAmount) > 0 && (
-                                                <div className="px-1 flex items-center gap-2 text-[11px] text-amber-500 font-bold">
-                                                    <Activity className="w-3 h-3" />
-                                                    New Balance: {(user.credits ?? 0) + parseInt(creditAmount)} Credits
-                                                </div>
-                                            )}
-                                            <button
-                                                onClick={() => {
-                                                    handleAdjustCredits(user._id || user.id, parseInt(creditAmount));
-                                                }}
-                                                disabled={!creditAmount || parseInt(creditAmount) <= 0}
-                                                className="w-full py-2 bg-amber-500 text-white rounded-lg font-bold text-xs disabled:opacity-40 hover:bg-amber-600 transition-all flex justify-center items-center gap-2"
-                                            >
-                                                {t('sendCredits')}
-                                            </button>
-                                        </div>
-
-                                        {/* Manual Plan Upgrade */}
-                                        <div className="bg-white/10 dark:bg-black/10 rounded-xl p-4 space-y-3">
-                                            <h4 className="font-bold text-sm text-maintext flex items-center gap-2">
-                                                <CreditCard className="w-4 h-4 text-primary" /> {t('manualPlanUpgrade')}
-                                            </h4>
-                                            <select
-                                                value={upgradeData.planName}
-                                                onChange={e => {
-                                                    const selectedPlanName = e.target.value;
-                                                    setUpgradeData(p => ({ ...p, planName: selectedPlanName }));
-                                                    const planCredits = availablePlans.find(p => p.planName === selectedPlanName)?.credits || 0;
-                                                    setCreditAmount(planCredits.toString());
-                                                }}
-                                                className="w-full bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-2 px-3 text-sm outline-none focus:border-primary/50 text-maintext"
-                                            >
-                                                <option value="" disabled className="bg-slate-50 dark:bg-zinc-900 text-subtext">{t('selectPlan') || 'Select Plan'}</option>
-                                                {availablePlans.map(plan => (
-                                                    <option key={plan._id} value={plan.planName} className="bg-slate-50 dark:bg-zinc-900 text-maintext">
-                                                        {plan.planName}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <input
-                                                type="date"
-                                                value={upgradeData.expiryDate}
-                                                onChange={e => setUpgradeData(p => ({ ...p, expiryDate: e.target.value }))}
-                                                className="w-full bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-2 px-3 text-sm outline-none focus:border-primary/50 text-maintext"
-                                            />
-                                            {upgradeData.planName && (
-                                                <div className="px-1 flex items-center gap-2 text-[11px] text-amber-500 font-bold">
-                                                    <Zap className="w-3 h-3" />
-                                                    Plan Includes: {availablePlans.find(p => p.planName === upgradeData.planName)?.credits || 0} Credits
-                                                </div>
-                                            )}
-                                            <button
-                                                onClick={() => handleManualUpgrade(user._id || user.id)}
-                                                disabled={!upgradeData.planName || isUpgrading === (user._id || user.id)}
-                                                className="w-full py-2 bg-primary text-white rounded-lg font-bold text-xs disabled:opacity-40 hover:opacity-90 transition-all flex items-center justify-center gap-2"
-                                            >
-                                                {isUpgrading === (user._id || user.id) ? (
-                                                    <>
-                                                        <RefreshCw className="w-3 h-3 animate-spin" />
-                                                        {t('upgrading') || 'Upgrading...'}
-                                                    </>
-                                                ) : (
-                                                    t('upgradePlan') || 'Upgrade Plan'
-                                                )}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        {selectedUser === (user._id || user.id) && (
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden border-t border-white/10 mt-3 pt-3"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-lg px-2 py-1.5 text-xs text-maintext"
+                                        value={upgradeData.planName}
+                                        onChange={(e) => setUpgradeData({ ...upgradeData, planName: e.target.value })}
+                                    >
+                                        <option value="">{t('selectPlan')}</option>
+                                        {availablePlans.map(p => (
+                                            <option key={p._id} value={p.planName}>{p.planName}</option>
+                                        ))}
+                                    </select>
+                                    <input
+                                        type="date"
+                                        className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-lg px-2 py-1.5 text-xs text-maintext"
+                                        value={upgradeData.expiryDate}
+                                        onChange={(e) => setUpgradeData({ ...upgradeData, expiryDate: e.target.value })}
+                                    />
+                                    <button
+                                        onClick={() => handleManualUpgrade(user._id || user.id)}
+                                        disabled={isUpgrading === (user._id || user.id)}
+                                        className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:opacity-90 transition-all"
+                                    >
+                                        {isUpgrading === (user._id || user.id) ? t('loading') : t('upgrade')}
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
                     </motion.div>
                 ))}
             </div>
@@ -478,6 +382,44 @@ const UsersTab = () => {
             />
         </div>
     );
+};
+
+// Helper function to format feature checklist descriptions dynamically matching DB limits
+const formatFeatureString = (feature, plan) => {
+    if (!feature || !plan) return feature;
+    let result = feature;
+
+    // 1. Total AI messages / chat limit / Unlimited Chat
+    if (/total AI messages/i.test(result) || /total messages/i.test(result) || /AI messages/i.test(result)) {
+        if (plan.chatLimit === -1 || plan.chatScope === 'unlimited') {
+            return "Unlimited AI Chat";
+        } else {
+            result = result.replace(/\d+/, plan.chatLimit ?? 100);
+        }
+    }
+
+    // 2. Validity
+    if (/months validity/i.test(result) || /month validity/i.test(result) || /days validity/i.test(result)) {
+        const months = Math.round((plan.validityDays || 90) / 30);
+        result = result.replace(/\d+/, months);
+    }
+
+    // 3. Images/day
+    if (/Images\/day/i.test(result)) {
+        result = result.replace(/\d+/, plan.imageLimit ?? 0);
+    }
+
+    // 4. Carousel/day
+    if (/Carousel\/day/i.test(result)) {
+        result = result.replace(/\d+/, plan.carouselLimit ?? 0);
+    }
+
+    // 5. Videos/day
+    if (/Videos\/day/i.test(result)) {
+        result = result.replace(/\d+/, plan.videoLimit ?? 0);
+    }
+
+    return result;
 };
 
 // ═══════════════════════════════
@@ -494,18 +436,10 @@ const PlansTab = () => {
         planName: '',
         priceMonthly: '',
         priceYearly: '',
-        credits: '',
-        creditsYearly: '',
-        chatLimit: '',
-        chatScope: 'total',
-        imageLimit: '',
-        carouselLimit: '',
-        videoLimit: '',
-        editImageAllowed: false,
-        cashflowAllowed: false,
         validityDays: '',
         features: ''
     });
+
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, planId: null });
     const [saving, setSaving] = useState(false);
 
@@ -529,16 +463,11 @@ const PlansTab = () => {
         setSaving(true);
         try {
             const body = {
-                ...form,
+                planId: form.planId,
+                planName: form.planName,
                 priceMonthly: Number(form.priceMonthly),
                 priceYearly: Number(form.priceYearly),
-                chatLimit: Number(form.chatLimit),
-                imageLimit: Number(form.imageLimit),
-                carouselLimit: Number(form.carouselLimit),
-                videoLimit: Number(form.videoLimit),
                 validityDays: Number(form.validityDays),
-                editImageAllowed: Boolean(form.editImageAllowed),
-                cashflowAllowed: Boolean(form.cashflowAllowed),
                 features: form.features.split(',').map(f => f.trim()).filter(Boolean)
             };
 
@@ -583,15 +512,8 @@ const PlansTab = () => {
             planName: plan.planName || '',
             priceMonthly: plan.priceMonthly?.toString() || '',
             priceYearly: plan.priceYearly?.toString() || '',
-            chatLimit: plan.chatLimit?.toString() ?? '100',
-            chatScope: plan.chatScope || 'total',
-            imageLimit: plan.imageLimit?.toString() ?? '0',
-            carouselLimit: plan.carouselLimit?.toString() ?? '0',
-            videoLimit: plan.videoLimit?.toString() ?? '0',
-            editImageAllowed: !!plan.editImageAllowed,
-            cashflowAllowed: !!plan.cashflowAllowed,
             validityDays: plan.validityDays?.toString() ?? '90',
-            features: (plan.features || []).join(', ')
+            features: (plan.features || []).map(f => formatFeatureString(f, plan)).join(', ')
         });
         setShowForm(true);
     };
@@ -602,13 +524,6 @@ const PlansTab = () => {
             planName: '',
             priceMonthly: '',
             priceYearly: '',
-            chatLimit: '',
-            chatScope: 'total',
-            imageLimit: '',
-            carouselLimit: '',
-            videoLimit: '',
-            editImageAllowed: false,
-            cashflowAllowed: false,
             validityDays: '',
             features: ''
         });
@@ -640,45 +555,38 @@ const PlansTab = () => {
                     >
                         <div className="bg-white/30 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl p-5 space-y-4">
                             <h3 className="font-bold text-maintext">{editingPlan ? 'Edit Plan' : 'Create New Plan'}</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                <input placeholder="Plan ID (e.g. starter-plan)" value={form.planId} onChange={e => setForm(p => ({ ...p, planId: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext" />
-                                <input placeholder="Plan Name" value={form.planName} onChange={e => setForm(p => ({ ...p, planName: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext" />
-                                <input placeholder="Price Monthly (₹)" type="number" value={form.priceMonthly} onChange={e => setForm(p => ({ ...p, priceMonthly: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext no-spinner" />
-                                <input placeholder="Price Yearly (₹)" type="number" value={form.priceYearly} onChange={e => setForm(p => ({ ...p, priceYearly: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext no-spinner" />
-                                <input placeholder="Validity (Days)" type="number" value={form.validityDays} onChange={e => setForm(p => ({ ...p, validityDays: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext no-spinner" />
-                                <input placeholder="Chat Limit (-1 for unlimited)" type="number" value={form.chatLimit} onChange={e => setForm(p => ({ ...p, chatLimit: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext no-spinner" />
-                                <select value={form.chatScope} onChange={e => setForm(p => ({ ...p, chatScope: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext font-bold">
-                                    <option value="total" className="bg-slate-50 dark:bg-zinc-900 text-maintext font-bold">Total Lifetime Cap</option>
-                                    <option value="unlimited" className="bg-slate-50 dark:bg-zinc-900 text-maintext font-bold">Unlimited Chat</option>
-                                </select>
-                                <input placeholder="Daily Image Limit" type="number" value={form.imageLimit} onChange={e => setForm(p => ({ ...p, imageLimit: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext no-spinner" />
-                                <input placeholder="Daily Carousel Limit" type="number" value={form.carouselLimit} onChange={e => setForm(p => ({ ...p, carouselLimit: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext no-spinner" />
-                                <input placeholder="Daily Video Limit" type="number" value={form.videoLimit} onChange={e => setForm(p => ({ ...p, videoLimit: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext no-spinner" />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-subtext">Plan ID</label>
+                                    <input placeholder="e.g. starter-plan" value={form.planId} onChange={e => setForm(p => ({ ...p, planId: e.target.value }))}
+                                        className="w-full bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-subtext">Plan Name</label>
+                                    <input placeholder="e.g. Starter" value={form.planName} onChange={e => setForm(p => ({ ...p, planName: e.target.value }))}
+                                        className="w-full bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-subtext">Monthly Price (₹)</label>
+                                    <input placeholder="e.g. 499" type="number" value={form.priceMonthly} onChange={e => setForm(p => ({ ...p, priceMonthly: e.target.value }))}
+                                        className="w-full bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext no-spinner" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-subtext">Yearly Price (₹)</label>
+                                    <input placeholder="e.g. 4990" type="number" value={form.priceYearly} onChange={e => setForm(p => ({ ...p, priceYearly: e.target.value }))}
+                                        className="w-full bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext no-spinner" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-subtext">Validity (Days)</label>
+                                    <input placeholder="e.g. 30" type="number" value={form.validityDays} onChange={e => setForm(p => ({ ...p, validityDays: e.target.value }))}
+                                        className="w-full bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext no-spinner" />
+                                </div>
                             </div>
-                            <div className="flex flex-wrap gap-6 py-2 px-1">
-                                <label className="flex items-center gap-2 cursor-pointer text-sm text-maintext font-semibold">
-                                    <input type="checkbox" checked={form.editImageAllowed} onChange={e => setForm(p => ({ ...p, editImageAllowed: e.target.checked }))}
-                                        className="w-4 h-4 rounded border-white/20 accent-primary" />
-                                    Image Editing Allowed
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer text-sm text-maintext font-semibold">
-                                    <input type="checkbox" checked={form.cashflowAllowed} onChange={e => setForm(p => ({ ...p, cashflowAllowed: e.target.checked }))}
-                                        className="w-4 h-4 rounded border-white/20 accent-primary" />
-                                    CashFlow Allowed
-                                </label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold uppercase tracking-wider text-subtext">Features List (Comma-separated)</label>
+                                <input placeholder="e.g. Unlimited AI Chat, CashFlow Explorer, Web & Deep Search" value={form.features} onChange={e => setForm(p => ({ ...p, features: e.target.value }))}
+                                    className="w-full bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext" />
                             </div>
-                            <input placeholder="Features (comma-separated)" value={form.features} onChange={e => setForm(p => ({ ...p, features: e.target.value }))}
-                                className="w-full bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext" />
                             <div className="flex gap-3 justify-end">
                                 <button onClick={resetForm} className="px-4 py-2 rounded-xl text-sm font-bold text-subtext hover:text-maintext hover:bg-white/20 transition-all">Cancel</button>
                                 <button onClick={handleSubmit} className="px-6 py-2 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-primary/20">
@@ -711,44 +619,16 @@ const PlansTab = () => {
                                 </button>
                             </div>
                         </div>
-                        <div className="space-y-1.5 text-xs text-subtext">
+                        <div className="space-y-1.5 text-xs text-subtext border-t border-white/10 pt-3">
                             <p className="flex items-center gap-2">
-                                <MessageSquare className="w-3 h-3 text-primary" />
-                                Chat: <span className="font-semibold text-maintext">{plan.chatLimit === -1 ? 'Unlimited' : `${plan.chatLimit} (${plan.chatScope})`}</span>
-                            </p>
-                            <p className="flex items-center gap-2">
-                                <Image className="w-3 h-3 text-emerald-500" />
-                                Images: <span className="font-semibold text-maintext">{plan.imageLimit}/day</span> (Edit: {plan.editImageAllowed ? 'Yes' : 'No'})
-                            </p>
-                            <p className="flex items-center gap-2">
-                                <Layers className="w-3 h-3 text-indigo-500" />
-                                Carousels: <span className="font-semibold text-maintext">{plan.carouselLimit}/day</span>
-                            </p>
-                            <p className="flex items-center gap-2">
-                                <Video className="w-3 h-3 text-rose-500" />
-                                Videos: <span className="font-semibold text-maintext">{plan.videoLimit}/day</span>
-                            </p>
-                            <p className="flex items-center gap-2">
-                                <TrendingUp className="w-3 h-3 text-amber-500" />
-                                CashFlow: <span className="font-semibold text-maintext">{plan.cashflowAllowed ? 'Yes' : 'No'}</span>
-                            </p>
-                            <p className="flex items-center gap-2">
-                                <Clock className="w-3 h-3 text-subtext" />
+                                <Clock className="w-3.5 h-3.5 text-primary animate-pulse" />
                                 Validity: <span className="font-semibold text-maintext">{plan.validityDays} days</span>
                             </p>
                             <p className="flex items-center gap-2 text-[10px] opacity-70">
-                                <CreditCard className="w-3 h-3" />
+                                <CreditCard className="w-3.5 h-3.5" />
                                 ID: {plan.planId}
                             </p>
-                            {plan.features && plan.features.length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
-                                    {plan.features.map((f, i) => (
-                                        <p key={i} className="flex items-center gap-1.5">
-                                            <Check className="w-3 h-3 text-green-500" /> {f}
-                                        </p>
-                                    ))}
-                                </div>
-                            )}
+
                         </div>
                     </div>
                 ))}
@@ -767,147 +647,366 @@ const PlansTab = () => {
 };
 
 // ═══════════════════════════════
-// PACKAGES TAB
+// TOOL LIMIT TAB
 // ═══════════════════════════════
-const PackagesTab = () => {
+const ToolLimitTab = () => {
     const { t } = useLanguage();
-    const [packages, setPackages] = useState([]);
+    const [plans, setPlans] = useState([]);
+    const [editedPlans, setEditedPlans] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showForm, setShowForm] = useState(false);
-    const [editingPkg, setEditingPkg] = useState(null);
-    const [form, setForm] = useState({ name: '', credits: '', price: '', description: '' });
-    const [deleteModal, setDeleteModal] = useState({ isOpen: false, pkgId: null });
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        fetchPackages();
+        const fetchPlans = async () => {
+            try {
+                const data = await apiService.getPlans();
+                const plansList = Array.isArray(data) ? data : data.plans || [];
+                setPlans(plansList);
+                setEditedPlans(JSON.parse(JSON.stringify(plansList)));
+            } catch (err) {
+                console.error('Failed to fetch plans:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPlans();
     }, []);
 
-    const fetchPackages = async () => {
-        setLoading(true);
+    const handleValueChange = (planId, field, value) => {
+        setEditedPlans(prev => prev.map(p => {
+            if (p._id === planId) {
+                return { ...p, [field]: value };
+            }
+            return p;
+        }));
+    };
+
+    const hasUnsavedChanges = JSON.stringify(plans) !== JSON.stringify(editedPlans);
+
+    const handleSaveAll = async () => {
+        setSaving(true);
+        let successCount = 0;
+        let failCount = 0;
+
+        const modified = editedPlans.filter(ep => {
+            const original = plans.find(p => p._id === ep._id);
+            return JSON.stringify(ep) !== JSON.stringify(original);
+        });
+
+        for (const plan of modified) {
+            try {
+                const body = {
+                    planId: plan.planId,
+                    planName: plan.planName,
+                    priceMonthly: Number(plan.priceMonthly),
+                    priceYearly: Number(plan.priceYearly),
+                    chatLimit: Number(plan.chatLimit),
+                    chatScope: plan.chatScope,
+                    imageLimit: Number(plan.imageLimit),
+                    carouselLimit: Number(plan.carouselLimit),
+                    videoLimit: Number(plan.videoLimit),
+                    editImageAllowed: Boolean(plan.editImageAllowed),
+                    cashflowAllowed: Boolean(plan.cashflowAllowed),
+                    validityDays: Number(plan.validityDays),
+                    aiLegalAllowed: Boolean(plan.aiLegalAllowed),
+                    aiAdsAllowed: Boolean(plan.aiAdsAllowed),
+                    voiceGenAllowed: Boolean(plan.voiceGenAllowed),
+                    webSearchAllowed: Boolean(plan.webSearchAllowed),
+                    deepSearchAllowed: Boolean(plan.deepSearchAllowed),
+                    codeWriterAllowed: Boolean(plan.codeWriterAllowed),
+                    documentConvertAllowed: Boolean(plan.documentConvertAllowed),
+                    features: plan.features,
+                    badge: plan.badge,
+                    isPopular: plan.isPopular,
+                    isActive: plan.isActive
+                };
+                const res = await apiService.updatePlan(plan._id, body);
+                if (res.success) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+            } catch (err) {
+                console.error(`Failed to update plan ${plan.planName}:`, err);
+                failCount++;
+            }
+        }
+
+        if (successCount > 0) {
+            toast.success(`Successfully saved ${successCount} plan limit configuration${successCount > 1 ? 's' : ''}`);
+        }
+        if (failCount > 0) {
+            toast.error(`Failed to save ${failCount} plan configurations`);
+        }
+
         try {
-            const data = await apiService.getPackages();
-            setPackages(Array.isArray(data) ? data : data.packages || []);
+            const data = await apiService.getPlans();
+            const freshPlans = Array.isArray(data) ? data : data.plans || [];
+            setPlans(freshPlans);
+            setEditedPlans(JSON.parse(JSON.stringify(freshPlans)));
         } catch (err) {
-            console.error('Failed to fetch packages:', err);
+            console.error('Failed to reload plans:', err);
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
-    };
-
-    const handleSubmit = async () => {
-        try {
-            const body = { ...form, credits: Number(form.credits), price: Number(form.price) };
-            
-            let data;
-            if (editingPkg) {
-                data = await apiService.updatePackage(editingPkg._id, body);
-            } else {
-                data = await apiService.createPackage(body);
-            }
-
-            if (data.success) {
-                toast.success(editingPkg ? 'Package updated' : 'Package created');
-                resetForm();
-                fetchPackages();
-            }
-        } catch (err) {
-            toast.error('Failed to save package');
-        }
-    };
-
-    const handleDelete = async () => {
-        if (!deleteModal.pkgId) return;
-        try {
-            await apiService.deletePackage(deleteModal.pkgId);
-            toast.success('Package deleted');
-            setDeleteModal({ isOpen: false, pkgId: null });
-            fetchPackages();
-        } catch (err) {
-            toast.error('Failed to delete package');
-            setDeleteModal({ isOpen: false, pkgId: null });
-        }
-    };
-
-    const startEdit = (pkg) => {
-        setEditingPkg(pkg);
-        setForm({ name: pkg.name || '', credits: pkg.credits?.toString() || '', price: pkg.price?.toString() || '', description: pkg.description || '' });
-        setShowForm(true);
-    };
-
-    const resetForm = () => {
-        setForm({ name: '', credits: '', price: '', description: '' });
-        setEditingPkg(null);
-        setShowForm(false);
     };
 
     if (loading) return <LoadingSpinner />;
 
+    // Matrix representation fields classified according to home chat screen categories
+    const services = [
+        {
+            category: 'Plan Core Settings',
+            items: [
+                {
+                    name: 'AI Chat Scope',
+                    description: 'Chat availability type',
+                    field: 'chatScope',
+                    type: 'select',
+                    options: [
+                        { value: 'total', label: 'Lifetime Cap' },
+                        { value: 'unlimited', label: 'Unlimited' }
+                    ]
+                },
+                {
+                    name: 'AI Chat Limit',
+                    description: 'Max messages count (-1 for unlimited)',
+                    field: 'chatLimit',
+                    type: 'number'
+                },
+                {
+                    name: 'Validity (Days)',
+                    description: 'Plan expiration duration',
+                    field: 'validityDays',
+                    type: 'number'
+                }
+            ]
+        },
+        {
+            category: 'BUSINESS',
+            items: [
+                {
+                    name: 'AI Legal™ Advisor',
+                    description: 'Access to AI Legal documents and toolkit',
+                    field: 'aiLegalAllowed',
+                    type: 'boolean'
+                },
+                {
+                    name: 'AI Cashflow™',
+                    description: 'Permission to access stock analysis tabs',
+                    field: 'cashflowAllowed',
+                    type: 'boolean'
+                },
+                {
+                    name: 'AI ADS™ Agent',
+                    description: 'Access to AI Ads and Social Media generation',
+                    field: 'aiAdsAllowed',
+                    type: 'boolean'
+                }
+            ]
+        },
+        {
+            category: 'CREATE',
+            items: [
+                {
+                    name: 'AI Image Generation',
+                    description: 'Daily image creation limit',
+                    field: 'imageLimit',
+                    type: 'number'
+                },
+                {
+                    name: 'AI Image Editor',
+                    description: 'Permission to edit/transform images',
+                    field: 'editImageAllowed',
+                    type: 'boolean'
+                },
+                {
+                    name: 'AI Carousel Generation',
+                    description: 'Daily AIAD carousel limit',
+                    field: 'carouselLimit',
+                    type: 'number'
+                },
+                {
+                    name: 'AI Video Generation',
+                    description: 'Daily video creation limit',
+                    field: 'videoLimit',
+                    type: 'number'
+                },
+                {
+                    name: 'Voice Generation',
+                    description: 'Text-to-speech audio synthesis',
+                    field: 'voiceGenAllowed',
+                    type: 'boolean'
+                }
+            ]
+        },
+        {
+            category: 'INTELLIGENCE',
+            items: [
+                {
+                    name: 'AI Web Search',
+                    description: 'Real-time web search capability',
+                    field: 'webSearchAllowed',
+                    type: 'boolean'
+                },
+                {
+                    name: 'AI Deep Search',
+                    description: 'AI Deep Search capability',
+                    field: 'deepSearchAllowed',
+                    type: 'boolean'
+                },
+                {
+                    name: 'AI Code Writer',
+                    description: 'Programming support and code generator',
+                    field: 'codeWriterAllowed',
+                    type: 'boolean'
+                },
+                {
+                    name: 'AI Document Converter',
+                    description: 'Access to document format conversion tool',
+                    field: 'documentConvertAllowed',
+                    type: 'boolean'
+                }
+            ]
+        }
+    ];
+
     return (
-        <div className="space-y-4">
-            <div className="flex justify-end">
-                <button
-                    onClick={() => { resetForm(); setShowForm(!showForm); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-primary/20"
-                >
-                    <Plus className="w-4 h-4" /> New Package
-                </button>
+        <div className="space-y-6 pb-24">
+            <div>
+                <h2 className="text-lg font-bold text-maintext">Plan Services & Limits (Tool Matrix)</h2>
+                <p className="text-xs text-subtext">Directly edit limits, permissions, and service capabilities for each plan in the grid below.</p>
             </div>
 
+            {/* Matrix Card */}
+            <div className="bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl overflow-hidden overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[800px]">
+                    <thead>
+                        <tr className="border-b border-white/20 dark:border-white/10 bg-white/20 dark:bg-black/20">
+                            <th className="p-4 text-xs font-bold text-subtext uppercase tracking-wider w-[280px]">Service / Tool Name</th>
+                            {editedPlans.map(plan => (
+                                <th key={plan._id} className="p-4 text-xs font-black text-maintext uppercase tracking-wider text-center">
+                                    <div className="flex flex-col items-center">
+                                        <span className="font-bold text-sm text-maintext">{plan.planName}</span>
+                                        <span className="text-[10px] text-primary/80 lowercase font-medium mt-0.5">₹{plan.priceMonthly}/mo</span>
+                                    </div>
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {services.map((cat, idx) => (
+                            <React.Fragment key={idx}>
+                                {/* Category Header */}
+                                <tr className="bg-white/10 dark:bg-white/5">
+                                    <td colSpan={editedPlans.length + 1} className="px-4 py-2 text-xs font-extrabold text-primary uppercase tracking-wider">
+                                        {cat.category}
+                                    </td>
+                                </tr>
+                                {cat.items.map((item, itemIdx) => (
+                                    <tr key={itemIdx} className="border-b border-white/10 dark:border-b-white/5 hover:bg-white/10 dark:hover:bg-white/5 transition-colors">
+                                        <td className="p-4">
+                                            <p className="font-bold text-maintext text-sm">{item.name}</p>
+                                            <p className="text-[11px] text-subtext/80 mt-0.5">{item.description}</p>
+                                        </td>
+                                        {editedPlans.map(plan => {
+                                            const val = plan[item.field];
+                                            
+                                            return (
+                                                <td key={plan._id} className="p-4 text-center">
+                                                    {item.type === 'boolean' && (
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!val}
+                                                            onChange={(e) => handleValueChange(plan._id, item.field, e.target.checked)}
+                                                            className="w-4.5 h-4.5 accent-primary rounded border-white/20 cursor-pointer flex items-center justify-center mx-auto"
+                                                        />
+                                                    )}
+                                                    {item.type === 'number' && (
+                                                        <input
+                                                            type="number"
+                                                            value={val ?? 0}
+                                                            onChange={(e) => handleValueChange(plan._id, item.field, Number(e.target.value))}
+                                                            className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-1.5 px-3 text-xs outline-none focus:border-primary text-maintext font-bold text-center w-24 mx-auto block no-spinner font-mono"
+                                                        />
+                                                    )}
+                                                    {item.type === 'select' && (
+                                                        <select
+                                                            value={val || ''}
+                                                            onChange={(e) => handleValueChange(plan._id, item.field, e.target.value)}
+                                                            className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-1.5 px-3 text-xs outline-none focus:border-primary text-maintext font-bold text-center max-w-[150px] mx-auto block font-mono"
+                                                        >
+                                                            {item.options.map(opt => (
+                                                                <option key={opt.value} value={opt.value} className="bg-slate-50 dark:bg-zinc-900 text-maintext text-xs font-semibold">
+                                                                    {opt.label}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    )}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
+                            </React.Fragment>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Hint Box */}
+            <div className="bg-white/20 dark:bg-white/5 rounded-2xl p-4 border border-white/10 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-xs text-subtext space-y-1">
+                    <p className="font-bold text-maintext">Quick Edit Matrix</p>
+                    <p>Adjust limits and check permissions directly in the comparison grid. Changes are kept locally until you click the save bar at the bottom.</p>
+                </div>
+            </div>
+
+            {/* Floating Save/Reset Bar */}
             <AnimatePresence>
-                {showForm && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <div className="bg-white/30 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl p-5 space-y-4">
-                            <h3 className="font-bold text-maintext">{editingPkg ? 'Edit Package' : 'Create New Package'}</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <input placeholder="Package Name" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext" />
-                                <input placeholder="Credits" type="number" value={form.credits} onChange={e => setForm(p => ({ ...p, credits: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext no-spinner" />
-                                <input placeholder="Price (₹)" type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))}
-                                    className="bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext no-spinner" />
+                {hasUnsavedChanges && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 50 }}
+                        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between gap-6 px-6 py-4 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-2xl rounded-2xl min-w-[320px] md:min-w-[500px]"
+                    >
+                        <div className="flex items-center gap-2.5 text-maintext">
+                            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                            <div className="text-left">
+                                <p className="text-sm font-bold text-maintext">Unsaved Changes</p>
+                                <p className="text-[11px] text-subtext">You have modified the plan limits and permissions matrix.</p>
                             </div>
-                            <input placeholder="Description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                                className="w-full bg-white/20 dark:bg-black/20 border border-white/20 dark:border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/50 text-maintext" />
-                            <div className="flex gap-3 justify-end">
-                                <button onClick={resetForm} className="px-4 py-2 rounded-xl text-sm font-bold text-subtext hover:text-maintext hover:bg-white/20 transition-all">Cancel</button>
-                                <button onClick={handleSubmit} className="px-6 py-2 bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-primary/20">
-                                    {editingPkg ? 'Update' : 'Create'}
-                                </button>
-                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 font-semibold">
+                            <button
+                                onClick={() => setEditedPlans(JSON.parse(JSON.stringify(plans)))}
+                                className="px-4 py-2 text-xs font-bold text-subtext hover:text-maintext hover:bg-white/10 rounded-xl transition-all"
+                            >
+                                Reset
+                            </button>
+                            <button
+                                onClick={handleSaveAll}
+                                disabled={saving}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-bold text-xs hover:opacity-90 transition-all shadow-lg shadow-primary/30 disabled:opacity-50"
+                            >
+                                {saving ? (
+                                    <>
+                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="w-3.5 h-3.5" />
+                                        Save All Changes
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {packages.map(pkg => (
-                    <div key={pkg._id} className="bg-white/30 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl p-5 hover:border-primary/20 transition-all">
-                        <div className="flex items-start justify-between mb-3">
-                            <div>
-                                <h4 className="font-bold text-maintext">{pkg.name}</h4>
-                                <p className="text-xs text-subtext mt-1">{pkg.description}</p>
-                            </div>
-                            <div className="flex gap-1">
-                                <button onClick={() => startEdit(pkg)} className="p-2 rounded-lg hover:bg-primary/10 text-subtext hover:text-primary transition-all"><Edit2 className="w-4 h-4" /></button>
-                                <button onClick={() => setDeleteModal({ isOpen: true, pkgId: pkg._id })} className="p-2 rounded-lg hover:bg-red-500/10 text-subtext hover:text-red-500 transition-all"><Trash2 className="w-4 h-4" /></button>
-                            </div>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-primary">₹{pkg.price}</span>
-                            <span className="text-xs text-subtext font-semibold">{pkg.credits} credits</span>
-                        </div>
-                    </div>
-                ))}
-                {packages.length === 0 && <p className="text-subtext text-sm col-span-full text-center py-8">No packages created yet</p>}
-            </div>
-
-            <DeleteConfirmModal
-                isOpen={deleteModal.isOpen}
-                onClose={() => setDeleteModal({ isOpen: false, pkgId: null })}
-                onConfirm={handleDelete}
-                title="Delete Package?"
-                description="Are you sure you want to delete this package? This action cannot be undone."
-            />
         </div>
     );
 };
@@ -1374,439 +1473,6 @@ const KnowledgeBaseTab = () => {
     );
 };
 
-// ═══════════════════════════════
-// FEATURE CREDITS TAB
-// ═══════════════════════════════
-const FeatureCreditsTab = () => {
-    const { t } = useLanguage();
-    const [features, setFeatures] = useState([]);
-    const [modifiedFeatures, setModifiedFeatures] = useState({});
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [showAiAdsModal, setShowAiAdsModal] = useState(false);
-    const AI_ADS_FEATURES = [
-        'ai_ads_agent', 'gemini_flash', 'activate_strategy', 'generate_content', 'regenerate_content',
-        'strategy_7days', 'strategy_1x_week', 'strategy_3x_week', 'strategy_daily', 'strategy_2x_daily'
-    ];
-
-    const fetchFeatures = async () => {
-        try {
-            const res = await apiService.getFeatureCredits();
-            if (res.success && res.features) {
-                setFeatures(res.features.sort((a, b) => a.category.localeCompare(b.category)));
-                setModifiedFeatures({});
-            }
-        } catch (err) {
-            toast.error(t('failedToLoadFeatureCredits') || "Failed to load feature credits");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => { fetchFeatures(); }, []);
-
-    const handleFeatureChange = (id, field, value) => {
-        setModifiedFeatures(prev => ({
-            ...prev,
-            [id]: {
-                ...prev[id],
-                [field]: value
-            }
-        }));
-    };
-
-    const handleSaveChanges = async () => {
-        const changes = Object.entries(modifiedFeatures);
-        if (changes.length === 0) return;
-
-        setSaving(true);
-        try {
-            // Batch update visually by executing promises
-            await Promise.all(changes.map(async ([id, data]) => {
-                const original = features.find(f => f._id === id);
-                const updatePayload = {
-                    cost: data.cost !== undefined ? Number(data.cost) : original.cost,
-                    uiLabel: data.uiLabel !== undefined ? data.uiLabel : original.uiLabel
-                };
-                await apiService.updateFeatureCredit(id, updatePayload);
-            }));
-            
-            toast.success(t('featureCostsUpdated') || 'All feature costs updated successfully!');
-            fetchFeatures();
-        } catch (error) {
-            toast.error(t('failedToSaveFeatures') || 'Failed to save some features');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    if (loading) return <LoadingSpinner />;
-
-    // Group features by category
-    const grouped = features.reduce((acc, curr) => {
-        if (!acc[curr.category]) acc[curr.category] = [];
-        acc[curr.category].push(curr);
-        return acc;
-    }, {});
-
-    const hasChanges = Object.keys(modifiedFeatures).length > 0;
-
-    return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-start gap-4 flex-1">
-                    <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                    <div>
-                        <h4 className="font-bold text-maintext">{t('creditCostEconomics')}</h4>
-                        <p className="text-xs text-subtext mt-1">{t('platformEconomicsDesc')}</p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0">
-                    <button
-                        onClick={fetchFeatures}
-                        className="px-4 py-2 bg-white/10 dark:bg-black/20 text-maintext rounded-xl font-bold text-sm hover:bg-white/20 transition-all border border-white/20 flex items-center gap-2"
-                        disabled={saving}
-                    >
-                        <RefreshCw className={`w-4 h-4 ${saving ? 'animate-spin' : ''}`} /> {t('reset')}
-                    </button>
-                    <button
-                        onClick={handleSaveChanges}
-                        disabled={!hasChanges || saving}
-                        className={`px-5 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
-                            hasChanges && !saving
-                                ? 'bg-primary text-white shadow-lg shadow-primary/30 hover:scale-105'
-                                : 'bg-white/5 text-subtext cursor-not-allowed border border-white/10'
-                        }`}
-                    >
-                        {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        {t('saveChanges')}
-                    </button>
-                </div>
-            </div>
-
-            {Object.entries(grouped).map(([category, items]) => {
-                const isAdvanceCategory = category === 'AISA Advance Feature';
-                const regularFeatures = isAdvanceCategory ? items.filter(f => !AI_ADS_FEATURES.includes(f.featureKey)) : items;
-                const aiAdsFeatures = isAdvanceCategory ? items.filter(f => AI_ADS_FEATURES.includes(f.featureKey)) : [];
-
-                return (
-                    <SectionCard key={category} title={category}>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {/* Render AI ADS Combined Card first if applicable */}
-                            {isAdvanceCategory && aiAdsFeatures.length > 0 && (
-                                <div 
-                                    onClick={() => setShowAiAdsModal(true)}
-                                    className="bg-white/5 border border-white/10 rounded-xl p-4 relative flex flex-col justify-between hover:bg-white/10 hover:border-primary/50 transition-colors cursor-pointer group"
-                                >
-                                    <div>
-                                        <p className="text-xs font-bold text-subtext uppercase tracking-wider mb-1">AI_ADS_AGENT_SUITE</p>
-                                        <h3 className="font-bold text-maintext text-lg">AI ADS™ Credits</h3>
-                                        <p className="text-xs text-subtext mt-1.5">Manage credit costs for Visuals, Strategy, Content, and Brand Scraping.</p>
-                                    </div>
-                                    <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
-                                        <p className="text-xs text-primary font-bold group-hover:text-primary transition-colors">Configure {aiAdsFeatures.length} Features</p>
-                                        <div className="bg-primary/20 text-primary w-8 h-8 rounded-full flex items-center justify-center">
-                                            <Settings className="w-4 h-4 group-hover:rotate-90 transition-transform" />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Render Regular Features */}
-                            {regularFeatures.map(f => {
-                                const mod = modifiedFeatures[f._id] || {};
-                                const currentCost = mod.cost !== undefined ? mod.cost : f.cost;
-                                const currentLabel = mod.uiLabel !== undefined ? mod.uiLabel : f.uiLabel;
-                                const isChanged = mod.cost !== undefined || mod.uiLabel !== undefined;
-                                
-                                return (
-                                    <div key={f._id} className={`bg-white/5 border rounded-xl p-4 relative flex flex-col justify-between transition-colors ${isChanged ? 'border-primary/50' : 'border-white/10'}`}>
-                                        <div>
-                                            <p className="text-xs font-bold text-subtext uppercase tracking-wider mb-1">{f.featureKey}</p>
-                                            <input 
-                                                type="text" 
-                                                className="font-bold text-maintext bg-transparent border-none p-0 outline-none w-full"
-                                                value={currentLabel}
-                                                onChange={(e) => handleFeatureChange(f._id, 'uiLabel', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="mt-4 flex items-center justify-between">
-                                            <p className="text-xs text-subtext font-medium">Credit Cost</p>
-                                            <div className="flex items-center bg-black/20 rounded-lg w-24 overflow-hidden border border-transparent focus-within:border-primary/50 transition-colors">
-                                                <input
-                                                    type="number"
-                                                    className="bg-transparent border-none outline-none text-right font-black text-primary text-lg w-full p-2 no-spinner"
-                                                    value={currentCost}
-                                                    onChange={(e) => handleFeatureChange(f._id, 'cost', e.target.value)}
-                                                    min="0"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </SectionCard>
-                );
-            })}
-
-            {/* AI ADS Credit System Modal */}
-            {showAiAdsModal && (() => {
-                // Pull live base costs from DB features (editable)
-                const getBase = (key) => {
-                    const f = features.find(f => f.featureKey === key);
-                    if (!f) return 0;
-                    const mod = modifiedFeatures[f._id];
-                    return mod?.cost !== undefined ? Number(mod.cost) : f.cost;
-                };
-                const baseScrape     = getBase('gemini_flash');
-                const baseStrategy   = getBase('activate_strategy');
-                const baseVisual     = getBase('ai_ads_agent');
-                const baseContent    = getBase('generate_content');
-                const baseRegen      = getBase('regenerate_content');
-
-                // Dynamic strategy costs (frequency-based)
-                const strategyRows = [
-                    { key: 'strategy_7days',    label: '7 Days (Starter)',      days: 7,  posts: 7,   freeOnly: true },
-                    { key: 'strategy_1x_week',  label: '1x per week',           days: 30, posts: 4,   freeOnly: false },
-                    { key: 'strategy_3x_week',  label: '3x per week',           days: 30, posts: 12,  freeOnly: false },
-                    { key: 'strategy_daily',    label: 'Daily',                 days: 30, posts: 30,  freeOnly: false },
-                    { key: 'strategy_2x_daily', label: '2x Daily (High Growth)', days: 30, posts: 60,  freeOnly: false },
-                ];
-
-                // Carousel costs (ai_ads_agent base × slides)
-                const carouselRows = [
-                    { slides: 2, credits: baseVisual * 2 },
-                    { slides: 3, credits: baseVisual * 3 },
-                    { slides: 4, credits: baseVisual * 4 },
-                ];
-
-                const FIXED_KEYS = [
-                    { key: 'brand_setup',        label: 'Brand Setup Save',         note: 'No AI call — always free' },
-                    { key: 'gemini_flash',        label: 'Website Scraping',         note: 'Per scrape (Gemini Flash)' },
-                    { key: 'generate_content',    label: 'Content Generation',       note: 'Per calendar row' },
-                    { key: 'regenerate_content',  label: 'Regeneration / Hashtags',  note: 'Per re-roll' },
-                    { key: 'ai_ads_agent',        label: 'Visual Post (Single)',      note: 'GPT-4 + Imagen 3 per image' },
-                ];
-
-                return (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-                        <div className="bg-surface dark:bg-[#0e0e0e] border border-border/50 dark:border-white/10 rounded-3xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-hidden flex flex-col">
-
-                            {/* Header */}
-                            <div className="p-5 sm:p-6 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-primary/10 to-transparent shrink-0">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                                        <Zap className="w-5 h-5 text-primary" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-black text-maintext">AI ADS™ Credit System</h3>
-                                        <p className="text-xs text-subtext mt-0.5">Full pricing matrix — edit base costs, dynamic costs auto-calculate</p>
-                                    </div>
-                                </div>
-                                <button onClick={() => setShowAiAdsModal(false)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg transition-colors text-subtext">
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-
-                            {/* Body */}
-                            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 custom-scrollbar">
-
-                                {/* ── SECTION 1: FIXED BASE COSTS ── */}
-                                <div>
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-1.5 h-4 bg-primary rounded-full" />
-                                        <h4 className="text-xs font-black uppercase tracking-widest text-maintext">Fixed Base Costs</h4>
-                                        <span className="text-[10px] text-subtext ml-1">(editable — saved to DB)</span>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {FIXED_KEYS.map(({ key, label, note }) => {
-                                            const f = features.find(f => f.featureKey === key);
-                                            if (!f) return null;
-                                            const mod = modifiedFeatures[f._id] || {};
-                                            const currentCost  = mod.cost !== undefined ? mod.cost : f.cost;
-                                            const isChanged    = mod.cost !== undefined || mod.uiLabel !== undefined;
-                                            const isFree       = key === 'brand_setup';
-                                            return (
-                                                <div key={f._id} className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 border transition-all ${isChanged ? 'border-primary/50 bg-primary/5' : 'border-white/10 bg-white/5'}`}>
-                                                    <div className="min-w-0">
-                                                        <p className="text-[10px] font-black uppercase tracking-wider text-subtext">{key}</p>
-                                                        <p className="text-sm font-bold text-maintext truncate">{label}</p>
-                                                        <p className="text-[10px] text-subtext/70 mt-0.5">{note}</p>
-                                                    </div>
-                                                    <div className={`flex items-center gap-1.5 rounded-lg px-2 py-1 border shrink-0 ${isFree ? 'bg-green-500/10 border-green-500/20' : 'bg-black/20 border-transparent focus-within:border-primary/50'}`}>
-                                                        {isFree ? (
-                                                            <span className="text-green-400 font-black text-lg w-10 text-right">FREE</span>
-                                                        ) : (
-                                                            <>
-                                                                <input
-                                                                    type="number"
-                                                                    className="bg-transparent border-none outline-none text-right font-black text-primary text-xl w-16 no-spinner"
-                                                                    value={currentCost}
-                                                                    onChange={(e) => handleFeatureChange(f._id, 'cost', e.target.value)}
-                                                                    min="0"
-                                                                />
-                                                                <span className="text-[10px] text-subtext font-bold">cr</span>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* ── SECTION 2: STRATEGY DYNAMIC COSTS ── */}
-                                <div>
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-1.5 h-4 bg-amber-400 rounded-full" />
-                                        <h4 className="text-xs font-black uppercase tracking-widest text-maintext">Strategy Activation — Dynamic Pricing</h4>
-                                        <span className="text-[10px] text-subtext ml-1">(editable — saved to DB)</span>
-                                    </div>
-                                    <div className="rounded-xl border border-white/10 overflow-hidden">
-                                        <table className="w-full text-sm">
-                                            <thead>
-                                                <tr className="bg-white/5 border-b border-white/10">
-                                                    <th className="text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-subtext">Posting Frequency</th>
-                                                    <th className="text-center px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-subtext">Days</th>
-                                                    <th className="text-center px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-subtext">Posts</th>
-                                                    <th className="text-right px-4 py-2.5 text-[10px] font-black uppercase tracking-wider text-subtext">Credits</th>
-                                                    <th className="text-center px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-subtext">Plan</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {strategyRows.map((row, i) => {
-                                                    const f = features.find(feat => feat.featureKey === row.key);
-                                                    if (!f) return null;
-                                                    const mod = modifiedFeatures[f._id] || {};
-                                                    const currentCost = mod.cost !== undefined ? mod.cost : f.cost;
-                                                    return (
-                                                    <tr key={i} className={`border-b border-white/5 last:border-0 ${row.freeOnly ? 'bg-green-500/5' : ''}`}>
-                                                        <td className="px-4 py-3">
-                                                            <span className="font-bold text-maintext text-sm">{row.label}</span>
-                                                        </td>
-                                                        <td className="px-3 py-3 text-center text-subtext text-xs font-medium">{row.days}d</td>
-                                                        <td className="px-3 py-3 text-center text-subtext text-xs font-medium">{row.posts}</td>
-                                                        <td className="px-4 py-3 text-right">
-                                                            <div className="flex items-center justify-end gap-1">
-                                                                <input
-                                                                    type="number"
-                                                                    className="bg-black/20 border border-transparent focus:border-primary/50 outline-none text-right font-black text-primary text-base w-16 px-2 py-1 rounded no-spinner"
-                                                                    value={currentCost}
-                                                                    onChange={(e) => handleFeatureChange(f._id, 'cost', e.target.value)}
-                                                                    min="0"
-                                                                />
-                                                                <span className="text-subtext text-[10px]">cr</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-3 py-3 text-center">
-                                                            {row.freeOnly
-                                                                ? <span className="px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[10px] font-black">FREE + PRO</span>
-                                                                : <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-black">🔒 PRO</span>
-                                                            }
-                                                        </td>
-                                                    </tr>
-                                                )})}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <p className="text-[10px] text-subtext mt-2 ml-1">
-                                        ⚠️ Free plan users are always forced to <strong>7 Days = 14 credits</strong>. Other frequencies require a paid plan.
-                                    </p>
-                                </div>
-
-                                {/* ── SECTION 3: CAROUSEL DYNAMIC COSTS ── */}
-                                <div>
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-1.5 h-4 bg-violet-400 rounded-full" />
-                                        <h4 className="text-xs font-black uppercase tracking-widest text-maintext">Carousel — Dynamic Pricing</h4>
-                                        <span className="text-[10px] text-subtext ml-1">(Visual base × slide count)</span>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {carouselRows.map((row) => (
-                                            <div key={row.slides} className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
-                                                <div className="flex justify-center gap-0.5 mb-2">
-                                                    {Array.from({ length: row.slides }).map((_, i) => (
-                                                        <div key={i} className="w-4 h-6 rounded bg-primary/30 border border-primary/20" />
-                                                    ))}
-                                                </div>
-                                                <p className="text-[10px] text-subtext font-bold uppercase tracking-wide mb-1">{row.slides} Slides</p>
-                                                <p className="text-2xl font-black text-primary">{row.credits}</p>
-                                                <p className="text-[10px] text-subtext">credits</p>
-                                                <p className="text-[10px] text-subtext/50 mt-1">{baseVisual} × {row.slides}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <p className="text-[10px] text-subtext mt-2 ml-1">❌ Carousel posts are <strong>blocked</strong> for free plan users.</p>
-                                </div>
-
-                                {/* ── SECTION 4: FREE PLAN RULES ── */}
-                                <div>
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-1.5 h-4 bg-red-400 rounded-full" />
-                                        <h4 className="text-xs font-black uppercase tracking-widest text-maintext">Free Plan Rules (500 Credits)</h4>
-                                        <span className="text-[10px] text-subtext ml-1">(enforced in backend middleware)</span>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {[
-                                            { icon: '🌐', rule: 'Website Scraping', limit: 'Max 2 scrapes (lifetime)', action: '3rd attempt → UPGRADE_REQUIRED → Upgrade modal', color: 'amber' },
-                                            { icon: '📅', rule: 'Content Calendar', limit: 'Hard-capped at 7 days', action: 'Backend forces maxDays=7 regardless of selection', color: 'blue' },
-                                            { icon: '🎨', rule: 'Visual Posts', limit: 'Completely blocked', action: 'PLAN_RESTRICTED 403 → Upgrade modal', color: 'red' },
-                                            { icon: '🖼️', rule: 'Carousel Posts', limit: 'Completely blocked', action: 'Same as visual posts', color: 'red' },
-                                            { icon: '📊', rule: 'Posting Frequency', limit: 'Only "7 Days (Starter)"', action: 'Other options show 🔒 PRO lock in dropdown', color: 'violet' },
-                                        ].map((item, i) => (
-                                            <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/10">
-                                                <span className="text-base shrink-0 mt-0.5">{item.icon}</span>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <p className="text-sm font-bold text-maintext">{item.rule}</p>
-                                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                                                            item.color === 'red' ? 'bg-red-500/15 text-red-400' :
-                                                            item.color === 'amber' ? 'bg-amber-500/15 text-amber-400' :
-                                                            item.color === 'blue' ? 'bg-blue-500/15 text-blue-400' :
-                                                            'bg-violet-500/15 text-violet-400'
-                                                        }`}>{item.limit}</span>
-                                                    </div>
-                                                    <p className="text-[10px] text-subtext mt-0.5">{item.action}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                            </div>
-
-                            {/* Footer */}
-                            <div className="p-4 sm:p-5 border-t border-white/10 bg-white/[0.02] flex items-center justify-between gap-3 shrink-0">
-                                <p className="text-[10px] text-subtext">
-                                    {Object.keys(modifiedFeatures).length > 0
-                                        ? <span className="text-amber-400 font-bold">⚠ {Object.keys(modifiedFeatures).length} unsaved changes — click Save to apply</span>
-                                        : 'Changes to base costs are reflected in all dynamic calculations above.'}
-                                </p>
-                                <div className="flex gap-2 shrink-0">
-                                    <button onClick={() => setShowAiAdsModal(false)} className="px-4 py-2 rounded-xl font-bold text-sm bg-white/10 text-maintext hover:bg-white/20 transition-colors">
-                                        Close
-                                    </button>
-                                    {Object.keys(modifiedFeatures).length > 0 && (
-                                        <button
-                                            onClick={() => { handleSaveChanges(); setShowAiAdsModal(false); }}
-                                            disabled={saving}
-                                            className="px-5 py-2 rounded-xl font-bold text-sm bg-primary text-white shadow-lg shadow-primary/30 hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50"
-                                        >
-                                            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                            Save Changes
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            })()}
-        </div>
-    );
-};
 
 // ═══════════════════════════════
 // MAIN ADMIN DASHBOARD
@@ -1832,8 +1498,7 @@ const AdminDashboard = () => {
         { id: 'overview', label: t('overview'), icon: BarChart3 },
         { id: 'users', label: t('users'), icon: Users },
         { id: 'plans', label: t('plans'), icon: CreditCard },
-        { id: 'packages', label: t('packages'), icon: Package },
-        { id: 'credits', label: t('toolCosts'), icon: Zap },
+        { id: 'tool-limit', label: t('toolLimit') || 'Tool Limit', icon: Shield },
         { id: 'legal', label: t('legalPages'), icon: FileText },
         { id: 'helpdesk', label: t('helpDesk'), icon: Headphones },
         { id: 'knowledge', label: t('knowledge'), icon: BookOpen },
@@ -1845,8 +1510,7 @@ const AdminDashboard = () => {
             case 'overview': return <OverviewTab />;
             case 'users': return <UsersTab />;
             case 'plans': return <PlansTab />;
-            case 'packages': return <PackagesTab />;
-            case 'credits': return <FeatureCreditsTab />;
+            case 'tool-limit': return <ToolLimitTab />;
             case 'legal': return <LegalPagesTab />;
             case 'helpdesk': return <AdminHelpDesk isOpen={true} isEmbedded={true} />;
             case 'knowledge': return <KnowledgeBaseTab />;
@@ -1854,6 +1518,8 @@ const AdminDashboard = () => {
             default: return <OverviewTab />;
         }
     };
+
+
 
     return (
         <div className="h-full overflow-y-auto">

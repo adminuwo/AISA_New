@@ -11,6 +11,44 @@ import GooglePayButton from '../Components/GooglePayButton';
 import ApplePayButton from '../Components/ApplePayButton';
 import useCreditStore from '../userStore/useCreditStore';
 
+// Helper function to format feature checklist descriptions dynamically matching DB limits
+const formatFeatureString = (feature, plan) => {
+    if (!feature || !plan) return feature;
+    let result = feature;
+
+    // 1. Total AI messages / chat limit / Unlimited Chat
+    if (/total AI messages/i.test(result) || /total messages/i.test(result) || /AI messages/i.test(result)) {
+        if (plan.chatLimit === -1 || plan.chatScope === 'unlimited') {
+            return "Unlimited AI Chat";
+        } else {
+            result = result.replace(/\d+/, plan.chatLimit ?? 100);
+        }
+    }
+
+    // 2. Validity
+    if (/months validity/i.test(result) || /month validity/i.test(result) || /days validity/i.test(result)) {
+        const months = Math.round((plan.validityDays || 90) / 30);
+        result = result.replace(/\d+/, months);
+    }
+
+    // 3. Images/day
+    if (/Images\/day/i.test(result)) {
+        result = result.replace(/\d+/, plan.imageLimit ?? 0);
+    }
+
+    // 4. Carousel/day
+    if (/Carousel\/day/i.test(result)) {
+        result = result.replace(/\d+/, plan.carouselLimit ?? 0);
+    }
+
+    // 5. Videos/day
+    if (/Videos\/day/i.test(result)) {
+        result = result.replace(/\d+/, plan.videoLimit ?? 0);
+    }
+
+    return result;
+};
+
 const Pricing = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -560,15 +598,18 @@ const Pricing = () => {
               </div>
 
               <ul className="feature-list">
-                {plan.features.map((feature, i) => (
-                  <li key={i}>
-                    <Check size={16} />
-                    <span className="flex items-center gap-1.5">
-                      <span className="aisa-badge-small" style={{ fontSize: '0.6rem', padding: '1px 4px', minWidth: '30px' }}>AISA™</span>
-                      {feature.replace(/^AISA\s+/i, '')}
-                    </span>
-                  </li>
-                ))}
+                {plan.features.map((feature, i) => {
+                  const formattedFeature = formatFeatureString(feature, plan);
+                  return (
+                    <li key={i}>
+                      <Check size={16} />
+                      <span className="flex items-center gap-1.5">
+                        <span className="aisa-badge-small" style={{ fontSize: '0.6rem', padding: '1px 4px', minWidth: '30px' }}>AISA™</span>
+                        {formattedFeature.replace(/^AISA\s+/i, '')}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
 
 

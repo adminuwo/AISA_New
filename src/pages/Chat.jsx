@@ -6804,7 +6804,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
             : viewingDoc ? 'overflow-hidden' : `overflow-y-auto ${showFloatingNavbar ? 'pt-[72px] sm:mt-0 sm:pt-24' : (currentMode === 'LEGAL_TOOLKIT' || location.pathname === '/dashboard/cases' ? 'pt-4' : 'pt-[72px] sm:mt-0 sm:pt-[76px]')} lg:pt-6 pb-64 md:pb-72`
             }`}
           style={{
-            overflowY: viewingDoc ? 'hidden' : (((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT') || selectedLegalTool?.id === 'legal_general_chat' || (selectedLegalTool?.id && selectedLegalTool.id !== 'legal_my_case') ? 'hidden' : 'auto'),
+            overflowY: viewingDoc || ((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT') || selectedLegalTool?.id === 'legal_general_chat' || (selectedLegalTool?.id && selectedLegalTool.id !== 'legal_my_case') ? 'hidden' : 'auto',
             height: '100%',
             flex: '1 1 auto',
             display: 'flex',
@@ -6867,7 +6867,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="flex-1 flex flex-col w-full select-text min-h-0 h-full"
+                className="flex-1 flex flex-col w-full select-text min-h-0 min-h-full"
               >
                 {/* 🚀 MINI STICKY CASE BREADCRUMB (Lightweight & Non-obstructive) */}
                 <AnimatePresence>
@@ -7414,7 +7414,15 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                                               <button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  setExpandedMessages(prev => ({ ...prev, [msg.id]: !prev[msg.id] }));
+                                                  setExpandedMessages(prev => {
+                                                    const next = { ...prev, [msg.id]: !prev[msg.id] };
+                                                    if (next[msg.id]) {
+                                                      setTimeout(() => {
+                                                        scrollToBottom(true, 'smooth');
+                                                      }, 100);
+                                                    }
+                                                    return next;
+                                                  });
                                                 }}
                                                 className="read-more-btn"
                                                 title={expandedMessages[msg.id] ? 'Show less' : 'Read full response'}
@@ -8008,6 +8016,8 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                 </AnimatePresence>
 
                 <div ref={messagesEndRef} />
+                {/* Spacer to allow scrolling past the fixed bottom input area */}
+                <div className="h-64 md:h-72 shrink-0 pointer-events-none" />
               </motion.div>
             )}
           </AnimatePresence>
