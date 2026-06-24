@@ -69,46 +69,89 @@ const LegalResearch = ({ currentCase, onBack, theme, allProjects = [], onUpdateC
 
   const loadResearchHistory = async (caseId) => {
     try {
-      const data = localStorage.getItem('aisa_legal_research_history');
-      if (data && caseId) {
-        const parsed = JSON.parse(data);
-        const filtered = parsed.filter(h => h.caseId === caseId);
-        setHistoryData(filtered);
-      } else {
-        setHistoryData([]);
+      const targetCase = allProjects.find(p => p._id === caseId);
+      let dbHistory = targetCase?.researchHistory || [];
+
+      // Check legacy local storage history to migrate
+      const localData = localStorage.getItem('aisa_legal_research_history');
+      if (localData && targetCase) {
+        try {
+          const parsedLocal = JSON.parse(localData);
+          const localForCase = parsedLocal.filter(h => h.caseId === caseId);
+          if (localForCase.length > 0) {
+            const merged = [...dbHistory];
+            localForCase.forEach(item => {
+              if (!merged.some(m => m.id === item.id)) {
+                merged.push(item);
+              }
+            });
+            const payload = {
+              ...targetCase,
+              researchHistory: merged
+            };
+            const response = await apiService.updateProject(caseId, payload);
+            if (onUpdateCase) onUpdateCase(response);
+            dbHistory = merged;
+
+            const remainingLocal = parsedLocal.filter(h => h.caseId !== caseId);
+            if (remainingLocal.length > 0) {
+              localStorage.setItem('aisa_legal_research_history', JSON.stringify(remainingLocal));
+            } else {
+              localStorage.removeItem('aisa_legal_research_history');
+            }
+          }
+        } catch (err) {
+          console.error("Error migrating research history", err);
+        }
       }
+
+      setHistoryData(dbHistory);
     } catch (e) {
       console.error('[LegalResearch] Error loading history', e);
     }
   };
 
   const saveResearchToHistory = async (research) => {
+    const caseId = linkedCaseId || currentCase?._id;
+    if (!caseId) return;
     try {
+      const targetCase = allProjects.find(p => p._id === caseId);
+      if (!targetCase) return;
       const researchWithCase = {
         ...research,
-        caseId: linkedCaseId || currentCase?._id
+        caseId: caseId
       };
-      const stored = localStorage.getItem('aisa_legal_research_history');
-      const allHistory = stored ? JSON.parse(stored) : [];
-      const updated = [researchWithCase, ...allHistory.filter(h => h.id !== research.id)];
-      localStorage.setItem('aisa_legal_research_history', JSON.stringify(updated));
-      if (linkedCaseId || currentCase?._id) {
-        setHistoryData(updated.filter(h => h.caseId === (linkedCaseId || currentCase?._id)));
-      }
+      const existingHistory = targetCase.researchHistory || [];
+      const updated = [researchWithCase, ...existingHistory.filter(h => h.id !== research.id)];
+
+      const payload = {
+        ...targetCase,
+        researchHistory: updated
+      };
+      const response = await apiService.updateProject(caseId, payload);
+      if (onUpdateCase) onUpdateCase(response);
+      setHistoryData(updated);
     } catch (e) {
       console.error('[LegalResearch] Error saving history', e);
     }
   };
 
   const deleteHistoryItem = async (id) => {
+    const caseId = linkedCaseId || currentCase?._id;
+    if (!caseId) return;
     try {
-      const stored = localStorage.getItem('aisa_legal_research_history');
-      const allHistory = stored ? JSON.parse(stored) : [];
-      const updated = allHistory.filter(h => h.id !== id);
-      localStorage.setItem('aisa_legal_research_history', JSON.stringify(updated));
-      if (linkedCaseId || currentCase?._id) {
-        setHistoryData(updated.filter(h => h.caseId === (linkedCaseId || currentCase?._id)));
-      }
+      const targetCase = allProjects.find(p => p._id === caseId);
+      if (!targetCase) return;
+      const existingHistory = targetCase.researchHistory || [];
+      const updated = existingHistory.filter(h => h.id !== id);
+
+      const payload = {
+        ...targetCase,
+        researchHistory: updated
+      };
+      const response = await apiService.updateProject(caseId, payload);
+      if (onUpdateCase) onUpdateCase(response);
+      setHistoryData(updated);
       toast.success("Research log deleted successfully");
       if (activeResearch?.id === id) {
         setActiveResearch(null);

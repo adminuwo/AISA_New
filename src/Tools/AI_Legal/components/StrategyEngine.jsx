@@ -3,11 +3,12 @@ import {
   ChevronLeft, ChevronRight, Gavel, Plus, FileText, Copy, 
   Share2, FileDown, History, Search, X, Shield, Clock, 
   Brain, Scale, BookOpen, AlertTriangle, TrendingUp, Mic, 
-  Database, Cpu, Briefcase, Building2, Landmark, Folder, Printer
+  Database, Cpu, Briefcase, Building2, Landmark, Folder, Printer, CheckCircle2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
 import { apiService } from '../../../services/apiService';
+import { consumePrefillIntent, mapCaseToForm } from '../services/activeModuleService';
 
 const allTools = [
   { id: 'Bail', name: 'Bail Strategy', desc: 'Pre-arrest roadmap', category: 'Criminal', icon: Gavel },
@@ -53,8 +54,23 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
   // Tools Grid State
   const [toolsSearchQuery, setToolsSearchQuery] = useState('');
   const [toolsCategory, setToolsCategory] = useState('All');
+  const [prefillBanner, setPrefillBanner] = useState(null);
 
   const scrollRef = useRef(null);
+
+  // ── On mount: consume prefill intent from "Use Active Case" ──
+  useEffect(() => {
+    const intent = consumePrefillIntent('legal_strategy_engine');
+    if (intent?.caseData) {
+      const mapped = mapCaseToForm(intent.caseData);
+      if (mapped.caseTitle) setCaseTitle(mapped.caseTitle);
+      if (mapped.caseFacts) setCaseFacts(mapped.caseFacts);
+      const caseId = intent.caseData?._id || intent.caseData?.id;
+      if (caseId) { setLinkedCaseId(caseId); loadStrategyHistory(caseId); }
+      setPrefillBanner({ caseTitle: mapped.caseTitle || intent.caseData?.name || 'Active Case' });
+      toast.success(`✓ Case data loaded for strategy`, { icon: '🏆', duration: 3000 });
+    }
+  }, []); // eslint-disable-line
 
   useEffect(() => {
     if (currentCase) {
@@ -73,46 +89,89 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
 
   const loadStrategyHistory = async (caseId) => {
     try {
-      const data = localStorage.getItem('aisa_litigation_strategies_history');
-      if (data && caseId) {
-        const parsed = JSON.parse(data);
-        const filtered = parsed.filter(h => h.caseId === caseId);
-        setHistoryData(filtered);
-      } else {
-        setHistoryData([]);
+      const targetCase = allProjects.find(p => p._id === caseId);
+      let dbHistory = targetCase?.strategiesHistory || [];
+
+      // Check legacy local storage history to migrate
+      const localData = localStorage.getItem('aisa_litigation_strategies_history');
+      if (localData && targetCase) {
+        try {
+          const parsedLocal = JSON.parse(localData);
+          const localForCase = parsedLocal.filter(h => h.caseId === caseId);
+          if (localForCase.length > 0) {
+            const merged = [...dbHistory];
+            localForCase.forEach(item => {
+              if (!merged.some(m => m.id === item.id)) {
+                merged.push(item);
+              }
+            });
+            const payload = {
+              ...targetCase,
+              strategiesHistory: merged
+            };
+            const response = await apiService.updateProject(caseId, payload);
+            if (onUpdateCase) onUpdateCase(response);
+            dbHistory = merged;
+
+            const remainingLocal = parsedLocal.filter(h => h.caseId !== caseId);
+            if (remainingLocal.length > 0) {
+              localStorage.setItem('aisa_litigation_strategies_history', JSON.stringify(remainingLocal));
+            } else {
+              localStorage.removeItem('aisa_litigation_strategies_history');
+            }
+          }
+        } catch (err) {
+          console.error("Error migrating strategy history", err);
+        }
       }
+
+      setHistoryData(dbHistory);
     } catch (e) {
       console.error('[StrategyEngine] Error loading history', e);
     }
   };
 
   const saveStrategyToHistory = async (strategy) => {
+    const caseId = linkedCaseId || currentCase?._id;
+    if (!caseId) return;
     try {
-      const stored = localStorage.getItem('aisa_litigation_strategies_history');
-      const allStrategies = stored ? JSON.parse(stored) : [];
+      const targetCase = allProjects.find(p => p._id === caseId);
+      if (!targetCase) return;
       const strategyWithCase = {
         ...strategy,
-        caseId: linkedCaseId || currentCase?._id
+        caseId: caseId
       };
-      const updated = [strategyWithCase, ...allStrategies.filter(h => h.id !== strategy.id)];
-      localStorage.setItem('aisa_litigation_strategies_history', JSON.stringify(updated));
-      if (linkedCaseId || currentCase?._id) {
-        setHistoryData(updated.filter(h => h.caseId === (linkedCaseId || currentCase?._id)));
-      }
+      const existingHistory = targetCase.strategiesHistory || [];
+      const updated = [strategyWithCase, ...existingHistory.filter(h => h.id !== strategy.id)];
+
+      const payload = {
+        ...targetCase,
+        strategiesHistory: updated
+      };
+      const response = await apiService.updateProject(caseId, payload);
+      if (onUpdateCase) onUpdateCase(response);
+      setHistoryData(updated);
     } catch (e) {
       console.error('[StrategyEngine] Error saving history', e);
     }
   };
 
   const deleteHistoryItem = async (id) => {
+    const caseId = linkedCaseId || currentCase?._id;
+    if (!caseId) return;
     try {
-      const stored = localStorage.getItem('aisa_litigation_strategies_history');
-      const allStrategies = stored ? JSON.parse(stored) : [];
-      const updated = allStrategies.filter(h => h.id !== id);
-      localStorage.setItem('aisa_litigation_strategies_history', JSON.stringify(updated));
-      if (linkedCaseId || currentCase?._id) {
-        setHistoryData(updated.filter(h => h.caseId === (linkedCaseId || currentCase?._id)));
-      }
+      const targetCase = allProjects.find(p => p._id === caseId);
+      if (!targetCase) return;
+      const existingHistory = targetCase.strategiesHistory || [];
+      const updated = existingHistory.filter(h => h.id !== id);
+
+      const payload = {
+        ...targetCase,
+        strategiesHistory: updated
+      };
+      const response = await apiService.updateProject(caseId, payload);
+      if (onUpdateCase) onUpdateCase(response);
+      setHistoryData(updated);
       toast.success("Strategy log deleted successfully");
       if (activeStrategy?.id === id) {
         setActiveStrategy(null);
@@ -526,6 +585,20 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
               ))}
             </div>
           </div>
+
+          {/* Active Case Prefill Banner */}
+          {prefillBanner && (
+            <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/10 border border-emerald-200 dark:border-emerald-900/30 rounded-2xl shadow-sm">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">
+                <CheckCircle2 size={16} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-emerald-700 dark:text-emerald-400">Active Case: {prefillBanner.caseTitle}</p>
+                <p className="text-[10px] text-emerald-600/70 dark:text-emerald-500/60 font-medium mt-0.5">Case facts pre-loaded — click Simulate or Generate Roadmap</p>
+              </div>
+              <button onClick={() => setPrefillBanner(null)} className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-full text-emerald-500 shrink-0"><X size={13} /></button>
+            </div>
+          )}
 
           {/* Form and Input Area */}
           <div className="bg-white dark:bg-[#1A2540] rounded-3xl p-6 shadow-md space-y-5">

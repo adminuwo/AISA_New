@@ -3,11 +3,12 @@ import {
   ChevronLeft, ChevronRight, Gavel, Plus, FileText, Copy, 
   Share2, FileDown, History, Search, X, Shield, Clock, 
   Brain, Scale, BookOpen, AlertTriangle, TrendingUp, Mic, 
-  Database, Cpu, Briefcase, Building2, Landmark, Folder, Printer
+  Database, Cpu, Briefcase, Building2, Landmark, Folder, Printer, CheckCircle2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
 import { apiService } from '../../../services/apiService';
+import { consumePrefillIntent, mapCaseToForm } from '../services/activeModuleService';
 
 const allTools = [
   { id: 'NDA', name: 'NDA Review', desc: 'Indemnity & leak audit', category: 'Corporate' },
@@ -52,8 +53,37 @@ const ContractReview = ({ currentCase, onBack, theme, allProjects = [], onUpdate
   // Tools Grid State
   const [toolsSearchQuery, setToolsSearchQuery] = useState('');
   const [toolsCategory, setToolsCategory] = useState('All');
+  const [prefillBanner, setPrefillBanner] = useState(null); // { type: 'success'|'warning', message, caseTitle }
 
   const scrollRef = useRef(null);
+
+  // ── On mount: consume prefill intent from "Use Active Case" ──
+  useEffect(() => {
+    const intent = consumePrefillIntent('legal_contract_analyzer');
+    if (intent?.caseData) {
+      const mapped = mapCaseToForm(intent.caseData);
+      const caseId = intent.caseData?._id || intent.caseData?.id;
+      if (caseId) { setLinkedCaseId(caseId); loadAuditHistory(caseId); }
+
+      if (mapped.hasContract && mapped.contractFiles?.length) {
+        // Found contract files in this case
+        const contractFile = mapped.contractFiles[0];
+        setContractTitle(`${mapped.caseTitle} — ${contractFile.name}`);
+        setContractText(mapped.caseFacts || `Contract file: ${contractFile.name}\nCase: ${mapped.caseTitle}\n\n${mapped.notes || ''}`);
+        setPrefillBanner({ type: 'success', caseTitle: mapped.caseTitle, message: `Contract found: ${contractFile.name}` });
+        toast.success(`✓ Contract file detected — pre-loaded for review`, { icon: '📄', duration: 3000 });
+      } else if (mapped.caseFacts) {
+        // No contract file but has case facts — load them as context
+        setContractTitle(mapped.caseTitle || '');
+        setContractText(mapped.caseFacts);
+        setPrefillBanner({ type: 'warning', caseTitle: mapped.caseTitle, message: 'No contract file found in this case. Paste contract text below or select a template.' });
+        toast(`⚠️ No contract found — case facts loaded as context`, { icon: '⚠️', duration: 4000 });
+      } else {
+        // Nothing useful
+        setPrefillBanner({ type: 'warning', caseTitle: mapped.caseTitle, message: 'No contract found in this case. Upload or paste contract text to analyze.' });
+      }
+    }
+  }, []); // eslint-disable-line
 
   useEffect(() => {
     if (currentCase) {
@@ -504,6 +534,30 @@ const ContractReview = ({ currentCase, onBack, theme, allProjects = [], onUpdate
               ))}
             </div>
           </div>
+
+          {/* Active Case Prefill Banner */}
+          {prefillBanner && (
+            <div className={`flex items-start gap-3 px-4 py-3 border rounded-2xl shadow-sm ${
+              prefillBanner.type === 'success'
+                ? 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/10 border-emerald-200 dark:border-emerald-900/30'
+                : 'bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/10 border-amber-200 dark:border-amber-900/30'
+            }`}>
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                prefillBanner.type === 'success' ? 'bg-emerald-500' : 'bg-amber-500'
+              }`}>
+                {prefillBanner.type === 'success' ? <CheckCircle2 size={16} className="text-white" /> : <AlertTriangle size={14} className="text-white" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-xs font-black leading-none ${ prefillBanner.type === 'success' ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                  {prefillBanner.type === 'success' ? `Active Case: ${prefillBanner.caseTitle}` : `⚠️ No Contract Found — ${prefillBanner.caseTitle}`}
+                </p>
+                <p className={`text-[10px] font-medium mt-0.5 ${ prefillBanner.type === 'success' ? 'text-emerald-600/70 dark:text-emerald-500/60' : 'text-amber-600/70 dark:text-amber-500/60'}`}>
+                  {prefillBanner.message}
+                </p>
+              </div>
+              <button onClick={() => setPrefillBanner(null)} className={`p-1 rounded-full shrink-0 ${ prefillBanner.type === 'success' ? 'hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-500' : 'hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-500'}`}><X size={13} /></button>
+            </div>
+          )}
 
           {/* Form and Input Area */}
           <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-md space-y-5">

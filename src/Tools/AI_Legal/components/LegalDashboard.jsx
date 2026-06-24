@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../../context/LanguageContext';
 import { legalService } from '../services/legalService';
+import { getActiveModule } from '../services/activeModuleService';
 import toast from 'react-hot-toast';
 
 // ─── Status badge component ──────────────────────────────────────────
@@ -87,16 +88,16 @@ const QuickActionsModal = ({ visible, onClose, phoneNumber, countryCode }) => {
 };
 
 // ─── Module Router Modal ─────────────────────────────────────────────
-const ModuleRouterModal = ({ visible, onClose, caseData, onLaunchModule }) => {
+const ModuleRouterModal = ({ visible, onClose, caseData, onLaunchModule, activeModuleId }) => {
   const [search, setSearch] = useState('');
   const modules = useMemo(() => [
-    { id: 'legal_argument_builder', name: 'Argument Builder', desc: 'Draft courtroom strategies and arguments' },
-    { id: 'legal_precedents', name: 'Legal Precedent', desc: 'AI precedent and citation explorer' },
-    { id: 'legal_draft_maker', name: 'Draft Maker', desc: 'Generate court-ready legal drafts' },
-    { id: 'legal_evidence_checker', name: 'Evidence Analysis', desc: 'Analyze legal documents and evidence' },
-    { id: 'legal_case_predictor', name: 'Case Predictor', desc: 'Judicial scanner and forecast' },
-    { id: 'legal_contract_analyzer', name: 'Contract Review', desc: 'Agreement review and compliance' },
-    { id: 'legal_strategy_engine', name: 'Strategy Engine', desc: 'Litigation Roadmap & Tactical Suggestions' }
+    { id: 'legal_argument_builder', name: 'Argument Builder', desc: 'Draft courtroom strategies and arguments', icon: '⚖️' },
+    { id: 'legal_precedents',       name: 'Legal Precedent',  desc: 'AI precedent and citation explorer',       icon: '🏛️' },
+    { id: 'legal_draft_maker',      name: 'Draft Maker',      desc: 'Generate court-ready legal drafts',        icon: '📝' },
+    { id: 'legal_evidence_checker', name: 'Evidence Analysis',desc: 'Analyze legal documents and evidence',     icon: '🔍' },
+    { id: 'legal_case_predictor',   name: 'Case Predictor',   desc: 'Judicial scanner and forecast',            icon: '🎯' },
+    { id: 'legal_contract_analyzer',name: 'Contract Review',  desc: 'Agreement review and compliance',          icon: '📋' },
+    { id: 'legal_strategy_engine',  name: 'Strategy Engine',  desc: 'Litigation Roadmap & Tactical Suggestions',icon: '🗺️' }
   ], []);
 
   const filtered = useMemo(() => {
@@ -109,44 +110,100 @@ const ModuleRouterModal = ({ visible, onClose, caseData, onLaunchModule }) => {
 
   return (
     <div className="fixed inset-0 z-[120000] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-      <div className="relative bg-white dark:bg-[#1e293b] w-full sm:w-[480px] max-h-[70vh] sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="relative bg-white dark:bg-[#0e1628] w-full sm:w-[500px] max-h-[80vh] sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl flex flex-col border border-slate-200/50 dark:border-white/5" onClick={e => e.stopPropagation()}>
+
+        {/* Drag handle (mobile) */}
+        <div className="w-10 h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-full mx-auto mt-3 mb-1 sm:hidden" />
+
+        {/* Header */}
         <div className="p-5 border-b border-slate-100 dark:border-white/5 shrink-0">
-          <div className="w-10 h-1 bg-slate-300 dark:bg-slate-600 rounded-full mx-auto mb-4 sm:hidden" />
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-black text-slate-900 dark:text-white">Open Case In...</h3>
-            <button onClick={onClose} className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg"><X size={18} className="text-slate-400" /></button>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">Open Case In...</h3>
+              {caseData && (
+                <p className="text-[10px] text-slate-400 font-bold mt-0.5 truncate max-w-[280px]">
+                  📁 {caseData.title || caseData.name || 'Selected Case'}
+                </p>
+              )}
+            </div>
+            <button onClick={onClose} className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-colors">
+              <X size={18} className="text-slate-400" />
+            </button>
           </div>
           <div className="flex items-center gap-2 bg-slate-50 dark:bg-black/20 rounded-xl px-3 py-2.5 border border-slate-100 dark:border-white/5">
-            <Search size={16} className="text-slate-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search modules..." className="bg-transparent outline-none text-sm font-semibold w-full text-slate-800 dark:text-white" />
+            <Search size={15} className="text-slate-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search modules..."
+              className="bg-transparent outline-none text-sm font-semibold w-full text-slate-800 dark:text-white placeholder-slate-400"
+              autoFocus
+            />
           </div>
         </div>
+
+        {/* Module list */}
         <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
-          {filtered.map(m => (
-            <button key={m.id} onClick={() => {
-              console.log("Button Clicked: Open Case in Module " + m.name);
-              console.log("Icon Clicked: Open Case in Module " + m.name);
-              onLaunchModule(m.id, caseData);
-              onClose();
-            }}
-              className="w-full flex items-center gap-3 p-3.5 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 rounded-xl text-left transition-all"
-            >
-              <div className="p-2 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl shrink-0">
-                <ExternalLink size={16} className="text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-black text-slate-900 dark:text-white truncate">{m.name}</p>
-                <p className="text-[10px] text-slate-400 font-semibold truncate">{m.desc}</p>
-              </div>
-              <ChevronRight size={16} className="text-slate-300 shrink-0 ml-auto" />
-            </button>
-          ))}
+          {filtered.map(m => {
+            const isActive = activeModuleId === m.id;
+            return (
+              <button
+                key={m.id}
+                onClick={() => {
+                  onLaunchModule(m.id, caseData);
+                  onClose();
+                }}
+                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl text-left transition-all active:scale-[0.98] group
+                  ${isActive
+                    ? 'bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-950/30 dark:to-indigo-950/20 border border-violet-200 dark:border-violet-800/40 shadow-sm'
+                    : 'hover:bg-slate-50 dark:hover:bg-zinc-800/50 border border-transparent'
+                  }`}
+              >
+                {/* Icon */}
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-base shrink-0 transition-all
+                  ${isActive
+                    ? 'bg-gradient-to-br from-violet-600 to-indigo-600 shadow-md shadow-violet-500/20'
+                    : 'bg-slate-100 dark:bg-zinc-800 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/30'
+                  }`}>
+                  <span role="img" aria-label={m.name}>{m.icon}</span>
+                </div>
+
+                {/* Name + desc */}
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-black truncate ${isActive ? 'text-violet-700 dark:text-violet-300' : 'text-slate-900 dark:text-white'}`}>
+                    {m.name}
+                  </p>
+                  <p className="text-[10px] text-slate-400 font-semibold truncate mt-0.5">{m.desc}</p>
+                </div>
+
+                {/* Status badge */}
+                {isActive ? (
+                  <span className="flex items-center gap-1 px-2.5 py-1 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-[9px] font-black uppercase tracking-widest rounded-full shrink-0 shadow-sm shadow-violet-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    ACTIVE
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-slate-500 text-[9px] font-black uppercase tracking-widest rounded-full shrink-0">
+                    AVAILABLE
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Footer note */}
+        <div className="px-5 py-3 border-t border-slate-100 dark:border-white/5 shrink-0 bg-slate-50/50 dark:bg-black/10">
+          <p className="text-[9px] text-center text-slate-400 font-medium">
+            Selecting a module will set it as ACTIVE for this case
+          </p>
         </div>
       </div>
     </div>
   );
 };
+
 
 // ─── Task Modal ──────────────────────────────────────────────────────
 const TaskModal = ({ visible, onClose, onSave, editingTask }) => {
@@ -382,6 +439,13 @@ const CaseDetailView = ({ item, isDark, onBack, onDelete, onAskStrategy, onViewR
 
   const [isDocViewerOpen, setIsDocViewerOpen] = useState(false);
   const [activeDoc, setActiveDoc] = useState(null);
+
+  // Track active module for this case
+  const [activeModuleId, setActiveModuleId] = useState(() => {
+    const state = getActiveModule();
+    const caseId = item?.id || item?._id;
+    return (state && state.caseId === caseId) ? state.moduleId : null;
+  });
 
   const docFormat = (doc) => {
     if (!doc?.name) return 'file';
@@ -925,7 +989,17 @@ const CaseDetailView = ({ item, isDark, onBack, onDelete, onAskStrategy, onViewR
       <TimelineModal visible={isTimelineModalVisible} onClose={() => { setIsTimelineModalVisible(false); setEditingTimeline(null); }} onSave={handleSaveTimeline} editingEvent={editingTimeline} />
       <NotesModal visible={isNotesModalVisible} onClose={() => setIsNotesModalVisible(false)} onSave={handleSaveNotes} initialText={caseData.description} />
       <QuickActionsModal visible={quickActionsPhone !== null} onClose={() => setQuickActionsPhone(null)} phoneNumber={quickActionsPhone} countryCode={caseData.countryCode} />
-      <ModuleRouterModal visible={isRouterVisible} onClose={() => setIsRouterVisible(false)} caseData={caseData} onLaunchModule={onLaunchModuleWithCase} />
+      <ModuleRouterModal
+        visible={isRouterVisible}
+        onClose={() => setIsRouterVisible(false)}
+        caseData={caseData}
+        activeModuleId={activeModuleId}
+        onLaunchModule={(moduleId, cd) => {
+          // Update local active state immediately for instant UI feedback
+          setActiveModuleId(moduleId);
+          onLaunchModuleWithCase(moduleId, cd);
+        }}
+      />
       <DocViewerModal visible={isDocViewerOpen} onClose={() => setIsDocViewerOpen(false)} doc={activeDoc} />
     </>
   );

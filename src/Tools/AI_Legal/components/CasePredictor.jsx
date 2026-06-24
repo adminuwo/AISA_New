@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { 
   ChevronLeft, ChevronRight, Gavel, Plus, FileText, Copy, Share2, 
   FileDown, History, Search, X, ShieldCheck, Clock, Brain, Scale, 
-  BookOpen, AlertTriangle, TrendingUp, Mic, Database, Cpu, BarChart2, Users, Save
+  BookOpen, AlertTriangle, TrendingUp, Mic, Database, Cpu, BarChart2, Users, Save, CheckCircle2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
+import { consumePrefillIntent, mapCaseToForm } from '../services/activeModuleService';
 
 const QUICK_PRESETS = [
   { name: 'Bail Forecast', desc: 'Predict bail approval chances for financial disputes.' },
@@ -28,6 +29,31 @@ const CasePredictor = ({ currentCase, onBack, theme }) => {
   const [historyVisible, setHistoryVisible] = useState(false);
   const [historyData, setHistoryData] = useState([]);
   const [historySearch, setHistorySearch] = useState('');
+  const [prefillBanner, setPrefillBanner] = useState(null);
+
+  // ── On mount: consume prefill intent from "Use Active Case" ──
+  useEffect(() => {
+    const intent = consumePrefillIntent('legal_case_predictor');
+    if (intent?.caseData) {
+      const mapped = mapCaseToForm(intent.caseData);
+      if (mapped.caseFacts) setFacts(mapped.caseFacts);
+      if (mapped.courtName) setCourtName(mapped.courtName);
+      if (mapped.respondent) setOpponentDetails(`Opponent: ${mapped.respondent}`);
+      if (mapped.caseType) {
+        const t = mapped.caseType.toLowerCase();
+        if (t.includes('civil')) setCaseType('Civil');
+        else if (t.includes('corporate') || t.includes('arbitration')) setCaseType('Corporate');
+        else if (t.includes('cyber')) setCaseType('Cyber');
+        else setCaseType('Criminal');
+      }
+      if (mapped.allDocuments?.length) {
+        setEvidenceList(mapped.allDocuments.map(d => d.name).join(', '));
+      }
+      if (mapped.provisions) setIpcSections(String(mapped.provisions).split(/[\n,;]/)[0]?.trim() || '');
+      setPrefillBanner({ caseTitle: mapped.caseTitle || intent.caseData?.name || 'Active Case' });
+      toast.success(`✓ Case data pre-loaded for prediction`, { icon: '⚤', duration: 3000 });
+    }
+  }, []); // eslint-disable-line
 
   useEffect(() => {
     if (currentCase) {
@@ -52,48 +78,94 @@ const CasePredictor = ({ currentCase, onBack, theme }) => {
   }, [currentCase]);
 
   const loadPredictionHistory = async () => {
+    if (!currentCase?._id) return;
     try {
-      const data = localStorage.getItem('aisa_case_predictions_history');
-      if (data && currentCase?._id) {
-        const parsed = JSON.parse(data);
-        const filtered = parsed.filter(h => h.caseId === currentCase._id);
-        setHistoryData(filtered);
-      } else {
-        setHistoryData([]);
+      const targetCase = allProjects.find(p => p._id === currentCase._id);
+      let dbHistory = targetCase?.predictionsHistory || [];
+
+      // Check legacy local storage history to migrate
+      const localData = localStorage.getItem('aisa_case_predictions_history');
+      if (localData && targetCase) {
+        try {
+          const parsedLocal = JSON.parse(localData);
+          const localForCase = parsedLocal.filter(h => h.caseId === currentCase._id);
+          if (localForCase.length > 0) {
+            const merged = [...dbHistory];
+            localForCase.forEach(item => {
+              if (!merged.some(m => m.id === item.id)) {
+                merged.push(item);
+              }
+            });
+            const payload = {
+              ...targetCase,
+              predictionsHistory: merged
+            };
+            const response = await apiService.updateProject(currentCase._id, payload);
+            if (onUpdateCase) onUpdateCase(response);
+            dbHistory = merged;
+
+            const remainingLocal = parsedLocal.filter(h => h.caseId !== currentCase._id);
+            if (remainingLocal.length > 0) {
+              localStorage.setItem('aisa_case_predictions_history', JSON.stringify(remainingLocal));
+            } else {
+              localStorage.removeItem('aisa_case_predictions_history');
+            }
+          }
+        } catch (err) {
+          console.error("Error migrating prediction history", err);
+        }
       }
+
+      setHistoryData(dbHistory);
     } catch (e) {
       console.error(e);
     }
   };
 
   const savePredictionToHistory = async (prediction) => {
+    if (!currentCase?._id) return;
     try {
-      const data = localStorage.getItem('aisa_case_predictions_history');
-      const all = data ? JSON.parse(data) : [];
-      const withCase = { ...prediction, caseId: currentCase?._id };
-      const updated = [withCase, ...all.filter(h => h.id !== prediction.id)];
-      localStorage.setItem('aisa_case_predictions_history', JSON.stringify(updated));
-      if (currentCase?._id) {
-        setHistoryData(updated.filter(h => h.caseId === currentCase._id));
-      }
+      const targetCase = allProjects.find(p => p._id === currentCase._id);
+      if (!targetCase) return;
+      const predictionWithCase = { ...prediction, caseId: currentCase._id };
+      const existingHistory = targetCase.predictionsHistory || [];
+      const updated = [predictionWithCase, ...existingHistory.filter(h => h.id !== prediction.id)];
+
+      const payload = {
+        ...targetCase,
+        predictionsHistory: updated
+      };
+      const response = await apiService.updateProject(currentCase._id, payload);
+      if (onUpdateCase) onUpdateCase(response);
+      setHistoryData(updated);
     } catch (e) {
       console.error(e);
     }
   };
 
   const handleDeleteHistoryItem = async (id) => {
+    if (!currentCase?._id) return;
     if (window.confirm("Delete this prediction?")) {
-      const data = localStorage.getItem('aisa_case_predictions_history');
-      const all = data ? JSON.parse(data) : [];
-      const updated = all.filter(h => h.id !== id);
-      localStorage.setItem('aisa_case_predictions_history', JSON.stringify(updated));
-      if (currentCase?._id) {
-        setHistoryData(updated.filter(h => h.caseId === currentCase._id));
+      try {
+        const targetCase = allProjects.find(p => p._id === currentCase._id);
+        if (!targetCase) return;
+        const existingHistory = targetCase.predictionsHistory || [];
+        const updated = existingHistory.filter(h => h.id !== id);
+
+        const payload = {
+          ...targetCase,
+          predictionsHistory: updated
+        };
+        const response = await apiService.updateProject(currentCase._id, payload);
+        if (onUpdateCase) onUpdateCase(response);
+        setHistoryData(updated);
+        if (activePrediction?.id === id) {
+          setActivePrediction(null);
+        }
+        toast.success("Record deleted");
+      } catch (e) {
+        console.error(e);
       }
-      if (activePrediction?.id === id) {
-        setActivePrediction(null);
-      }
-      toast.success("Record deleted");
     }
   };
 
@@ -222,6 +294,26 @@ const CasePredictor = ({ currentCase, onBack, theme }) => {
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Active Case Prefill Banner */}
+          {prefillBanner && (
+            <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/10 border border-emerald-200 dark:border-emerald-900/30 rounded-2xl shadow-sm">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">
+                <CheckCircle2 size={16} className="text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-emerald-700 dark:text-emerald-400">
+                  Active Case: {prefillBanner.caseTitle}
+                </p>
+                <p className="text-[10px] text-emerald-600/70 dark:text-emerald-500/60 font-medium mt-0.5">
+                  Form fields pre-filled — review and click Predict Judicial Verdict
+                </p>
+              </div>
+              <button onClick={() => setPrefillBanner(null)} className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-full text-emerald-500 shrink-0">
+                <X size={13} />
+              </button>
             </div>
           )}
 

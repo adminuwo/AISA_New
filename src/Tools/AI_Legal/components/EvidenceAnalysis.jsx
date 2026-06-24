@@ -4,11 +4,12 @@ import {
   Share2, FileDown, History, Search, X, Shield, Clock, 
   Brain, Scale, BookOpen, AlertTriangle, TrendingUp, Mic, 
   Database, Cpu, Briefcase, Building2, Landmark, Folder, 
-  Fingerprint, ShieldAlert, ShieldCheck, Printer, Upload
+  Fingerprint, ShieldAlert, ShieldCheck, Printer, Upload, CheckCircle2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
 import { apiService } from '../../../services/apiService';
+import { consumePrefillIntent, mapCaseToForm } from '../services/activeModuleService';
 
 const allTools = [
   { id: 'OCR', name: 'OCR Metadata Scan', desc: 'Timestamp & hash checks', category: 'Metadata' },
@@ -38,6 +39,8 @@ const EvidenceAnalysis = ({ currentCase, onBack, theme, allProjects = [], onUpda
   const [evidenceTitle, setEvidenceTitle] = useState('');
   const [evidenceNotes, setEvidenceNotes] = useState('');
   const [linkedCaseId, setLinkedCaseId] = useState(currentCase?._id || '');
+  const [prefillData, setPrefillData] = useState(null);
+  const [prefillBanner, setPrefillBanner] = useState(null);
 
   // Forensic States
   const [isAuditing, setIsAuditing] = useState(false);
@@ -61,6 +64,27 @@ const EvidenceAnalysis = ({ currentCase, onBack, theme, allProjects = [], onUpda
 
   const scrollRef = useRef(null);
 
+  // ── On mount: consume prefill intent from "Use Active Case" ──
+  useEffect(() => {
+    const intent = consumePrefillIntent('legal_evidence_checker');
+    if (intent?.caseData) {
+      const mapped = mapCaseToForm(intent.caseData);
+      setPrefillData(mapped);
+      // Pre-populate evidence notes with case context
+      if (mapped.evidenceNotes) setEvidenceNotes(mapped.evidenceNotes);
+      if (mapped.caseTitle) setEvidenceTitle(`${mapped.caseTitle} - Evidence Review`);
+      const caseId = intent.caseData?._id || intent.caseData?.id;
+      if (caseId) setLinkedCaseId(caseId);
+      const docCount = mapped.allDocuments?.length || 0;
+      setPrefillBanner({
+        caseTitle: mapped.caseTitle || 'Active Case',
+        docCount,
+        docs: mapped.allDocuments?.slice(0, 5) || []
+      });
+      toast.success(`✓ Case loaded — ${docCount} evidence files available`, { icon: '💼', duration: 3500 });
+    }
+  }, []); // eslint-disable-line
+
   useEffect(() => {
     if (currentCase) {
       setLinkedCaseId(currentCase._id);
@@ -80,11 +104,9 @@ const EvidenceAnalysis = ({ currentCase, onBack, theme, allProjects = [], onUpda
 
   const loadForensicHistory = async (caseId) => {
     try {
-      const data = localStorage.getItem('aisa_evidence_forensics_history');
-      if (data && caseId) {
-        const parsed = JSON.parse(data);
-        const filtered = parsed.filter(h => h.caseId === caseId);
-        setHistoryData(filtered);
+      const targetCase = allProjects.find(p => p._id === caseId) || currentCase;
+      if (targetCase && Array.isArray(targetCase.forensicHistory)) {
+        setHistoryData(targetCase.forensicHistory);
       } else {
         setHistoryData([]);
       }
@@ -95,49 +117,59 @@ const EvidenceAnalysis = ({ currentCase, onBack, theme, allProjects = [], onUpda
 
   const saveForensicToHistory = async (forensic) => {
     try {
+      const targetCaseId = linkedCaseId || currentCase?._id;
+      if (!targetCaseId) return;
+      const targetCase = allProjects.find(p => p._id === targetCaseId) || currentCase;
+      if (!targetCase) return;
+
       const forensicWithCase = { 
         ...forensic, 
-        caseId: linkedCaseId || currentCase?._id 
+        caseId: targetCaseId 
       };
-      const data = localStorage.getItem('aisa_evidence_forensics_history');
-      const allHistory = data ? JSON.parse(data) : [];
-      const updated = [forensicWithCase, ...allHistory.filter(h => h.id !== forensic.id)];
-      
-      localStorage.setItem('aisa_evidence_forensics_history', JSON.stringify(updated));
-      if (linkedCaseId || currentCase?._id) {
-        setHistoryData(updated.filter(h => h.caseId === (linkedCaseId || currentCase?._id)));
-      }
+
+      const existingHistory = targetCase.forensicHistory || [];
+      const updatedHistory = [forensicWithCase, ...existingHistory.filter(h => h.id !== forensic.id)];
 
       // Also attach to active case documents!
-      const targetCase = allProjects.find(p => p._id === (linkedCaseId || currentCase?._id)) || currentCase;
-      if (targetCase) {
-        const newDoc = {
-          id: forensic.id,
-          name: forensic.title,
-          uri: selectedFile?.uri || '',
-          type: selectedFile?.mimeType || 'document',
-          uploadDate: new Date().toLocaleDateString(),
-          analysisResult: forensic
-        };
-        const updatedDocs = [...(targetCase.documents || []), newDoc];
-        const payload = { ...targetCase, documents: updatedDocs };
-        const response = await apiService.updateProject(targetCase._id, payload);
-        if (onUpdateCase) onUpdateCase(response);
-      }
+      const newDoc = {
+        id: forensic.id,
+        name: forensic.title,
+        uri: selectedFile?.uri || '',
+        type: selectedFile?.mimeType || 'document',
+        uploadDate: new Date().toLocaleDateString(),
+        analysisResult: forensic
+      };
+      const updatedDocs = [...(targetCase.documents || []), newDoc];
+
+      const payload = { 
+        ...targetCase, 
+        forensicHistory: updatedHistory,
+        documents: updatedDocs 
+      };
+
+      const response = await apiService.updateProject(targetCase._id, payload);
+      if (onUpdateCase) onUpdateCase(response);
+      setHistoryData(updatedHistory);
     } catch (e) {
       console.error('[EvidenceAnalysis] Error saving history', e);
     }
   };
 
   const deleteHistoryItem = async (id) => {
+    const targetCaseId = linkedCaseId || currentCase?._id;
+    if (!targetCaseId) return;
+    const targetCase = allProjects.find(p => p._id === targetCaseId) || currentCase;
+    if (!targetCase) return;
+
     try {
-      const data = localStorage.getItem('aisa_evidence_forensics_history');
-      const allHistory = data ? JSON.parse(data) : [];
-      const updated = allHistory.filter(h => h.id !== id);
-      localStorage.setItem('aisa_evidence_forensics_history', JSON.stringify(updated));
-      if (linkedCaseId || currentCase?._id) {
-        setHistoryData(updated.filter(h => h.caseId === (linkedCaseId || currentCase?._id)));
-      }
+      const updatedHistory = (targetCase.forensicHistory || []).filter(h => h.id !== id);
+      const payload = { 
+        ...targetCase, 
+        forensicHistory: updatedHistory 
+      };
+      const response = await apiService.updateProject(targetCase._id, payload);
+      if (onUpdateCase) onUpdateCase(response);
+      setHistoryData(updatedHistory);
       toast.success("Forensic log deleted successfully");
     } catch (e) {
       console.error('[EvidenceAnalysis] Error deleting history', e);
@@ -571,6 +603,46 @@ Additional Filters: EvidenceType=${evidenceType}, Admissibility Filter=${admissi
 
           {/* Upload Dropzone */}
           <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-3xl p-6 shadow-md space-y-5">
+
+            {/* Active Case Prefill Banner */}
+            {prefillBanner && (
+              <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/10 border border-emerald-200 dark:border-emerald-900/30 rounded-2xl">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 mt-0.5">
+                  <CheckCircle2 size={15} className="text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-black text-emerald-700 dark:text-emerald-400">
+                    Active Case: {prefillBanner.caseTitle}
+                  </p>
+                  {prefillBanner.docCount > 0 ? (
+                    <>
+                      <p className="text-[10px] text-emerald-600/70 dark:text-emerald-500/60 font-medium mt-0.5">
+                        {prefillBanner.docCount} evidence file(s) found in case — context pre-loaded
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {prefillBanner.docs.map((d, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-[9px] font-bold">
+                            <FileText size={8} />
+                            {d.name}
+                          </span>
+                        ))}
+                        {prefillBanner.docCount > 5 && (
+                          <span className="text-[9px] text-emerald-500 font-bold">+{prefillBanner.docCount - 5} more</span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-[10px] text-emerald-600/70 dark:text-emerald-500/60 font-medium mt-0.5">
+                      Case facts pre-loaded — upload new evidence to analyze
+                    </p>
+                  )}
+                </div>
+                <button onClick={() => setPrefillBanner(null)} className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-full text-emerald-500 shrink-0">
+                  <X size={13} />
+                </button>
+              </div>
+            )}
+
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-white/5 pb-3">
               <Upload size={16} className="text-indigo-600 dark:text-indigo-400" />
               <h3 className="text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">UPLOAD ELECTRONIC RECORD EVIDENCE</h3>

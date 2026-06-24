@@ -4,11 +4,13 @@ import {
   FileText, Copy, Share2, FileDown, History, Search, X, ShieldCheck, 
   Clock, Brain, Target, Scale, BookOpen, AlertTriangle, TrendingUp, 
   Mic, Star, Database, Cpu, BarChart2, Users, ShieldAlert, Briefcase, 
-  Calendar, ChevronDown, ChevronUp, Trash2, Edit2, Eye, Download, Upload, Check, Paperclip
+  Calendar, ChevronDown, ChevronUp, Trash2, Edit2, Eye, Download, Upload, Check, Paperclip,
+  Pin, PinOff
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
 import { apiService } from '../../../services/apiService';
+import BuildArgumentModal from './BuildArgumentModal';
 
 const WORKFLOW_CATEGORIES = [
   {
@@ -72,6 +74,94 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
   // Chat sessions state
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState('');
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [showBuildArgument, setShowBuildArgument] = useState(false);
+  const [pinnedSessions, setPinnedSessions] = useState([]);
+
+  // ─── HISTORY HANDLERS ────────────────────────────────────────────────────
+  const handleTogglePin = async (sessId, e) => {
+    e.stopPropagation();
+    if (!currentCase) return;
+    const nextPinned = pinnedSessions.includes(sessId)
+      ? pinnedSessions.filter(id => id !== sessId)
+      : [...pinnedSessions, sessId];
+
+    setPinnedSessions(nextPinned);
+
+    try {
+      const payload = {
+        ...currentCase,
+        argumentsData: {
+          ...(currentCase.argumentsData || {}),
+          pinnedSessions: nextPinned
+        }
+      };
+      const response = await apiService.updateProject(currentCase._id, payload);
+      if (onUpdateCase) onUpdateCase(response);
+    } catch (err) {
+      console.error("Failed to pin session", err);
+    }
+  };
+
+  const handleDeleteSession = async (sessId, e) => {
+    e.stopPropagation();
+    if (!currentCase) return;
+
+    const updatedSessions = sessions.filter(s => s.id !== sessId);
+    let nextActiveId = activeSessionId;
+    let nextMessages = messages;
+
+    if (sessId === activeSessionId) {
+      if (updatedSessions.length > 0) {
+        nextActiveId = updatedSessions[0].id;
+        const activeSess = updatedSessions.find(s => s.id === nextActiveId);
+        nextMessages = activeSess ? activeSess.messages : [];
+      } else {
+        const newSessionId = 'sess_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        const caseName = currentCase.name || 'AISA Argument Builder';
+        const defaultMsgs = [
+          {
+            id: '1',
+            role: 'model',
+            content: `Welcome to **AISA Argument Intelligence** for **${caseName}**. I am your Elite Litigation Architect. Describe your case facts or select a courtroom workflow to build a winning strategy.`,
+            timestamp: Date.now(),
+            isSystemLog: true
+          }
+        ];
+        const newSession = {
+          id: newSessionId,
+          title: 'New Chat',
+          messages: defaultMsgs,
+          timestamp: Date.now()
+        };
+        updatedSessions.push(newSession);
+        nextActiveId = newSessionId;
+        nextMessages = defaultMsgs;
+      }
+    }
+
+    const nextPinned = pinnedSessions.filter(id => id !== sessId);
+
+    setSessions(updatedSessions);
+    setActiveSessionId(nextActiveId);
+    setMessages(nextMessages);
+    setPinnedSessions(nextPinned);
+
+    try {
+      const payload = {
+        ...currentCase,
+        argumentsData: {
+          sessions: updatedSessions,
+          activeSessionId: nextActiveId,
+          pinnedSessions: nextPinned
+        }
+      };
+      const response = await apiService.updateProject(currentCase._id, payload);
+      if (onUpdateCase) onUpdateCase(response);
+    } catch (err) {
+      console.error("Failed to delete session", err);
+    }
+  };
 
 
   // Form states for proceeding CRUD (timeline/facts)
@@ -207,23 +297,63 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
   // Load chat history and sessions for the active case
   useEffect(() => {
     if (currentCase) {
+      const data = currentCase.argumentsData || {};
+      const dbSessions = data.sessions || [];
+      const dbActiveSessionId = data.activeSessionId || '';
+      const dbPinnedSessions = data.pinnedSessions || [];
+
+      if (dbSessions.length > 0) {
+        setSessions(dbSessions);
+        setPinnedSessions(dbPinnedSessions);
+        const activeId = dbActiveSessionId || dbSessions[0].id;
+        setActiveSessionId(activeId);
+        const activeSess = dbSessions.find(s => s.id === activeId);
+        if (activeSess) {
+          setMessages(activeSess.messages);
+        }
+        return;
+      }
+
+      // Check for legacy/local storage sessions to migrate
       const storedSessions = localStorage.getItem(`@aisa_arg_sessions_${currentCase._id}`);
+      let migratedSessions = [];
+      let migratedActiveSessionId = '';
+      let migratedPinnedSessions = [];
+
       if (storedSessions) {
         try {
           const parsed = JSON.parse(storedSessions);
           if (parsed && Array.isArray(parsed.sessions) && parsed.sessions.length > 0) {
-            setSessions(parsed.sessions);
-            const activeId = parsed.activeSessionId || parsed.sessions[0].id;
-            setActiveSessionId(activeId);
-            const activeSess = parsed.sessions.find(s => s.id === activeId);
-            if (activeSess) {
-              setMessages(activeSess.messages);
-            }
-            return;
+            migratedSessions = parsed.sessions;
+            migratedActiveSessionId = parsed.activeSessionId || parsed.sessions[0].id;
+            migratedPinnedSessions = JSON.parse(localStorage.getItem('arg_builder_pinned_sessions') || '[]');
           }
         } catch (e) {
-          console.error("Failed to parse sessions", e);
+          console.error("Failed to parse local sessions", e);
         }
+      }
+
+      if (migratedSessions.length > 0) {
+        setSessions(migratedSessions);
+        setActiveSessionId(migratedActiveSessionId);
+        setPinnedSessions(migratedPinnedSessions);
+        const activeSess = migratedSessions.find(s => s.id === migratedActiveSessionId);
+        if (activeSess) {
+          setMessages(activeSess.messages);
+        }
+        const payload = {
+          ...currentCase,
+          argumentsData: {
+            sessions: migratedSessions,
+            activeSessionId: migratedActiveSessionId,
+            pinnedSessions: migratedPinnedSessions
+          }
+        };
+        apiService.updateProject(currentCase._id, payload).then(response => {
+          if (onUpdateCase) onUpdateCase(response);
+          localStorage.removeItem(`@aisa_arg_sessions_${currentCase._id}`);
+        }).catch(err => console.error("Error migrating local sessions to DB", err));
+        return;
       }
 
       // Check for legacy single chat history to migrate
@@ -268,51 +398,67 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
       setActiveSessionId(initialId);
       setMessages(initialMsgs);
 
-      localStorage.setItem(`@aisa_arg_sessions_${currentCase._id}`, JSON.stringify({
-        sessions: [initialSession],
-        activeSessionId: initialId
-      }));
+      const payload = {
+        ...currentCase,
+        argumentsData: {
+          sessions: [initialSession],
+          activeSessionId: initialId,
+          pinnedSessions: []
+        }
+      };
+      apiService.updateProject(currentCase._id, payload).then(response => {
+        if (onUpdateCase) onUpdateCase(response);
+        if (legacyChat) {
+          localStorage.removeItem(`@aisa_arg_chat_${currentCase._id}`);
+        }
+      }).catch(err => console.error("Error saving initial session to DB", err));
     }
-  }, [currentCase]);
+  }, [currentCase?._id]);
 
-  const saveChatHistory = (updatedMsgs) => {
-    if (currentCase && activeSessionId) {
-      setSessions(prevSessions => {
-        const updatedSessions = prevSessions.map(s => {
-          if (s.id === activeSessionId) {
-            let title = s.title;
-            if (s.title === 'Initial Conversation' || s.title === 'New Chat') {
-              const firstUser = updatedMsgs.find(m => m.role === 'user');
-              if (firstUser) {
-                title = firstUser.content.slice(0, 30) + (firstUser.content.length > 30 ? '...' : '');
-              }
-            }
-            return {
-              ...s,
-              title,
-              messages: updatedMsgs
-            };
+  const saveChatHistory = async (updatedMsgs) => {
+    if (!currentCase || !activeSessionId) return;
+
+    const updatedSessions = sessions.map(s => {
+      if (s.id === activeSessionId) {
+        let title = s.title;
+        if (s.title === 'Initial Conversation' || s.title === 'New Chat') {
+          const firstUser = updatedMsgs.find(m => m.role === 'user');
+          if (firstUser) {
+            title = firstUser.content.slice(0, 30) + (firstUser.content.length > 30 ? '...' : '');
           }
-          return s;
-        });
+        }
+        return { ...s, title, messages: updatedMsgs };
+      }
+      return s;
+    });
 
-        localStorage.setItem(`@aisa_arg_sessions_${currentCase._id}`, JSON.stringify({
+    setSessions(updatedSessions);
+
+    try {
+      const payload = {
+        ...currentCase,
+        argumentsData: {
+          ...(currentCase.argumentsData || {}),
           sessions: updatedSessions,
           activeSessionId
-        }));
-        return updatedSessions;
-      });
+        }
+      };
+      const response = await apiService.updateProject(currentCase._id, payload);
+      if (onUpdateCase) onUpdateCase(response);
+    } catch (err) {
+      console.error("Failed to save chat history", err);
     }
   };
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
     if (!currentCase) return;
+    const caseName = currentCase.name || 'AISA Argument Builder';
     const newSessionId = 'sess_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     const defaultMsgs = [
       {
         id: '1',
         role: 'model',
-        content: `Welcome to **AISA Argument Intelligence** for **${currentCase.name}**. I am your Elite Litigation Architect. Select a courtroom simulation to begin.`,
+        content: `Welcome to **AISA Argument Intelligence** for **${caseName}**. I am your Elite Litigation Architect. Describe your case facts or select a courtroom workflow to build a winning strategy.`,
         timestamp: Date.now(),
         isSystemLog: true
       }
@@ -329,31 +475,51 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
     setSessions(updatedSessions);
     setActiveSessionId(newSessionId);
     setMessages(defaultMsgs);
+    setInputValue('');
+    setAttachments([]);
 
-    localStorage.setItem(`@aisa_arg_sessions_${currentCase._id}`, JSON.stringify({
-      sessions: updatedSessions,
-      activeSessionId: newSessionId
-    }));
+    try {
+      const payload = {
+        ...currentCase,
+        argumentsData: {
+          ...(currentCase.argumentsData || {}),
+          sessions: updatedSessions,
+          activeSessionId: newSessionId
+        }
+      };
+      const response = await apiService.updateProject(currentCase._id, payload);
+      if (onUpdateCase) onUpdateCase(response);
+    } catch (err) {
+      console.error("Failed to save new chat session", err);
+    }
 
-    // Focus input
     setTimeout(() => {
       const chatInput = document.querySelector('input[placeholder="Describe case details or ask litigation questions..."]');
       if (chatInput) chatInput.focus();
     }, 100);
   };
 
-  const switchSession = (sessionId) => {
+  const switchSession = async (sessionId) => {
+    if (!currentCase) return;
     const sess = sessions.find(s => s.id === sessionId);
     if (sess) {
       setActiveSessionId(sessionId);
       setMessages(sess.messages);
 
-      localStorage.setItem(`@aisa_arg_sessions_${currentCase._id}`, JSON.stringify({
-        sessions,
-        activeSessionId: sessionId
-      }));
+      try {
+        const payload = {
+          ...currentCase,
+          argumentsData: {
+            ...(currentCase.argumentsData || {}),
+            activeSessionId: sessionId
+          }
+        };
+        const response = await apiService.updateProject(currentCase._id, payload);
+        if (onUpdateCase) onUpdateCase(response);
+      } catch (err) {
+        console.error("Failed to switch session", err);
+      }
 
-      // Focus input
       setTimeout(() => {
         const chatInput = document.querySelector('input[placeholder="Describe case details or ask litigation questions..."]');
         if (chatInput) chatInput.focus();
@@ -382,7 +548,7 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
     setIsGenerating(true);
 
     try {
-      let caseContext = "";
+      let caseContext = '';
       if (currentCase) {
         caseContext = `
 [Active Case Context]
@@ -395,8 +561,8 @@ Summary/Facts: ${currentCase.summary || currentCase.caseSummary || currentCase.d
       }
 
       const systemPrompt = `You are the AISA Enterprise Litigation Strategy War Room. You build courtroom arguments, rebuttals, cross-examination structures, and win probability reports.
-      Format response in clean Markdown.
-      Use professional Legal English.`;
+Format response in clean Markdown.
+Use professional Legal English.`;
 
       const apiAttachments = currentAttachments.map(att => ({
         url: att.dataUrl,
@@ -419,7 +585,45 @@ Summary/Facts: ${currentCase.summary || currentCase.caseSummary || currentCase.d
         null,
         'legal'
       );
-      const reply = response?.reply || response || '';
+
+      // Detect error responses (string error messages from the service)
+      let reply = '';
+      if (typeof response === 'string') {
+        // These are error strings returned by generateChatResponse catch block
+        if (
+          response.includes('trouble connecting') ||
+          response.includes('System Busy') ||
+          response.includes('Log In') ||
+          response.includes('System Message') ||
+          response.includes('System Error') ||
+          response.includes('LIMIT_REACHED')
+        ) {
+          toast.error(response.replace('Sorry, ', '').replace('[Log In](/login) to your AISA™ account to continue chatting.', 'Please log in to continue.'), { duration: 4000 });
+          setIsGenerating(false);
+          // Remove the user message from UI if AI completely failed
+          setMessages(prev => prev.filter(m => m.id !== userMsg.id));
+          setInputValue(text); // restore input
+          return;
+        }
+        reply = response;
+      } else if (response?.error) {
+        const errMsg = response.message || 'Something went wrong. Please try again.';
+        toast.error(errMsg, { duration: 4000 });
+        setIsGenerating(false);
+        setMessages(prev => prev.filter(m => m.id !== userMsg.id));
+        setInputValue(text);
+        return;
+      } else {
+        reply = response?.reply || response?.data?.reply || response?.text || '';
+      }
+
+      if (!reply) {
+        toast.error('AI returned an empty response. Please try again.');
+        setIsGenerating(false);
+        setMessages(prev => prev.filter(m => m.id !== userMsg.id));
+        setInputValue(text);
+        return;
+      }
 
       const aiMsg = {
         id: (Date.now() + 1).toString(),
@@ -431,7 +635,11 @@ Summary/Facts: ${currentCase.summary || currentCase.caseSummary || currentCase.d
       setMessages(finalMsgs);
       saveChatHistory(finalMsgs);
     } catch (e) {
-      toast.error("Failed to generate response");
+      console.error('[ArgumentBuilder] Send error:', e);
+      toast.error('Failed to generate response. Please check your connection.');
+      // Restore user input so they can retry
+      setMessages(prev => prev.filter(m => m.id !== userMsg.id));
+      setInputValue(text);
     } finally {
       setIsGenerating(false);
     }
@@ -535,6 +743,7 @@ Summary/Facts: ${currentCase.summary || currentCase.caseSummary || currentCase.d
   };
 
   return (
+    <>
     <div className="flex-1 flex flex-col w-full h-full min-h-0 bg-slate-50 dark:bg-transparent overflow-hidden">
       {/* Header bar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-white/5 bg-white/80 dark:bg-[#0B1020]/80 backdrop-blur-xl shrink-0">
@@ -553,21 +762,121 @@ Summary/Facts: ${currentCase.summary || currentCase.caseSummary || currentCase.d
             </div>
           </div>
         </div>
-        {/* Chat History Selector */}
-        {activeTab === 'assistant' && sessions.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider hidden sm:inline">History:</span>
-            <select
-              value={activeSessionId}
-              onChange={(e) => switchSession(e.target.value)}
-              className="bg-slate-100 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 text-xs font-bold text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl outline-none focus:border-indigo-500 cursor-pointer max-w-[150px] sm:max-w-[220px] truncate"
+        {/* Build Argument Button */}
+        <button
+          onClick={() => setShowBuildArgument(true)}
+          className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-black transition-all shadow-md shadow-violet-500/20 active:scale-95 shrink-0"
+          title="Build Argument"
+        >
+          <Scale size={15} className="shrink-0" />
+          <span className="hidden sm:inline whitespace-nowrap">Build Argument</span>
+        </button>
+
+        {/* History Icon Button + Panel */}
+        {activeTab === 'assistant' && (
+          <div className="relative">
+            <button
+              onClick={() => setShowHistoryPanel(v => !v)}
+              title="Chat History"
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-xs font-bold ${
+                showHistoryPanel
+                  ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-700 text-indigo-600'
+                  : 'bg-slate-100 dark:bg-zinc-800/60 border-slate-200 dark:border-zinc-700 text-slate-500 dark:text-slate-400 hover:border-indigo-400 hover:text-indigo-600'
+              }`}
             >
-              {sessions.map(s => (
-                <option key={s.id} value={s.id} className="bg-white dark:bg-zinc-900 text-slate-800 dark:text-slate-100">
-                  {s.title}
-                </option>
-              ))}
-            </select>
+              <History size={16} />
+              <span className="hidden sm:inline">History</span>
+              {sessions.filter(s => s.title && s.title !== 'New Chat' && s.title !== 'Initial Conversation').length > 0 && (
+                <span className="ml-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-indigo-600 text-white text-[9px] font-black">
+                  {sessions.filter(s => s.title && s.title !== 'New Chat' && s.title !== 'Initial Conversation').length}
+                </span>
+              )}
+            </button>
+
+            {/* History Dropdown Panel */}
+            {showHistoryPanel && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowHistoryPanel(false)} />
+                <div className="absolute right-0 top-full mt-2 z-50 w-72 rounded-2xl bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden">
+                  {/* Panel Header */}
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-black/20">
+                    <History size={14} className="text-indigo-600" />
+                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">Chat History</span>
+                  </div>
+
+                  {/* Session List */}
+                  <div className="max-h-72 overflow-y-auto py-1.5 custom-scrollbar">
+                    {(() => {
+                      const realSessions = sessions.filter(s => s.title && s.title.trim() !== '' && s.title !== 'New Chat' && s.title !== 'Initial Conversation');
+                      if (realSessions.length === 0) return (
+                        <div className="flex flex-col items-center justify-center py-8 gap-2">
+                          <MessageSquare size={28} className="text-slate-300 dark:text-zinc-700" />
+                          <p className="text-xs text-slate-400 font-semibold">No previous chats</p>
+                        </div>
+                      );
+                      const pinned = realSessions.filter(s => pinnedSessions.includes(s.id));
+                      const unpinned = realSessions.filter(s => !pinnedSessions.includes(s.id));
+                      const renderItem = (s) => (
+                        <div key={s.id} className="flex items-center gap-1 px-2 group">
+                          <button
+                            className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl text-left transition-all text-xs font-semibold ${
+                              s.id === activeSessionId
+                                ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600'
+                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5'
+                            }`}
+                            onClick={() => { switchSession(s.id); setShowHistoryPanel(false); }}
+                          >
+                            {pinnedSessions.includes(s.id)
+                              ? <Pin size={11} className="text-amber-500 shrink-0" />
+                              : <MessageSquare size={11} className="text-slate-400 shrink-0" />
+                            }
+                            <span className="truncate flex-1">{s.title || 'Untitled Chat'}</span>
+                          </button>
+                          {/* Pin & Delete Actions */}
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                            <button
+                              onClick={(e) => handleTogglePin(s.id, e)}
+                              title={pinnedSessions.includes(s.id) ? 'Unpin' : 'Pin'}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                pinnedSessions.includes(s.id)
+                                  ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                                  : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                              }`}
+                            >
+                              {pinnedSessions.includes(s.id) ? <PinOff size={12} /> : <Pin size={12} />}
+                            </button>
+                            <button
+                              onClick={(e) => handleDeleteSession(s.id, e)}
+                              title="Delete session"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                      return (
+                        <div>
+                          {pinned.length > 0 && (
+                            <>
+                              <div className="px-4 py-1.5 text-[9px] font-black uppercase tracking-widest text-amber-500">📌 Pinned</div>
+                              {pinned.map(renderItem)}
+                              {unpinned.length > 0 && <div className="mx-4 my-1 border-t border-slate-100 dark:border-white/5" />}
+                            </>
+                          )}
+                          {unpinned.length > 0 && (
+                            <>
+                              {pinned.length > 0 && <div className="px-4 py-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400">Recent</div>}
+                              {unpinned.map(renderItem)}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -982,6 +1291,16 @@ Summary/Facts: ${currentCase.summary || currentCase.caseSummary || currentCase.d
         )}
       </div>
     </div>
+
+    {/* ── BUILD ARGUMENT MODAL ────────────────────────────────── */}
+    <BuildArgumentModal
+      isOpen={showBuildArgument}
+      onClose={() => setShowBuildArgument(false)}
+      currentCase={currentCase}
+      onUpdateCase={onUpdateCase}
+    />
+    
+    </>
   );
 };
 

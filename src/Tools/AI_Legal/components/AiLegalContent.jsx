@@ -10,12 +10,14 @@ import { Transition, Dialog } from '@headlessui/react';
 import { useNavigate } from 'react-router-dom';
 import { legalService } from '../services/legalService';
 import { apiService } from '../../../services/apiService';
+import { setActiveModule as saveActiveModule, getActiveModule, MODULE_NAMES, setPrefillIntent, mapCaseToForm } from '../services/activeModuleService';
 import LegalGuideModal from './LegalGuideModal';
 import CreateCaseModal from './CreateCaseModal';
 import SavedToolsModal from './SavedToolsModal';
 import LegalDashboard from './LegalDashboard';
 import HearingManagement from './HearingManagement';
 import ComplianceCenter from './ComplianceCenter';
+import CaseContextModal from './CaseContextModal';
 
 const ArrowLeft = ({ size = 20, className = '' }) => (
   <ChevronRight size={size} className={`transform rotate-180 ${className}`} />
@@ -61,6 +63,14 @@ const AiLegalContent = ({
   const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
   const [localCases, setLocalCases] = useState([]);
   const [caseManagementFilter, setCaseManagementFilter] = useState('All');
+
+  // --- Case Context Modal (Active Module Detection) ---
+  const [caseContextModal, setCaseContextModal] = useState({
+    isOpen: false,
+    moduleId: null,
+    moduleName: null,
+    caseData: null,
+  });
 
   // --- Case Management Handlers (for LegalDashboard sub-view) ---
   const handleOpenCase = useCallback((c) => {
@@ -521,7 +531,7 @@ const AiLegalContent = ({
             if (setMessages) setMessages([]);
             navigate('/dashboard/chat/new', { replace: true, state: { fromTool: true } });
           }}
-          onLaunchModuleWithCase={(moduleId, caseData) => {
+          onLaunchModuleWithCase={async (moduleId, caseItem) => {
             const names = {
               'legal_argument_builder': 'Argument Builder',
               'legal_precedents': 'Legal Precedent',
@@ -531,12 +541,32 @@ const AiLegalContent = ({
               'legal_contract_analyzer': 'Contract Review',
               'legal_strategy_engine': 'Strategy Engine'
             };
-            if (setCurrentCase) setCurrentCase(caseData);
-            if (setCurrentProjectId) setCurrentProjectId(caseData.id || caseData._id);
-            setSelectedLegalTool({ id: moduleId, name: names[moduleId] || moduleId });
-            if (setLegalView) setLegalView('CHAT');
-            if (setMessages) setMessages([]);
-            navigate('/dashboard/chat/new', { replace: true, state: { fromTool: true } });
+            const moduleName = names[moduleId] || moduleId;
+
+            // Persist active module to localStorage + database
+            try {
+              await saveActiveModule(
+                caseItem?.id || caseItem?._id,
+                caseItem?.title || caseItem?.name,
+                moduleId,
+                moduleName,
+                'case'
+              );
+            } catch (e) {
+              console.warn('[AiLegalContent] setActiveModule failed:', e);
+            }
+
+            // Set current case immediately
+            if (setCurrentCase) setCurrentCase(caseItem);
+            if (setCurrentProjectId) setCurrentProjectId(caseItem?.id || caseItem?._id);
+
+            // Show Case Context Modal before routing
+            setCaseContextModal({
+              isOpen: true,
+              moduleId,
+              moduleName,
+              caseData: caseItem,
+            });
           }}
           initialFilter={caseManagementFilter}
         />
@@ -552,7 +582,37 @@ const AiLegalContent = ({
           onSave={handleCreateCase}
           editingCase={editingCase}
         />
+
+        {/* ── CASE CONTEXT MODAL ─────────────────────────────────── */}
+        <CaseContextModal
+          isOpen={caseContextModal.isOpen}
+          onClose={() => setCaseContextModal(prev => ({ ...prev, isOpen: false }))}
+          caseData={caseContextModal.caseData}
+          moduleId={caseContextModal.moduleId}
+          moduleName={caseContextModal.moduleName}
+          onUseCase={(cd) => {
+            setCaseContextModal(prev => ({ ...prev, isOpen: false }));
+            // ── Store prefill intent — each module reads this on mount ──
+            setPrefillIntent(cd, caseContextModal.moduleId);
+            // Route to module WITH active case data
+            setSelectedLegalTool({ id: caseContextModal.moduleId, name: caseContextModal.moduleName });
+            if (setLegalView) setLegalView('CHAT');
+            if (setMessages) setMessages([]);
+            navigate('/dashboard/chat/new', { replace: true, state: { fromTool: true, activeCase: true } });
+          }}
+          onManualMode={() => {
+            setCaseContextModal(prev => ({ ...prev, isOpen: false }));
+            // Clear any existing prefill — start fresh
+            try { localStorage.removeItem('@aisa_case_prefill_intent'); } catch {}
+            // Route to module WITHOUT case — clear current case context
+            setSelectedLegalTool({ id: caseContextModal.moduleId, name: caseContextModal.moduleName });
+            if (setMessages) setMessages([]);
+            if (setLegalView) setLegalView('CHAT');
+            navigate('/dashboard/chat/new', { replace: true, state: { fromTool: true, manualMode: true } });
+          }}
+        />
       </div>
+
     );
   }
 

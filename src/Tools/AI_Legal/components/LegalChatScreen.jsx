@@ -15,6 +15,7 @@ import { jsPDF } from 'jspdf';
 import toast from 'react-hot-toast';
 import { legalService } from '../services/legalService';
 import { apiService } from '../../../services/apiService';
+import { chatStorageService } from '../../../services/chatStorageService';
 
 // ─── LEGAL SYSTEM INSTRUCTION (matches AISA-Mobile) ─────────────────────────
 const LEGAL_SYSTEM_INSTRUCTION = `You are the AISA AI General Legal Chat Assistant. You are an expert in law. If a user uploads an image, PDF, or document, perform OCR, analyze the content, and provide structured legal insights. For Images: Provide a Summary, Key points, and Legal observations. For PDFs/Docs: Provide an Overview, Issues, and Recommendations. Never say you cannot view files. IMPORTANT: You must reply in the exact same language as the user's prompt (e.g., if the user asks in Hindi, reply in Hindi). If the user asks you to translate the previous response "in Hindi" or "hindi me batao", translate the current context to Hindi without hesitation.`;
@@ -73,43 +74,64 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
   const [activeShareMenu, setActiveShareMenu] = useState(null);
   const [activeCitationData, setActiveCitationData] = useState(null);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
-  const [pinnedSessions, setPinnedSessions] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('legal_pinned_sessions') || '[]'); }
-    catch { return []; }
-  });
+  const [pinnedSessions, setPinnedSessions] = useState([]);
+
+  // Load pinned sessions from currentCase
+  useEffect(() => {
+    if (currentCase) {
+      setPinnedSessions(currentCase.legalPinnedSessions || []);
+    }
+  }, [currentCase?._id]);
 
   // ─── HISTORY HANDLERS ──────────────────────────────────────────────────────
-  const handleTogglePin = (chatId, e) => {
+  const handleTogglePin = async (chatId, e) => {
     e.stopPropagation();
-    setPinnedSessions(prev => {
-      const next = prev.includes(chatId) ? prev.filter(id => id !== chatId) : [...prev, chatId];
-      localStorage.setItem('legal_pinned_sessions', JSON.stringify(next));
-      return next;
-    });
+    if (!currentCase) return;
+    const nextPinned = pinnedSessions.includes(chatId)
+      ? pinnedSessions.filter(id => id !== chatId)
+      : [...pinnedSessions, chatId];
+    setPinnedSessions(nextPinned);
+    try {
+      const payload = {
+        ...currentCase,
+        legalPinnedSessions: nextPinned
+      };
+      const response = await apiService.updateProject(currentCase._id, payload);
+      if (onUpdateCase) onUpdateCase(response);
+    } catch (err) {
+      console.error("Failed to pin legal chat session", err);
+    }
   };
 
-  const handleDeleteSession = (chatId, e) => {
+  const handleDeleteSession = async (chatId, e) => {
     e.stopPropagation();
-    setSessions(prev => {
-      const updated = prev.filter(s => s.chat_id !== chatId);
-      // Only switch if we deleted the active session
+    try {
+      await chatStorageService.deleteSession(chatId);
+      
+      const updated = sessions.filter(s => s.chat_id !== chatId);
+      setSessions(updated);
+
       if (chatId === activeSessionId) {
-        const remaining = updated;
-        if (remaining.length > 0) {
-          // Switch to first remaining session
-          switchSession(remaining[0].chat_id);
+        if (updated.length > 0) {
+          switchSession(updated[0].chat_id);
         } else {
-          // No sessions left — start fresh
-          handleNewChat();
+          handleNewChat(updated);
         }
       }
-      return updated;
-    });
-    setPinnedSessions(prev => {
-      const next = prev.filter(id => id !== chatId);
-      localStorage.setItem('legal_pinned_sessions', JSON.stringify(next));
-      return next;
-    });
+
+      if (currentCase) {
+        const nextPinned = (currentCase.legalPinnedSessions || []).filter(id => id !== chatId);
+        setPinnedSessions(nextPinned);
+        const payload = {
+          ...currentCase,
+          legalPinnedSessions: nextPinned
+        };
+        const response = await apiService.updateProject(currentCase._id, payload);
+        if (onUpdateCase) onUpdateCase(response);
+      }
+    } catch (err) {
+      console.error("Failed to delete session", err);
+    }
   };
 
 
@@ -396,95 +418,131 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
   }, []);
 
   // ─── CHAT SESSIONS & HISTORY ────────────────────────────────────────────────
-  const saveChatHistory = useCallback(async (msgs) => {
+  const mapDbMessageToLocal = (m) => ({
+    id: m.id || m._id || Date.now().toString() + Math.random().toString(36).substr(2, 5),
+    text: m.content || m.text || '',
+    sender: m.role === 'user' ? 'user' : 'ai',
+    timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
+    isIntro: m.isIntro || false,
+    attachments: m.attachments || []
+  });
+
+  const mapLocalMessageToDb = (m) => ({
+    id: m.id,
+    role: m.sender === 'user' ? 'user' : 'model',
+    content: m.text,
+    timestamp: m.timestamp?.toISOString?.() || m.timestamp,
+    isIntro: m.isIntro || false,
+    attachments: m.attachments || []
+  });
+
+  const loadSessionHistory = async (sessionId) => {
     try {
-      const raw = localStorage.getItem('legal_chat_history');
-      const currentList = raw ? JSON.parse(raw) : [];
-
-      const firstUserMsg = msgs.find(m => m.sender === 'user');
-      const title = firstUserMsg 
-        ? (firstUserMsg.text.slice(0, 30) + (firstUserMsg.text.length > 30 ? '...' : ''))
-        : 'New Chat';
-
-      const newSessionItem = {
-        chat_id: chatIdRef.current,
-        toolName,
-        title,
-        timestamp: Date.now(),
-        messages: msgs.map(m => ({ ...m, timestamp: m.timestamp?.toISOString?.() || m.timestamp }))
-      };
-
-      const existingIndex = currentList.findIndex(s => s.chat_id === chatIdRef.current);
-      if (existingIndex >= 0) {
-        currentList[existingIndex] = newSessionItem;
-      } else {
-        currentList.push(newSessionItem);
+      const history = await chatStorageService.getHistory(sessionId);
+      if (history && Array.isArray(history.messages)) {
+        const parsedMsgs = history.messages.map(mapDbMessageToLocal);
+        setMessages(parsedMsgs);
       }
+    } catch (e) {
+      console.error("Failed to load session history", e);
+    }
+  };
 
-      localStorage.setItem('legal_chat_history', JSON.stringify(currentList));
+  const saveChatHistory = useCallback(async (msgs) => {
+    if (msgs.length === 0) return;
+    const lastMsg = msgs[msgs.length - 1];
+    const firstUserMsg = msgs.find(m => m.sender === 'user');
+    const title = firstUserMsg 
+      ? (firstUserMsg.text.slice(0, 30) + (firstUserMsg.text.length > 30 ? '...' : ''))
+      : 'New Chat';
 
-      // Update local state list
-      const generalSessions = currentList.filter(s => s.toolName === toolName);
-      generalSessions.sort((a, b) => b.timestamp - a.timestamp);
-      setSessions(generalSessions);
+    const dbMsg = mapLocalMessageToDb(lastMsg);
+    dbMsg.activeTool = 'General Legal Chat';
+    dbMsg.mode = 'NORMAL_CHAT';
+
+    try {
+      await chatStorageService.saveMessage(chatIdRef.current, dbMsg, title, currentCase?._id);
+      
+      setSessions(prev => prev.map(s => {
+        if (s.chat_id === chatIdRef.current) {
+          return { ...s, title, timestamp: Date.now() };
+        }
+        return s;
+      }));
     } catch (e) {
       console.error('[LegalChatScreen] saveChatHistory failed', e);
     }
-  }, [toolName]);
+  }, [currentCase?._id]);
 
-  // Load sessions on mount
+  // Load sessions on mount / migrate from localStorage
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('legal_chat_history');
-      const currentList = raw ? JSON.parse(raw) : [];
-      const generalSessions = currentList.filter(s => s.toolName === toolName);
+    const migrateAndLoad = async () => {
+      try {
+        const raw = localStorage.getItem('legal_chat_history');
+        const localList = raw ? JSON.parse(raw) : [];
+        const localGeneral = localList.filter(s => s.toolName === toolName);
 
-      if (generalSessions.length > 0) {
-        generalSessions.sort((a, b) => b.timestamp - a.timestamp);
-        setSessions(generalSessions);
+        const dbSessions = await chatStorageService.getSessions(currentCase?._id);
+        const filteredDb = dbSessions.filter(s => s.activeTool === 'General Legal Chat');
 
-        const latestSession = generalSessions[0];
-        chatIdRef.current = latestSession.chat_id;
-        setActiveSessionId(latestSession.chat_id);
-
-        const parsedMsgs = latestSession.messages.map(m => ({
-          ...m,
-          timestamp: m.timestamp ? new Date(m.timestamp) : new Date()
-        }));
-        setMessages(parsedMsgs);
-      } else {
-        // Initial session
-        const initialId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-        chatIdRef.current = initialId;
-        setActiveSessionId(initialId);
-
-        const initialMsgs = [
-          {
-            id: '1',
-            text: `Hello! I am your AI ${toolName}. ${toolDesc} How can I assist you today?`,
-            sender: 'ai',
-            timestamp: new Date(),
-            isIntro: true,
+        if (localGeneral.length > 0) {
+          for (const ls of localGeneral) {
+            const exists = filteredDb.some(db => db.sessionId === ls.chat_id || db.chat_id === ls.chat_id);
+            if (!exists) {
+              const sessId = ls.chat_id;
+              const firstMsg = ls.messages.find(m => m.sender === 'user');
+              const title = firstMsg ? firstMsg.text.slice(0, 30) : 'New Chat';
+              
+              for (const m of ls.messages) {
+                const dbMsg = mapLocalMessageToDb(m);
+                dbMsg.activeTool = 'General Legal Chat';
+                dbMsg.mode = 'NORMAL_CHAT';
+                await chatStorageService.saveMessage(sessId, dbMsg, title, currentCase?._id);
+              }
+            }
           }
-        ];
-        setMessages(initialMsgs);
+          localStorage.removeItem('legal_chat_history');
+          const reloaded = await chatStorageService.getSessions(currentCase?._id);
+          const filtered = reloaded.filter(s => s.activeTool === 'General Legal Chat');
+          const mapped = filtered.map(s => ({
+            chat_id: s.sessionId || s.chat_id,
+            title: s.title || 'New Chat',
+            timestamp: s.lastModified || s.timestamp || Date.now(),
+          }));
+          mapped.sort((a, b) => b.timestamp - a.timestamp);
+          setSessions(mapped);
+          if (mapped.length > 0) {
+            chatIdRef.current = mapped[0].chat_id;
+            setActiveSessionId(mapped[0].chat_id);
+            await loadSessionHistory(mapped[0].chat_id);
+          } else {
+            await handleNewChat(mapped);
+          }
+          return;
+        }
 
-        const newSessionItem = {
-          chat_id: initialId,
-          toolName,
-          title: 'New Chat',
-          timestamp: Date.now(),
-          messages: initialMsgs
-        };
+        const mapped = filteredDb.map(s => ({
+          chat_id: s.sessionId || s.chat_id,
+          title: s.title || 'New Chat',
+          timestamp: s.lastModified || s.timestamp || Date.now(),
+        }));
+        mapped.sort((a, b) => b.timestamp - a.timestamp);
+        setSessions(mapped);
 
-        const newList = [newSessionItem, ...currentList];
-        localStorage.setItem('legal_chat_history', JSON.stringify(newList));
-        setSessions([newSessionItem]);
+        if (mapped.length > 0) {
+          chatIdRef.current = mapped[0].chat_id;
+          setActiveSessionId(mapped[0].chat_id);
+          await loadSessionHistory(mapped[0].chat_id);
+        } else {
+          await handleNewChat(mapped);
+        }
+      } catch (e) {
+        console.error("Failed loading/migrating legal chat sessions", e);
       }
-    } catch (e) {
-      console.error("Failed to load sessions in LegalChatScreen", e);
-    }
-  }, [toolName]);
+    };
+
+    migrateAndLoad();
+  }, [toolName, currentCase?._id]);
 
   useEffect(() => {
     if (messages.length > 1) {
@@ -723,13 +781,6 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
 
   // ─── NEW CHAT ──────────────────────────────────────────────────────────────
   const handleNewChat = async () => {
-    // Save current session before creating a new one
-    try {
-      await saveChatHistory(messages);
-    } catch (e) {
-      console.error('Failed to save current session before new chat', e);
-    }
-
     // Generate a fresh chat ID and set as active
     const newId = Date.now().toString(36) + Math.random().toString(36).substr(2);
     chatIdRef.current = newId;
@@ -749,23 +800,20 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
     setMessages(newMsgs);
 
     // Persist the newly created empty session in history
+    const newSessionItem = {
+      chat_id: newId,
+      title: 'New Chat',
+      timestamp: Date.now(),
+    };
+    setSessions(prev => [newSessionItem, ...prev]);
+
+    const dbMsg = mapLocalMessageToDb(newMsgs[0]);
+    dbMsg.activeTool = 'General Legal Chat';
+    dbMsg.mode = 'NORMAL_CHAT';
     try {
-      const raw = localStorage.getItem('legal_chat_history');
-      const currentList = raw ? JSON.parse(raw) : [];
-      const newSessionItem = {
-        chat_id: newId,
-        toolName,
-        title: 'New Chat',
-        timestamp: Date.now(),
-        messages: newMsgs,
-      };
-      const newList = [newSessionItem, ...currentList];
-      localStorage.setItem('legal_chat_history', JSON.stringify(newList));
-      const generalSessions = newList.filter(s => s.toolName === toolName);
-      generalSessions.sort((a, b) => b.timestamp - a.timestamp);
-      setSessions(generalSessions);
+      await chatStorageService.saveMessage(newId, dbMsg, 'New Chat', currentCase?._id);
     } catch (e) {
-      console.error('Failed to add new session to history', e);
+      console.error("Failed to save initial message in new chat", e);
     }
 
     // Scroll to top of chat window
@@ -779,27 +827,16 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
     }, 100);
   };
 
-  const switchSession = (sessionId) => {
+  const switchSession = async (sessionId) => {
     try {
-      const raw = localStorage.getItem('legal_chat_history');
-      const currentList = raw ? JSON.parse(raw) : [];
-      const sess = currentList.find(s => s.chat_id === sessionId);
-      if (sess) {
-        chatIdRef.current = sessionId;
-        setActiveSessionId(sessionId);
-
-        const parsedMsgs = sess.messages.map(m => ({
-          ...m,
-          timestamp: m.timestamp ? new Date(m.timestamp) : new Date()
-        }));
-        setMessages(parsedMsgs);
-
-        setTimeout(() => {
-          inputRef.current?.focus();
-        }, 100);
-      }
+      chatIdRef.current = sessionId;
+      setActiveSessionId(sessionId);
+      await loadSessionHistory(sessionId);
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     } catch (e) {
-      console.error("Failed to switch session in LegalChatScreen", e);
+      console.error("Failed to switch session", e);
     }
   };
 

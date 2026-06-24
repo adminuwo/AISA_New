@@ -6804,11 +6804,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
             : viewingDoc ? 'overflow-hidden' : `overflow-y-auto ${showFloatingNavbar ? 'pt-[72px] sm:mt-0 sm:pt-24' : (currentMode === 'LEGAL_TOOLKIT' || location.pathname === '/dashboard/cases' ? 'pt-4' : 'pt-[72px] sm:mt-0 sm:pt-[76px]')} lg:pt-6 pb-64 md:pb-72`
             }`}
           style={{
-<<<<<<< HEAD
-            overflowY: viewingDoc ? 'hidden' : (((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT') || selectedLegalTool?.id === 'legal_general_chat' ? 'hidden' : 'auto'),
-=======
-            overflowY: ((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT') || selectedLegalTool?.id === 'legal_general_chat' || (selectedLegalTool?.id && selectedLegalTool.id !== 'legal_my_case') ? 'hidden' : 'auto',
->>>>>>> 4a97b80 (just commit)
+            overflowY: viewingDoc ? 'hidden' : (((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT') || selectedLegalTool?.id === 'legal_general_chat' || (selectedLegalTool?.id && selectedLegalTool.id !== 'legal_my_case') ? 'hidden' : 'auto'),
             height: '100%',
             flex: '1 1 auto',
             display: 'flex',
