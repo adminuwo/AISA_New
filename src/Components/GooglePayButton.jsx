@@ -29,8 +29,8 @@ import { createGooglePayOrder, verifyGooglePayment } from '../services/walletPay
 
 const GOOGLE_PAY_SDK_URL = 'https://pay.google.com/gp/p/js/pay.js';
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const GOOGLE_PAY_ENV = isLocalhost ? 'TEST' : (window._env_?.VITE_GOOGLE_PAY_ENV || import.meta.env.VITE_GOOGLE_PAY_ENV || 'TEST');
-const MERCHANT_ID = window._env_?.VITE_GOOGLE_PAY_MERCHANT_ID || import.meta.env.VITE_GOOGLE_PAY_MERCHANT_ID;
+const GOOGLE_PAY_ENV = isLocalhost ? 'TEST' : (window._env_?.VITE_GOOGLE_PAY_ENV || import.meta.env.VITE_GOOGLE_PAY_ENV || 'PRODUCTION');
+const MERCHANT_ID = window._env_?.VITE_GOOGLE_PAY_MERCHANT_ID || import.meta.env.VITE_GOOGLE_PAY_MERCHANT_ID || 'BCR2DN7TTCBOV2A3';
 
 
 // ─── Main Component ─────────────────────────────────────────────────────────
