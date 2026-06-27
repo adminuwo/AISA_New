@@ -6803,7 +6803,7 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
           className={`relative flex-1 aisa-scalable-text chatgpt-container z-20 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent ${selectedLegalTool?.id === 'legal_general_chat' ? 'legal-chat-active' : ''} ${(((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT') || (selectedLegalTool?.id && selectedLegalTool.id !== 'legal_my_case')) ? 'legal-no-padding' : ''} ${((currentMode === 'LEGAL_TOOLKIT' && !showFloatingNavbar) || location.pathname === '/dashboard/cases') ? 'no-top-padding' : ''} ${(((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT') || (selectedLegalTool?.id && selectedLegalTool.id !== 'legal_my_case'))
             ? 'z-[30] h-full w-full overflow-hidden flex flex-col bg-transparent min-h-0'
             : selectedLegalTool?.id === 'legal_general_chat' ? 'overflow-hidden flex flex-col min-h-0'
-            : viewingDoc ? 'overflow-hidden' : `overflow-y-auto ${showFloatingNavbar ? 'pt-[72px] sm:mt-0 sm:pt-24' : (currentMode === 'LEGAL_TOOLKIT' || location.pathname === '/dashboard/cases' ? 'pt-4' : 'pt-[72px] sm:mt-0 sm:pt-[76px]')} lg:pt-6 pb-64 md:pb-72`
+              : viewingDoc ? 'overflow-hidden' : `overflow-y-auto ${showFloatingNavbar ? 'pt-[72px] sm:mt-0 sm:pt-24' : (currentMode === 'LEGAL_TOOLKIT' || location.pathname === '/dashboard/cases' ? 'pt-4' : 'pt-[72px] sm:mt-0 sm:pt-[76px]')} lg:pt-6 pb-64 md:pb-72`
             }`}
           style={{
             overflowY: viewingDoc || ((legalView === 'DASHBOARD' || legalView === 'PRECEDENTS') && currentMode === 'LEGAL_TOOLKIT') || selectedLegalTool?.id === 'legal_general_chat' || (selectedLegalTool?.id && selectedLegalTool.id !== 'legal_my_case') ? 'hidden' : 'auto',
@@ -6869,11 +6869,10 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className={`flex-1 flex flex-col w-full select-text min-h-0 ${
-                  (selectedLegalTool?.id && selectedLegalTool.id !== 'legal_my_case') 
-                    ? 'h-full' 
+                className={`flex-1 flex flex-col w-full select-text min-h-0 ${(selectedLegalTool?.id && selectedLegalTool.id !== 'legal_my_case')
+                    ? 'h-full'
                     : 'min-h-full'
-                }`}
+                  }`}
               >
                 {/* 🚀 MINI STICKY CASE BREADCRUMB (Lightweight & Non-obstructive) */}
                 <AnimatePresence>
