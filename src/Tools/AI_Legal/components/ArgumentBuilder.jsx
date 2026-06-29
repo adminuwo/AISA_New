@@ -10,6 +10,7 @@ import {
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
 import { apiService } from '../../../services/apiService';
+import { useActiveCase } from '../context/ActiveCaseContext';
 import BuildArgumentModal from './BuildArgumentModal';
 import useOutputLanguage from '../hooks/useOutputLanguage';
 import LanguageToggle from './shared/LanguageToggle';
@@ -326,9 +327,12 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isCreatingChat, setIsCreatingChat] = useState(false);
-  
-  // Attachments and Drag & Drop States
+
+  // Get active case context
+  const activeCaseContext = useActiveCase();
+  const triggerAutoRun = activeCaseContext?.triggerAutoRun;
+
+
   const [attachments, setAttachments] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const messagesContainerRef = useRef(null);
@@ -680,6 +684,16 @@ const fileInputRef = useRef(null);
     }
   }, [currentCase?._id]);
 
+  // Execute Auto-Run if intended by Context
+  useEffect(() => {
+    if (triggerAutoRun && currentCase && !isGenerating) {
+      toast.success("✓ Case loaded for Argument Intelligence", { icon: '⚖️', duration: 3000 });
+      setTimeout(() => {
+        handleSendMessage("Analyze this case facts and documents, and provide a complete argument and strategy report.", true);
+      }, 500);
+    }
+  }, [triggerAutoRun, currentCase]); // Wait for currentCase to populate sessions first
+
   const saveChatHistory = async (updatedMsgs) => {
     if (!currentCase || !activeSessionId) return;
 
@@ -827,12 +841,12 @@ const fileInputRef = useRef(null);
   };
 
 
-  const handleSendMessage = async (customPrompt = null) => {
-    const text = customPrompt || inputValue;
+  const handleSendMessage = async (customPrompt = null, isAuto = false) => {
+    const text = typeof customPrompt === 'string' ? customPrompt : inputValue;
     if (!text.trim() && attachments.length === 0) return;
 
     const currentAttachments = [...attachments];
-    setAttachments([]);
+    if (!isAuto) setAttachments([]);
 
     const userMsg = {
       id: Date.now().toString(),
@@ -843,7 +857,7 @@ const fileInputRef = useRef(null);
     };
     const newMsgs = [...messages, userMsg];
     setMessages(newMsgs);
-    setInputValue('');
+    if (!isAuto) setInputValue('');
     setIsGenerating(true);
 
     try {

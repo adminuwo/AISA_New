@@ -10,7 +10,8 @@ import {
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
 import { apiService } from '../../../services/apiService';
-import { consumePrefillIntent, mapCaseToForm } from '../services/activeModuleService';
+import { mapCaseToForm } from '../services/activeModuleService';
+import { useActiveCase } from '../context/ActiveCaseContext';
 import { getTemplate, GENERATION_MODES, DRAFT_TEMPLATES } from '../data/draftTemplates';
 import CountrySelect from './CountrySelect';
 import StateSelect from './StateSelect';
@@ -391,18 +392,26 @@ const DraftMaker = ({ currentCase, onBack, theme, allProjects = [] }) => {
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const previewRef = useRef(null);
 
-  // ── Prefill intent ──
+  // Get active case context
+  const activeCaseContext = useActiveCase();
+  const triggerAutoRun = activeCaseContext?.triggerAutoRun;
+
+  // ── Handle active case context ──
   useEffect(() => {
-    const intent = consumePrefillIntent('legal_draft_maker');
-    if (intent?.caseData) {
-      const mapped = mapCaseToForm(intent.caseData);
+    if (currentCase) {
+      const mapped = mapCaseToForm(currentCase);
       setPrefillData(mapped);
       setPrefillBanner(true);
-      const caseId = intent.caseData?._id || intent.caseData?.id;
-      if (caseId) setLinkedCaseId(caseId);
+      setLinkedCaseId(currentCase._id);
+    }
+  }, [currentCase]);
+
+  // ── Execute Auto-Run ──
+  useEffect(() => {
+    if (triggerAutoRun && currentCase) {
       toast.success(`✓ Case data ready — pick a template to auto-fill`, { icon: '💼', duration: 3500 });
     }
-  }, []);  
+  }, [triggerAutoRun, currentCase]);
 
   // ── Filtered draft types ──
   const filteredCategories = useMemo(() => {
@@ -674,6 +683,10 @@ Generate the draft now:`;
       return;
     }
 
+    if (finalDraft && !window.confirm("Are you sure you want to generate a new draft? This will replace the current content.")) {
+      return;
+    }
+
     setIsGenerating(true);
     setStep('GENERATING');
 
@@ -818,18 +831,28 @@ Generate the draft now:`;
     toast.success('Draft exported as Word DOC format');
   };
 
-  // ── Export: Download TXT/MD ──
+  // ── Export: Download TXT/MD/PDF/DOCX ──
   const handleDownload = () => {
-    const textToDownload = draftDisplayText || finalDraft;
-    const blob = new Blob([textToDownload], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${(selectedType || 'Legal_Draft').replace(/[^a-z0-9]/gi, '_')}_v${draftVersion}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    addToExportHistory('Download TXT');
-    toast.success('Draft downloaded');
+    const choice = window.prompt('Enter download format (PDF, DOCX, TXT):', 'DOCX');
+    if (!choice) return;
+    
+    const format = choice.toUpperCase().trim();
+    if (format === 'PDF') {
+      handleExportPDF();
+    } else if (format === 'DOCX' || format === 'DOC') {
+      handleExportDOCX();
+    } else {
+      const textToDownload = draftDisplayText || finalDraft;
+      const blob = new Blob([textToDownload], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(selectedType || 'Legal_Draft').replace(/[^a-z0-9]/gi, '_')}_v${draftVersion}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addToExportHistory('Download TXT');
+      toast.success('Draft downloaded');
+    }
   };
 
   // ── Export: Copy ──
@@ -848,7 +871,9 @@ Generate the draft now:`;
         await navigator.share({ title: selectedType || 'Legal Draft', text: textToShare });
         addToExportHistory('Share Report');
       } catch (e) {
-        handleCopy();
+        if (e.name !== 'AbortError') {
+          handleCopy();
+        }
       }
     } else {
       handleCopy();
@@ -862,7 +887,7 @@ Generate the draft now:`;
       toast.error('Please select or link a case first to save this draft');
       return;
     }
-    const targetCase = allProjects.find(p => p._id === caseId);
+    const targetCase = allProjects.find(p => p._id === caseId) || currentCase;
     if (!targetCase) {
       toast.error('Linked case not found');
       return;
@@ -893,7 +918,7 @@ Generate the draft now:`;
       if (onUpdateCase) onUpdateCase(response);
       setSavedNotice({ id, date: now.toLocaleDateString('en-IN'), time: now.toLocaleTimeString('en-IN') });
       addToExportHistory('Save Draft');
-      toast.success('Draft saved to case!');
+      toast.success('Draft Saved Successfully');
     } catch (e) {
       console.error("Failed to save draft", e);
       toast.error('Failed to save draft');
@@ -902,10 +927,12 @@ Generate the draft now:`;
 
   // ── Save to Case ──
   const handleSaveToCase = async () => {
-    if (!linkedCaseId) { toast.error('Link a case first to save draft to it'); return; }
+    const targetCaseId = linkedCaseId || currentCase?._id;
+    if (!targetCaseId) { toast.error('Link a case first to save draft to it'); return; }
     try {
-      const c = allProjects.find(p => p._id === linkedCaseId);
-      if (!c) return;
+      const c = allProjects.find(p => p._id === targetCaseId) || currentCase;
+      if (!c) { toast.error('Case not found'); return; }
+      
       const existingDrafts = c.drafts || [];
       const now = new Date();
       const id = `DRAFT-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
@@ -925,13 +952,14 @@ Generate the draft now:`;
 
       const payload = {
         ...c,
-        drafts: [...existingDrafts, newDraftItem]
+        drafts: [newDraftItem, ...existingDrafts]
       };
-      const response = await apiService.updateProject(linkedCaseId, payload);
+      const response = await apiService.updateProject(targetCaseId, payload);
       if (onUpdateCase) onUpdateCase(response);
       addToExportHistory('Save Draft to Case');
       toast.success('Draft saved to case!');
     } catch (e) {
+      console.error('Failed to save to case:', e);
       toast.error('Failed to save to case');
     }
   };

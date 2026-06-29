@@ -9,6 +9,7 @@ import {
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
 import { apiService } from '../../../services/apiService';
+import { useActiveCase } from '../context/ActiveCaseContext';
 import useOutputLanguage from '../hooks/useOutputLanguage';
 import LanguageToggle from './shared/LanguageToggle';
 import CopyOutputButton from './shared/CopyOutputButton';
@@ -31,6 +32,10 @@ const categories = [
 const LegalResearch = ({ currentCase, onBack, theme, allProjects = [], onUpdateCase }) => {
   const isDark = theme === 'dark';
   const linkedCaseIdRef = useRef(currentCase?._id || '');
+
+  // Get active case context
+  const activeCaseContext = useActiveCase();
+  const triggerAutoRun = activeCaseContext?.triggerAutoRun;
 
   // ─ Language toggle ─
   const {
@@ -89,6 +94,18 @@ const LegalResearch = ({ currentCase, onBack, theme, allProjects = [], onUpdateC
       setActiveResearch(null);
     }
   }, [currentCase]);
+
+  // Execute Auto-Run if intended by Context
+  useEffect(() => {
+    if (triggerAutoRun && currentCase && !isAuditing) {
+      toast.success("✓ Case loaded for Legal Research", { icon: '📚', duration: 3000 });
+      setTimeout(() => {
+        const query = `Landmark precedents for: ${currentCase.name}. facts: ${currentCase.description || ''}`;
+        runPrecedentDiscovery({ searchQuery: query });
+      }, 500);
+    }
+  }, [triggerAutoRun, currentCase]); // Run when triggerAutoRun is active
+
 
   const loadResearchHistory = async (caseId) => {
     try {

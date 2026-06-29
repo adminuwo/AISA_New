@@ -650,7 +650,7 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
             setActiveSessionId(mapped[0].chat_id);
             await loadSessionHistory(mapped[0].chat_id);
           } else {
-            await handleNewChat(mapped);
+            await handleNewChat(true);
           }
           return;
         }
@@ -668,7 +668,7 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
           setActiveSessionId(mapped[0].chat_id);
           await loadSessionHistory(mapped[0].chat_id);
         } else {
-          await handleNewChat(mapped);
+          await handleNewChat(true);
         }
       } catch (e) {
         console.error("Failed loading/migrating legal chat sessions", e);
@@ -724,10 +724,25 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
 
       console.log('[LegalChat] Sending message — attachments:', apiAttachments.length);
 
+      let systemInstruction = LEGAL_SYSTEM_INSTRUCTION;
+      if (currentCase) {
+        systemInstruction += `\n\nContext for the current case:\n`;
+        systemInstruction += `- Case ID: ${currentCase.id || currentCase._id}\n`;
+        systemInstruction += `- Case Name: ${currentCase.title || currentCase.name || 'N/A'}\n`;
+        systemInstruction += `- Case Number: ${currentCase.caseNumber || 'N/A'}\n`;
+        systemInstruction += `- Case Type: ${currentCase.caseType || currentCase.category || 'N/A'}\n`;
+        systemInstruction += `- Court: ${currentCase.courtName || currentCase.courtType || 'N/A'}\n`;
+        systemInstruction += `- Client Details: ${currentCase.clientName || 'N/A'}\n`;
+        systemInstruction += `- Opponent Details: ${currentCase.opponentName || 'N/A'}\n`;
+        systemInstruction += `- Case Status: ${currentCase.status || 'N/A'}\n`;
+        systemInstruction += `- Case Description: ${currentCase.summary || currentCase.description || 'N/A'}\n`;
+        systemInstruction += `- Notes: ${currentCase.notes || 'N/A'}\n`;
+      }
+
       const response = await generateChatResponse(
         apiHistory,
         promptText,
-        LEGAL_SYSTEM_INSTRUCTION,
+        systemInstruction,
         apiAttachments,
         'English',
         null, // abortSignal
@@ -914,51 +929,230 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
   };
 
   // ─── NEW CHAT ──────────────────────────────────────────────────────────────
-  const handleNewChat = async () => {
-    // Generate a fresh chat ID and set as active
+  const handleNewChat = async (param) => {
+    let isAutoAnalysis = false;
+    if (param === true || Array.isArray(param)) {
+      isAutoAnalysis = true;
+    } else if (param && param.preventDefault) {
+      param.preventDefault();
+      isAutoAnalysis = false;
+    }
+
     const newId = Date.now().toString(36) + Math.random().toString(36).substr(2);
     chatIdRef.current = newId;
     setActiveSessionId(newId);
 
-    // Clear any attachments from previous chat
     setAttachments([]);
+    setInputValue('');
 
-    // Initialize new chat with welcome AI message
-    const newMsgs = [{
-      id: '1',
-      text: `Hello! I am your AI ${toolName}. ${toolDesc} How can I assist you today?`,
-      sender: 'ai',
-      timestamp: new Date(),
-      isIntro: true,
-    }];
-    setMessages(newMsgs);
+    if (currentCase && isAutoAnalysis) {
+      const promptText = `Provide a comprehensive legal analysis and strategy advice for the following case:
+- **Case ID**: ${currentCase.id || currentCase._id}
+- **Case Name**: ${currentCase.title || currentCase.name || 'N/A'}
+- **Case Number**: ${currentCase.caseNumber || 'N/A'}
+- **Case Type**: ${currentCase.caseType || currentCase.category || 'N/A'}
+- **Court**: ${currentCase.courtName || currentCase.courtType || 'N/A'}
+- **Client Details**: ${currentCase.clientName || 'N/A'}
+- **Opponent Details**: ${currentCase.opponentName || 'N/A'}
+- **Case Status**: ${currentCase.status || 'N/A'}
+- **Case Description**: ${currentCase.summary || currentCase.description || 'N/A'}
+- **Uploaded Documents**: ${(currentCase.documents || []).length} files
+- **Evidence**: ${(currentCase.evidence || []).length} items
+- **Notes**: ${currentCase.notes || 'N/A'}
+- **Timeline**: ${(currentCase.timeline || []).length} events
+- **Previous AI Legal conversations**: ${currentCase.savedResponses ? currentCase.savedResponses.length : 0}
 
-    // Persist the newly created empty session in history
-    const newSessionItem = {
-      chat_id: newId,
-      title: 'New Chat',
-      timestamp: Date.now(),
-    };
-    setSessions(prev => [newSessionItem, ...prev]);
+Please provide:
+- Case Summary
+- Legal Issues
+- Applicable Laws
+- Strengths of the Case
+- Weaknesses of the Case
+- Missing Evidence
+- Missing Documents
+- Recommended Legal Strategy
+- Possible Defences
+- Relevant Legal Precedents
+- Draft Suggestions
+- Risks
+- Next Legal Steps
+- Probability Assessment
+- Recommended Actions`;
 
-    const dbMsg = mapLocalMessageToDb(newMsgs[0]);
-    dbMsg.activeTool = 'General Legal Chat';
-    dbMsg.mode = 'NORMAL_CHAT';
-    try {
-      await chatStorageService.saveMessage(newId, dbMsg, 'New Chat', currentCase?._id);
-    } catch (e) {
-      console.error("Failed to save initial message in new chat", e);
+      const userMsg = {
+        id: Date.now().toString(),
+        text: promptText,
+        sender: 'user',
+        timestamp: new Date(),
+        isIntro: false,
+      };
+
+      setMessages([userMsg]);
+      setIsTyping(true);
+
+      const newSessionItem = {
+        chat_id: newId,
+        title: 'Case Analysis',
+        timestamp: Date.now(),
+      };
+      setSessions(prev => [newSessionItem, ...prev]);
+
+      const dbMsg = mapLocalMessageToDb(userMsg);
+      dbMsg.activeTool = 'General Legal Chat';
+      dbMsg.mode = 'NORMAL_CHAT';
+      try {
+        await chatStorageService.saveMessage(newId, dbMsg, 'Case Analysis', currentCase?._id);
+      } catch (err) {
+        console.error("Failed to save initial user message", err);
+      }
+
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 300);
+
+      try {
+        let systemInstruction = LEGAL_SYSTEM_INSTRUCTION;
+        systemInstruction += `\n\nContext for the current case:\n`;
+        systemInstruction += `- Case ID: ${currentCase.id || currentCase._id}\n`;
+        systemInstruction += `- Case Name: ${currentCase.title || currentCase.name || 'N/A'}\n`;
+        systemInstruction += `- Case Number: ${currentCase.caseNumber || 'N/A'}\n`;
+        systemInstruction += `- Case Type: ${currentCase.caseType || currentCase.category || 'N/A'}\n`;
+        systemInstruction += `- Court: ${currentCase.courtName || currentCase.courtType || 'N/A'}\n`;
+        systemInstruction += `- Client Details: ${currentCase.clientName || 'N/A'}\n`;
+        systemInstruction += `- Opponent Details: ${currentCase.opponentName || 'N/A'}\n`;
+        systemInstruction += `- Case Status: ${currentCase.status || 'N/A'}\n`;
+        systemInstruction += `- Case Description: ${currentCase.summary || currentCase.description || 'N/A'}\n`;
+        systemInstruction += `- Notes: ${currentCase.notes || 'N/A'}\n`;
+
+        const response = await generateChatResponse(
+          [], 
+          promptText,
+          systemInstruction,
+          [],
+          'English',
+          null, null, null, null
+        );
+
+        let responseText = '';
+        if (typeof response === 'string') responseText = response;
+        else if (response?.reply) responseText = response.reply;
+        else if (response?.data?.reply) responseText = response.data.reply;
+        else if (response?.text) responseText = response.text;
+        else if (response && typeof response === 'object') responseText = JSON.stringify(response);
+        if (!responseText) responseText = 'We could not process the response. Please try again.';
+
+        const aiMsg = {
+          id: (Date.now() + 1).toString(),
+          text: responseText,
+          sender: 'ai',
+          timestamp: new Date(),
+          isIntro: false,
+        };
+
+        setMessages(prev => {
+          const updated = [...prev, aiMsg];
+          saveChatHistory(updated);
+          return updated;
+        });
+      } catch (err) {
+        console.error('[LegalChatScreen] API Error:', err);
+        const errorMsg = {
+          id: (Date.now() + 1).toString(),
+          text: err?.message || 'Unable to connect. Please check your connection and try again.',
+          sender: 'ai',
+          timestamp: new Date(),
+          isIntro: false,
+        };
+        setMessages(prev => [...prev, errorMsg]);
+      } finally {
+        setIsTyping(false);
+      }
+
+    } else if (currentCase && !isAutoAnalysis) {
+      const caseName = currentCase.title || currentCase.name || 'N/A';
+      const welcomeText = `**AI Legal Chat**
+
+**Current Case:**
+${caseName}
+
+How can I help you with this case today?
+
+**Examples:**
+• Analyse my evidence.
+• Draft a legal notice.
+• Build court arguments.
+• Review uploaded documents.
+• Predict the outcome.
+• Find relevant precedents.`;
+
+      const newMsgs = [{
+        id: '1',
+        text: welcomeText,
+        sender: 'ai',
+        timestamp: new Date(),
+        isIntro: true,
+      }];
+      setMessages(newMsgs);
+
+      const newSessionItem = {
+        chat_id: newId,
+        title: 'New Chat',
+        timestamp: Date.now(),
+      };
+      setSessions(prev => [newSessionItem, ...prev]);
+
+      const dbMsg = mapLocalMessageToDb(newMsgs[0]);
+      dbMsg.activeTool = 'General Legal Chat';
+      dbMsg.mode = 'NORMAL_CHAT';
+      try {
+        await chatStorageService.saveMessage(newId, dbMsg, 'New Chat', currentCase._id);
+      } catch (e) {
+        console.error("Failed to save initial message in new chat", e);
+      }
+      
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 300);
+
+    } else {
+      const newMsgs = [{
+        id: '1',
+        text: `Hello! I am your AI ${toolName}. ${toolDesc} How can I assist you today?`,
+        sender: 'ai',
+        timestamp: new Date(),
+        isIntro: true,
+      }];
+      setMessages(newMsgs);
+
+      const newSessionItem = {
+        chat_id: newId,
+        title: 'New Chat',
+        timestamp: Date.now(),
+      };
+      setSessions(prev => [newSessionItem, ...prev]);
+
+      const dbMsg = mapLocalMessageToDb(newMsgs[0]);
+      dbMsg.activeTool = 'General Legal Chat';
+      dbMsg.mode = 'NORMAL_CHAT';
+      try {
+        await chatStorageService.saveMessage(newId, dbMsg, 'New Chat', currentCase?._id);
+      } catch (e) {
+        console.error("Failed to save initial message in new chat", e);
+      }
+      
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 300);
     }
-
-    // Scroll to top of chat window
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // Focus input after a short delay
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
   };
 
   const switchSession = async (sessionId) => {

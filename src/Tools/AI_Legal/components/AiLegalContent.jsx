@@ -506,6 +506,54 @@ const AiLegalContent = ({
     return 'general legal chat'.includes(q) || 'advice situational Q&A'.includes(q);
   }, [debouncedQuery]);
 
+  const handleLaunchModule = async (moduleId, caseItem) => {
+    const names = {
+      'legal_argument_builder': 'Argument Builder',
+      'legal_precedents': 'Legal Precedent',
+      'legal_draft_maker': 'Draft Maker',
+      'legal_evidence_checker': 'Evidence Analysis',
+      'legal_case_predictor': 'Case Predictor',
+      'legal_contract_analyzer': 'Contract Review',
+      'legal_strategy_engine': 'Strategy Engine',
+      'legal_general_chat': 'General Legal Chat'
+    };
+    const moduleName = names[moduleId] || moduleId;
+    const caseId = caseItem?.id || caseItem?._id;
+
+    // 1. Persist active module state (fire-and-forget)
+    saveActiveModule(
+      caseId,
+      caseItem?.title || caseItem?.name,
+      moduleId,
+      moduleName,
+      'case'
+    ).catch((e) => console.warn('[AiLegalContent] setActiveModule failed:', e));
+
+    // Update Zustand case workspace store
+    if (caseId) {
+      try {
+        useCaseWorkspaceStore.getState().updateWorkspace(caseId, {
+          activeTool: { id: moduleId, name: moduleName }
+        });
+      } catch (err) {
+        console.warn('[AiLegalContent] Zustand workspace update failed:', err);
+      }
+    }
+
+    // 2. Set current case in global state immediately
+    if (setCurrentCase) setCurrentCase(caseItem);
+    if (setCurrentProjectId) setCurrentProjectId(caseId);
+
+    // 3. Store prefill intent so the module auto-loads the case on mount
+    setPrefillIntent(caseItem, moduleId);
+
+    // 4. Navigate directly to the module case path with tool parameter
+    setSelectedLegalTool({ id: moduleId, name: moduleName });
+    if (setMessages) setMessages([]);
+    if (setLegalView) setLegalView('CHAT');
+    navigate(`/dashboard/case/${caseId}?tool=${moduleId}`, { replace: true, state: { fromTool: true, activeCase: true } });
+  };
+
   // --- Sub views ---
   if (activeModule === 'CASE_MANAGEMENT') {
     return (
@@ -529,68 +577,9 @@ const AiLegalContent = ({
             setActiveModule(null);
             loadDashboardData();
           }}
-          onAskStrategy={(caseData) => {
-            if (setCurrentCase) setCurrentCase(caseData);
-            if (setCurrentProjectId) setCurrentProjectId(caseData.id || caseData._id);
-            setSelectedLegalTool({ id: 'legal_strategy_engine', name: 'Strategy Engine' });
-            if (setLegalView) setLegalView('CHAT');
-            if (setMessages) setMessages([]);
-            navigate('/dashboard/chat/new', { replace: true, state: { fromTool: true } });
-          }}
-          onViewRoadmap={(caseData) => {
-            if (setCurrentCase) setCurrentCase(caseData);
-            if (setCurrentProjectId) setCurrentProjectId(caseData.id || caseData._id);
-            setSelectedLegalTool({ id: 'legal_strategy_engine', name: 'Strategy Engine' });
-            if (setLegalView) setLegalView('CHAT');
-            if (setMessages) setMessages([]);
-            navigate('/dashboard/chat/new', { replace: true, state: { fromTool: true } });
-          }}
-          onLaunchModuleWithCase={async (moduleId, caseItem) => {
-            const names = {
-              'legal_argument_builder': 'Argument Builder',
-              'legal_precedents': 'Legal Precedent',
-              'legal_draft_maker': 'Draft Maker',
-              'legal_evidence_checker': 'Evidence Analysis',
-              'legal_case_predictor': 'Case Predictor',
-              'legal_contract_analyzer': 'Contract Review',
-              'legal_strategy_engine': 'Strategy Engine'
-            };
-            const moduleName = names[moduleId] || moduleId;
-            const caseId = caseItem?.id || caseItem?._id;
-
-            // 1. Persist active module state (fire-and-forget — don't await so UI is instant)
-            saveActiveModule(
-              caseId,
-              caseItem?.title || caseItem?.name,
-              moduleId,
-              moduleName,
-              'case'
-            ).catch((e) => console.warn('[AiLegalContent] setActiveModule failed:', e));
-
-            // Update Zustand case workspace store
-            if (caseId) {
-              try {
-                useCaseWorkspaceStore.getState().updateWorkspace(caseId, {
-                  activeTool: { id: moduleId, name: moduleName }
-                });
-              } catch (err) {
-                console.warn('[AiLegalContent] Zustand workspace update failed:', err);
-              }
-            }
-
-            // 2. Set current case in global state immediately
-            if (setCurrentCase) setCurrentCase(caseItem);
-            if (setCurrentProjectId) setCurrentProjectId(caseId);
-
-            // 3. Store prefill intent so the module auto-loads the case on mount
-            setPrefillIntent(caseItem, moduleId);
-
-            // 4. Navigate directly to the module case path with tool parameter
-            setSelectedLegalTool({ id: moduleId, name: moduleName });
-            if (setMessages) setMessages([]);
-            if (setLegalView) setLegalView('CHAT');
-            navigate(`/dashboard/case/${caseId}?tool=${moduleId}`, { replace: true, state: { fromTool: true, activeCase: true } });
-          }}
+          onAskStrategy={(caseData) => handleLaunchModule('legal_general_chat', caseData)}
+          onViewRoadmap={(caseData) => handleLaunchModule('legal_strategy_engine', caseData)}
+          onLaunchModuleWithCase={handleLaunchModule}
           initialFilter={caseManagementFilter}
         />
         <CreateCaseModal 
@@ -709,7 +698,7 @@ const AiLegalContent = ({
       </AnimatePresence>
 
       {/* Main Header */}
-      <div className="w-full px-4 sm:px-6 md:px-10 lg:px-12 pt-5 sm:pt-6 pb-4 sm:pb-5 flex items-center justify-between shrink-0 border-b border-slate-200/60 dark:border-white/5 bg-white/70 dark:bg-[#0B1020]/70 backdrop-blur-xl z-10 sticky top-0">
+      <div className="w-full px-4 sm:px-6 md:px-10 lg:px-12 pt-4 sm:pt-6 pb-4 sm:pb-5 flex items-center justify-between shrink-0 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#0B1020] z-20 sticky top-0 shadow-sm">
         <div className="flex items-center gap-3.5">
           <button 
             onClick={onBack}
@@ -731,7 +720,7 @@ const AiLegalContent = ({
       </div>
 
       {/* Content Area */}
-      <div className="px-4 sm:px-6 md:px-10 lg:px-12 py-5 sm:py-6 space-y-5 sm:space-y-6">
+      <div className="px-4 sm:px-6 md:px-10 lg:px-12 py-5 sm:py-6 space-y-5 sm:space-y-6 pb-28 sm:pb-36">
         {/* Stats Section */}
         {isLoading ? (
           <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 animate-pulse">
@@ -894,27 +883,27 @@ const AiLegalContent = ({
                 sampleOutput: 'According to Section 420 of IPC, the punishment for cheating is...'
               });
             }}
-            className="w-full relative rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 overflow-hidden text-left bg-gradient-to-br from-indigo-600 via-[#5f5ce6] to-[#7c3aed] text-white shadow-2xl shadow-indigo-500/35 hover:scale-[1.005] transition-all group active:scale-[0.99]"
+            className="w-full relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 overflow-hidden text-left bg-gradient-to-br from-indigo-600 via-[#5f5ce6] to-[#7c3aed] text-white shadow-2xl shadow-indigo-500/35 hover:scale-[1.005] transition-all group active:scale-[0.99]"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-[2.5s] ease-in-out" />
-            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4 w-full sm:w-auto">
-                <div className="w-14 h-14 bg-white/20 backdrop-blur-xl border border-white/25 rounded-2xl flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-                  <MessageSquare size={28} className="text-white" />
+            <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
+              <div className="flex flex-row items-center gap-3.5 sm:gap-4 w-full sm:w-auto">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 backdrop-blur-xl border border-white/25 rounded-2xl flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                  <MessageSquare size={26} className="text-white sm:w-7 sm:h-7" />
                 </div>
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
+                <div className="space-y-1 min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     <span className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-md text-[7px] sm:text-[8px] font-black uppercase tracking-widest shrink-0">Enterprise Elite</span>
                     <span className="flex items-center gap-1 text-[7px] sm:text-[8px] font-black text-emerald-400 shrink-0"><CheckCircle size={10} className="fill-current text-white" /> SECURE</span>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-black tracking-tight leading-tight">General Legal Chat</h3>
-                  <p className="text-xs text-indigo-100 font-semibold leading-relaxed max-w-md">
+                  <h3 className="text-base sm:text-xl font-black tracking-tight leading-tight truncate sm:whitespace-normal">General Legal Chat</h3>
+                  <p className="text-[11px] sm:text-xs text-indigo-100 font-semibold leading-relaxed max-w-md line-clamp-2 sm:line-clamp-none">
                     Professional legal discourse, situational guidance, and citation Q&A.
                   </p>
                 </div>
               </div>
-              <div className="w-full sm:w-auto shrink-0 flex justify-end">
-                <span className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 bg-white text-indigo-700 font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl sm:rounded-2xl shadow-lg shadow-black/10 shrink-0 group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
+              <div className="w-full sm:w-auto shrink-0 flex justify-end mt-1 sm:mt-0">
+                <span className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3.5 bg-white text-indigo-700 font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl sm:rounded-2xl shadow-lg shadow-black/10 shrink-0 group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
                   START
                   <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                 </span>
@@ -936,7 +925,7 @@ const AiLegalContent = ({
               <span className="text-xs font-bold">No templates match "{searchQuery}"</span>
             </div>
           ) : (
-            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4.5">
               {filteredTools.map(tool => {
                 const isSaved = savedTools.some(t => t.toolId === tool.id);
                 
@@ -956,7 +945,7 @@ const AiLegalContent = ({
                 return (
                   <div 
                     key={tool.id}
-                    className="group bg-gradient-to-b from-white to-slate-50/50 dark:from-[#1b254b] dark:to-[#111936] rounded-[24px] p-5 flex flex-col justify-between gap-5 cursor-pointer shadow-sm hover:-translate-y-1.5 hover:scale-[1.025] hover:shadow-2xl hover:shadow-indigo-550/15 dark:hover:shadow-indigo-500/10 hover:border-indigo-500/40 dark:hover:border-indigo-400/40 active:scale-[0.985] focus-within:ring-2 focus-within:ring-indigo-500/30 transition-all duration-300 ease-out"
+                    className="group bg-gradient-to-b from-white to-slate-50/50 dark:from-[#1b254b] dark:to-[#111936] rounded-[16px] sm:rounded-[24px] p-3 sm:p-5 flex flex-col justify-between gap-2.5 sm:gap-4 cursor-pointer shadow-sm hover:-translate-y-1.5 hover:scale-[1.025] hover:shadow-2xl hover:shadow-indigo-550/15 dark:hover:shadow-indigo-500/10 hover:border-indigo-500/40 dark:hover:border-indigo-400/40 active:scale-[0.985] focus-within:ring-2 focus-within:ring-indigo-500/30 transition-all duration-300 ease-out"
                     onClick={() => handleToolPress(tool)}
                     onContextMenu={(e) => {
                       e.preventDefault();
@@ -966,7 +955,7 @@ const AiLegalContent = ({
                   >
                     <div>
                       {/* Badge / Accuracy */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-4 shrink-0">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 mb-2 sm:mb-4 shrink-0">
                         <span className={`text-[8px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${badgeStyles}`}>
                           {tool.badge}
                         </span>
@@ -977,33 +966,33 @@ const AiLegalContent = ({
                       </div>
 
                       {/* Icon Container */}
-                      <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 dark:border-indigo-400/20 flex items-center justify-center mb-4 transition-all duration-350 shadow-[0_0_12px_rgba(99,102,241,0.25)] dark:shadow-[0_0_12px_rgba(99,102,241,0.2)] group-hover:from-indigo-600 group-hover:to-violet-600 group-hover:text-white group-hover:border-transparent group-hover:shadow-lg group-hover:shadow-indigo-500/30 group-hover:scale-105">
-                        {tool.icon}
+                      <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 dark:border-indigo-400/20 flex items-center justify-center mb-2 sm:mb-4 transition-all duration-350 shadow-[0_0_12px_rgba(99,102,241,0.25)] dark:shadow-[0_0_12px_rgba(99,102,241,0.2)] group-hover:from-indigo-600 group-hover:to-violet-600 group-hover:text-white group-hover:border-transparent group-hover:shadow-lg group-hover:shadow-indigo-500/30 group-hover:scale-105">
+                        <div className="scale-50 sm:scale-100 flex items-center justify-center">{tool.icon}</div>
                       </div>
 
                       {/* Info */}
-                      <div className="space-y-1.5">
-                        <h4 className="font-extrabold text-sm text-slate-800 dark:text-white tracking-tight leading-snug group-hover:text-indigo-650 dark:group-hover:text-indigo-400 transition-colors duration-300 truncate">
+                      <div className="space-y-0.5 sm:space-y-1.5">
+                        <h4 className="font-extrabold text-[12px] sm:text-sm text-slate-800 dark:text-white tracking-tight leading-snug group-hover:text-indigo-650 dark:group-hover:text-indigo-400 transition-colors duration-300 truncate">
                           {tool.title}
                         </h4>
-                        <p className="text-xs leading-relaxed font-semibold line-clamp-2 min-h-[32px] text-slate-500 dark:text-slate-400">
+                        <p className="text-[9px] sm:text-xs leading-relaxed font-semibold line-clamp-2 min-h-[24px] sm:min-h-[32px] text-slate-500 dark:text-slate-400">
                           {tool.desc}
                         </p>
                       </div>
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-4 mt-2">
-                      <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-750 dark:group-hover:text-indigo-300 transition-colors duration-300">
+                    <div className="flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-2 mt-0 sm:pt-4 sm:mt-2">
+                      <div className="flex items-center gap-1 sm:gap-1.5 text-[7px] sm:text-[9px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-750 dark:group-hover:text-indigo-300 transition-colors duration-300">
                         <span>LAUNCH</span>
-                        <ChevronRight size={13} className="group-hover:translate-x-1.5 transition-transform duration-300" />
+                        <ChevronRight size={11} className="sm:w-[13px] sm:h-[13px] group-hover:translate-x-1.5 transition-transform duration-300" />
                       </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleSavedTool(tool);
                         }}
-                        className={`p-2.5 rounded-xl text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-sm ${
+                        className={`p-1.5 sm:p-2.5 rounded-md sm:rounded-xl text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-sm ${
                           isSaved ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-500/10' : 'border border-transparent'
                         }`}
                         title="Bookmark Tool"

@@ -9,7 +9,8 @@ import {
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
 import { apiService } from '../../../services/apiService';
-import { consumePrefillIntent, mapCaseToForm } from '../services/activeModuleService';
+import { mapCaseToForm } from '../services/activeModuleService';
+import { useActiveCase } from '../context/ActiveCaseContext';
 import { getUserData } from '../../../userStore/userData';
 import useOutputLanguage from '../hooks/useOutputLanguage';
 import LanguageToggle from './shared/LanguageToggle';
@@ -30,6 +31,143 @@ const allTools = [
   { id: 'SettlementStrategy', name: 'Settlement Plan', desc: 'Mediation & trade settlement', category: 'Corporate' },
 ];
 
+const LITIGATION_SYSTEM_PROMPT = `You are a professional courtroom litigation attorney and judicial strategy architect.
+Analyze the provided legal matter facts. Output your complete strategy assessment as a single valid JSON object.
+Do NOT write conversational text outside the "json" code block. Double quote keys.
+
+JSON Schema:
+{
+  "stats": {
+    "overallStrategyScore": <Integer 0-100>,
+    "winningProbability": <Integer 0-100>,
+    "litigationRisk": <Integer 0-100>,
+    "evidenceStrength": <Integer 0-100>,
+    "precedentSupport": <Integer 0-100>,
+    "aiConfidence": <Integer 0-100>,
+    "courtReadiness": <Integer 0-100>,
+    "missingEvidenceCount": <Integer>,
+    "missingDocumentsCount": <Integer>,
+    "settlementProbability": <Integer 0-100>,
+    "appealRisk": <Integer 0-100>,
+    "opponentRiskLevel": "<Low | Medium | High>"
+  },
+  "strategies": {
+    "primary": { "title": "Primary Legal Strategy", "description": "Courtroom arguments focus on this central claim." },
+    "alternative": { "title": "Alternative Legal Strategy", "description": "Secondary line of defense if primary is challenged." },
+    "backup": { "title": "Backup Safety Strategy", "description": "Procedural actions to execute." },
+    "emergency": { "title": "Emergency Escalation Strategy", "description": "Filing stays or appeals immediately." }
+  },
+  "winningRoadmap": [
+    { "stage": "Investigation", "status": "Completed", "description": "Forensic timeline of events compiled." },
+    { "stage": "Evidence Collection", "status": "In Progress", "description": "Staging municipal records and deeds." },
+    { "stage": "Notice", "status": "Staged", "description": "Send legal demand notice to opposite party." },
+    { "stage": "Filing", "status": "Staged", "description": "File main suit/petition in registry." },
+    { "stage": "Interim Relief", "status": "Staged", "description": "File injunction or temporary stay petition." },
+    { "stage": "Witness Examination", "status": "Staged", "description": "Chief examination of primary client." },
+    { "stage": "Cross Examination", "status": "Staged", "description": "Expose hostile contradictions." },
+    { "stage": "Final Arguments", "status": "Staged", "description": "Synthesize case law precedents." },
+    { "stage": "Judgment", "status": "Staged", "description": "Wait for decree or judicial order." },
+    { "stage": "Appeal", "status": "Staged", "description": "Prepare grounds of appeal if required." }
+  ],
+  "evidenceStrategy": {
+    "strong": [{ "evidence": "Primary proof name", "reason": "Why it is legally binding" }],
+    "weak": [{ "evidence": "Corroborative proof", "reason": "Why it lacks direct force" }],
+    "missing": [{ "evidence": "Missing record", "reason": "Need to request immediately" }],
+    "priority": [{ "evidence": "High priority record", "reason": "Should secure first" }],
+    "sequence": ["Evidence Step 1", "Evidence Step 2"]
+  },
+  "witnessStrategy": {
+    "key": [{ "witness": "Key witness role", "purpose": "Explain facts of event" }],
+    "optional": [{ "witness": "Optional character witness", "purpose": "Support credibility" }],
+    "weak": [{ "witness": "Vulnerable witness", "purpose": "Susceptible to timelines" }],
+    "crossExamination": [
+      { "topic": "Credibility challenge", "questions": ["Question 1?"], "followUps": ["Follow-up?"], "traps": ["Trap question?"] }
+    ]
+  },
+  "opponentStrategy": {
+    "likelyDefence": "Summary of likely opposition defense tactics",
+    "likelyObjections": ["Objection 1", "Objection 2"],
+    "counterArguments": ["Counter 1", "Counter 2"],
+    "appealPossibility": "High probability of appeal to higher court",
+    "delayStrategy": "Likely to seek frequent adjournments using procedural rules"
+  },
+  "counterStrategy": [
+    { "opponentArgument": "Opponent claim", "counterResponse": "Your rebuttal", "evidenceRequired": "Proof to rebut", "applicableLaw": "BSA or CPC rule", "recommendedAction": "Action to take" }
+  ],
+  "judgePerspective": {
+    "likelyQuestions": ["Judicial question 1?"],
+    "courtConcerns": ["Concern 1", "Concern 2"],
+    "weakAreas": ["Weak link in case"],
+    "legalObservations": ["Relevant judicial observations"],
+    "expectedFocusAreas": ["Primary focus points"]
+  },
+  "precedents": [
+    { "citation": "Supreme Court Citation", "court": "Supreme Court of India", "summary": "Core legal principle settled", "similarityScore": 95, "type": "Binding Precedent" }
+  ],
+  "laws": [
+    { "section": "Section code", "act": "BSA / BNS / CPC / IT Act", "applicability": "Applicability details" }
+  ],
+  "timeline": [
+    { "phase": "Notice Stage", "duration": "15 Days", "description": "Drafting and dispatching legal notice." }
+  ],
+  "risks": {
+    "legal": 20,
+    "evidence": 30,
+    "procedural": 10,
+    "financial": 40,
+    "strategic": 15,
+    "riskPercentage": 25
+  },
+  "settlement": {
+    "settlementChance": 50,
+    "negotiationStrategy": "Mediation approach details",
+    "mediationPossibility": "High mediation suitability",
+    "arbitrationSuitability": "Arbitration clauses valid"
+  },
+  "negotiationPositions": {
+    "opening": "Opening negotiation demands",
+    "middle": "Realistic middle ground demands",
+    "final": "Bottom line target",
+    "fallback": "Litigation recovery fallback"
+  },
+  "crossExamPlanner": [
+    { "witness": "Witness name", "mainQuestions": ["Q1"], "followUps": ["F1"], "contradictionQuestions": ["C1"], "credibilityQuestions": ["CR1"], "closingQuestions": ["CL1"] }
+  ],
+  "finalArguments": {
+    "opening": "Opening statement outlines",
+    "arguments": ["Legal argument 1"],
+    "evidenceRefs": ["Evidence reference code"],
+    "laws": ["Statutory section"],
+    "precedents": ["Precedents citation"],
+    "prayer": "prayer request to court",
+    "submission": "Final submission request"
+  },
+  "appealStrategy": {
+    "grounds": ["Ground 1", "Ground 2"],
+    "timeline": "30 days from decree copy",
+    "additionalEvidence": ["Additional documents needed"],
+    "higherCourtStrategy": "High Court approach"
+  },
+  "readiness": {
+    "evidence": 80,
+    "witness": 70,
+    "documentation": 75,
+    "argument": 85,
+    "overall": 77
+  },
+  "pendingTasks": [
+    { "task": "Collect registry petition copy", "completed": false },
+    { "task": "File vakalatnama and memo", "completed": false }
+  ],
+  "aiRecommendations": {
+    "doFirst": ["Action 1"],
+    "doNext": ["Action 2"],
+    "avoid": ["Action to avoid"],
+    "criticalIssues": ["Critical issue identified"],
+    "priorityImprovements": ["Priority improvement needed"]
+  }
+}`;
+
 const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdateCase }) => {
   const isDark = theme === 'dark';
   
@@ -38,9 +176,13 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
   const [caseFacts, setCaseFacts] = useState('');
   const [linkedCaseId, setLinkedCaseId] = useState(currentCase?._id || '');
   const [isSyncing, setIsSyncing] = useState(false);
+  
+  // Get active case context for auto-running
+  const activeCaseContext = useActiveCase();
+  const triggerAutoRun = activeCaseContext?.triggerAutoRun;
 
   // Active Case Auto-load flag
-  const [useActiveCase, setUseActiveCase] = useState(false);
+  const [useActiveCase, setUseActiveCase] = useState(!!currentCase);
 
   // Simulation & Loader States
   const [isAuditing, setIsAuditing] = useState(false);
@@ -166,21 +308,21 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
     }
   }, [currentCase]);
 
-  // Handle active prefill intent from workspace
+  // Handle active case auto-load and trigger auto-run
   useEffect(() => {
-    const intent = consumePrefillIntent('legal_strategy_engine');
-    if (intent?.caseData) {
-      const mapped = mapCaseToForm(intent.caseData);
-      const caseId = intent.caseData?._id || intent.caseData?.id;
-      if (caseId) {
-        setLinkedCaseId(caseId);
-        hydrateFromCase(intent.caseData);
-      }
+    if (currentCase) {
       setUseActiveCase(true);
-      autoLoadCaseDetails(intent.caseData);
-      toast.success(`✓ Case workspace prefilled successfully`, { icon: '🏛️' });
+      autoLoadCaseDetails(currentCase);
     }
-  }, []);
+  }, [currentCase]);
+
+  // Execute Auto-Run if intended by Context
+  useEffect(() => {
+    if (triggerAutoRun && currentCase && !strategyResult && !isAuditing) {
+      toast.success(`✓ Case workspace prefilled successfully`, { icon: '🏛️' });
+      runLitigationSimulation(currentCase);
+    }
+  }, [triggerAutoRun, currentCase, strategyResult, isAuditing]);
 
   const resetPlatformState = () => {
     setCaseTitle('');
@@ -214,15 +356,19 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
     const mapped = mapCaseToForm(activeObj);
     const title = activeObj.name || activeObj.title || '';
     
-    // Assemble visual context facts outline
+    // Assemble visual context facts outline from ALL available data
     const assembledFacts = [
+      `Case ID: ${activeObj._id || activeObj.id || 'N/A'}`,
       `Court: ${mapped.courtName || 'District/High Court'}`,
       `Client Name (Party 1): ${mapped.petitioner || 'N/A'}`,
       `Opposing Party (Opponent): ${mapped.respondent || 'N/A'}`,
-      `Case Category: ${mapped.caseType || 'Litigation'}`,
+      `Case Category/Type: ${mapped.caseType || 'Litigation'}`,
       `Case Number: ${mapped.caseNumber || 'N/A'}`,
-      `Witnesses Matrix: ${mapped.evidenceSummary || 'N/A'}`,
-      `Case Summary facts:\n${mapped.caseFacts || ''}`
+      `Timeline & Important Dates: ${activeObj.hearingDate || activeObj.timeline || 'N/A'}`,
+      `Witnesses & Evidence Matrix: ${mapped.evidenceSummary || 'N/A'}`,
+      `Uploaded Documents Summary: ${Array.isArray(activeObj.documents) ? activeObj.documents.map(d => d.name).join(', ') : 'No documents'}`,
+      `Previous Notes & Drafts: ${activeObj.notes || mapped.notes || ''}`,
+      `Case Summary/Arguments:\n${mapped.caseFacts || activeObj.description || ''}`
     ].filter(Boolean).join('\n');
 
     setCaseTitle(title);
@@ -379,229 +525,111 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
   }, [strategyResult, tasks]);
 
   // --- AI Litigation Auditor ---
-  const runLitigationSimulation = async () => {
-    if (!caseFacts.trim()) {
-      toast.error("Please provide case facts or load templates first.");
-      return;
+  const runLitigationSimulation = async (forceCase = null) => {
+    const targetCase = forceCase || currentCase;
+    if (!caseFacts.trim() && targetCase) {
+      // Auto-load if facts are missing but active case exists
+      autoLoadCaseDetails(targetCase);
     }
-
-    const { activeId } = await ensureCaseCreated();
-
-    setIsAuditing(true);
-    setStrategyResult(null);
-    setAuditStep('Contextualizing case facts...');
-
-    const toastId = toast.loading("AI War Room calculating legal exposure & roadmap...");
-
-    try {
-      const systemPrompt = `You are a professional courtroom litigation attorney and judicial strategy architect.
-Analyze the provided legal matter facts. Output your complete strategy assessment as a single valid JSON object.
-Do NOT write conversational text outside the "json" code block. Double quote keys.
-
-JSON Schema:
-{
-  "stats": {
-    "overallStrategyScore": <Integer 0-100>,
-    "winningProbability": <Integer 0-100>,
-    "litigationRisk": <Integer 0-100>,
-    "evidenceStrength": <Integer 0-100>,
-    "precedentSupport": <Integer 0-100>,
-    "aiConfidence": <Integer 0-100>,
-    "courtReadiness": <Integer 0-100>,
-    "missingEvidenceCount": <Integer>,
-    "missingDocumentsCount": <Integer>,
-    "settlementProbability": <Integer 0-100>,
-    "appealRisk": <Integer 0-100>,
-    "opponentRiskLevel": "<Low | Medium | High>"
-  },
-  "strategies": {
-    "primary": { "title": "Primary Legal Strategy", "description": "Courtroom arguments focus on this central claim." },
-    "alternative": { "title": "Alternative Legal Strategy", "description": "Secondary line of defense if primary is challenged." },
-    "backup": { "title": "Backup Safety Strategy", "description": "Procedural actions to execute." },
-    "emergency": { "title": "Emergency Escalation Strategy", "description": "Filing stays or appeals immediately." }
-  },
-  "winningRoadmap": [
-    { "stage": "Investigation", "status": "Completed", "description": "Forensic timeline of events compiled." },
-    { "stage": "Evidence Collection", "status": "In Progress", "description": "Staging municipal records and deeds." },
-    { "stage": "Notice", "status": "Staged", "description": "Send legal demand notice to opposite party." },
-    { "stage": "Filing", "status": "Staged", "description": "File main suit/petition in registry." },
-    { "stage": "Interim Relief", "status": "Staged", "description": "File injunction or temporary stay petition." },
-    { "stage": "Witness Examination", "status": "Staged", "description": "Chief examination of primary client." },
-    { "stage": "Cross Examination", "status": "Staged", "description": "Expose hostile contradictions." },
-    { "stage": "Final Arguments", "status": "Staged", "description": "Synthesize case law precedents." },
-    { "stage": "Judgment", "status": "Staged", "description": "Wait for decree or judicial order." },
-    { "stage": "Appeal", "status": "Staged", "description": "Prepare grounds of appeal if required." }
-  ],
-  "evidenceStrategy": {
-    "strong": [{ "evidence": "Primary proof name", "reason": "Why it is legally binding" }],
-    "weak": [{ "evidence": "Corroborative proof", "reason": "Why it lacks direct force" }],
-    "missing": [{ "evidence": "Missing record", "reason": "Need to request immediately" }],
-    "priority": [{ "evidence": "High priority record", "reason": "Should secure first" }],
-    "sequence": ["Evidence Step 1", "Evidence Step 2"]
-  },
-  "witnessStrategy": {
-    "key": [{ "witness": "Key witness role", "purpose": "Explain facts of event" }],
-    "optional": [{ "witness": "Optional character witness", "purpose": "Support credibility" }],
-    "weak": [{ "witness": "Vulnerable witness", "purpose": "Susceptible to timelines" }],
-    "crossExamination": [
-      { "topic": "Credibility challenge", "questions": ["Question 1?"], "followUps": ["Follow-up?"], "traps": ["Trap question?"] }
-    ]
-  },
-  "opponentStrategy": {
-    "likelyDefence": "Summary of likely opposition defense tactics",
-    "likelyObjections": ["Objection 1", "Objection 2"],
-    "counterArguments": ["Counter 1", "Counter 2"],
-    "appealPossibility": "High probability of appeal to higher court",
-    "delayStrategy": "Likely to seek frequent adjournments using procedural rules"
-  },
-  "counterStrategy": [
-    { "opponentArgument": "Opponent claim", "counterResponse": "Your rebuttal", "evidenceRequired": "Proof to rebut", "applicableLaw": "BSA or CPC rule", "recommendedAction": "Action to take" }
-  ],
-  "judgePerspective": {
-    "likelyQuestions": ["Judicial question 1?"],
-    "courtConcerns": ["Concern 1", "Concern 2"],
-    "weakAreas": ["Weak link in case"],
-    "legalObservations": ["Relevant judicial observations"],
-    "expectedFocusAreas": ["Primary focus points"]
-  },
-  "precedents": [
-    { "citation": "Supreme Court Citation", "court": "Supreme Court of India", "summary": "Core legal principle settled", "similarityScore": 95, "type": "Binding Precedent" }
-  ],
-  "laws": [
-    { "section": "Section code", "act": "BSA / BNS / CPC / IT Act", "applicability": "Applicability details" }
-  ],
-  "timeline": [
-    { "phase": "Notice Stage", "duration": "15 Days", "description": "Drafting and dispatching legal notice." }
-  ],
-  "risks": {
-    "legal": 20,
-    "evidence": 30,
-    "procedural": 10,
-    "financial": 40,
-    "strategic": 15,
-    "riskPercentage": 25
-  },
-  "settlement": {
-    "settlementChance": 50,
-    "negotiationStrategy": "Mediation approach details",
-    "mediationPossibility": "High mediation suitability",
-    "arbitrationSuitability": "Arbitration clauses valid"
-  },
-  "negotiationPositions": {
-    "opening": "Opening negotiation demands",
-    "middle": "Realistic middle ground demands",
-    "final": "Bottom line target",
-    "fallback": "Litigation recovery fallback"
-  },
-  "crossExamPlanner": [
-    { "witness": "Witness name", "mainQuestions": ["Q1"], "followUps": ["F1"], "contradictionQuestions": ["C1"], "credibilityQuestions": ["CR1"], "closingQuestions": ["CL1"] }
-  ],
-  "finalArguments": {
-    "opening": "Opening statement outlines",
-    "arguments": ["Legal argument 1"],
-    "evidenceRefs": ["Evidence reference code"],
-    "laws": ["Statutory section"],
-    "precedents": ["Precedents citation"],
-    "prayer": "prayer request to court",
-    "submission": "Final submission request"
-  },
-  "appealStrategy": {
-    "grounds": ["Ground 1", "Ground 2"],
-    "timeline": "30 days from decree copy",
-    "additionalEvidence": ["Additional documents needed"],
-    "higherCourtStrategy": "High Court approach"
-  },
-  "readiness": {
-    "evidence": 80,
-    "witness": 70,
-    "documentation": 75,
-    "argument": 85,
-    "overall": 77
-  },
-  "pendingTasks": [
-    { "task": "Collect registry petition copy", "completed": false },
-    { "task": "File vakalatnama and memo", "completed": false }
-  ],
-  "aiRecommendations": {
-    "doFirst": ["Action 1"],
-    "doNext": ["Action 2"],
-    "avoid": ["Action to avoid"],
-    "criticalIssues": ["Critical issue identified"],
-    "priorityImprovements": ["Priority improvement needed"]
-  }
-}`;
-
-      setAuditStep('Precedents database search...');
-      const response = await generateChatResponse(
-        [],
-        `Matter Title: ${caseTitle || 'Custom Courtroom Strategy'}\n\nCase Facts Scenario:\n${caseFacts}`,
-        systemPrompt,
-        [],
-        'English',
-        null,
-        'legal'
-      );
-
-      const responseText = response.reply || response || '';
-      let parsed = null;
-      try {
-        const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) || responseText.match(/(\{[\s\S]*\})/);
-        if (jsonMatch) {
-          parsed = JSON.parse(jsonMatch[1] || jsonMatch[0]);
-        } else {
-          parsed = JSON.parse(responseText.trim());
-        }
-      } catch (err) {
-        console.error("JSON parsing failed, fallback used", err);
-      }
-
-      if (!parsed || !parsed.stats) {
-        throw new Error("Unable to parse structured litigation strategy metrics.");
-      }
-
-      setStrategyResult(parsed);
+    
+    // Check again after potentially auto-loading
+    setTimeout(async () => {
+      const currentFacts = caseFacts.trim() || targetCase?.description || '';
+      const currentTitle = caseTitle.trim() || targetCase?.name || '';
       
-      // Seed task manager with generated tasks
-      if (parsed.pendingTasks?.length > 0) {
-        const newTasks = parsed.pendingTasks.map((t, idx) => ({
-          id: `task_${Date.now()}_${idx}`,
-          task: t.task,
-          completed: false
-        }));
-        setTasks(newTasks);
-        await syncToDatabase({
-          activeStrategy: parsed,
-          tasks: newTasks
-        });
-      } else {
-        await syncToDatabase({
-          activeStrategy: parsed
-        });
+      if (!currentFacts) {
+        toast.error("Please provide case facts or load templates first.");
+        return;
       }
 
-      toast.success("AI litigation strategy compiled!", { id: toastId });
+      const { activeId } = await ensureCaseCreated();
 
-      // Save audit log
-      const timestamp = new Date().toISOString();
-      const userEmail = getUserData()?.email || 'System User';
-      const userName = getUserData()?.name || 'Advocate';
-      const newLog = {
-        timestamp,
-        action: 'AI Litigation Strategy Simulated',
-        details: `Simulated legal exposure. Winning Probability: ${parsed.stats.winningProbability}%. Risk Rating: ${parsed.stats.opponentRiskLevel}. Court Readiness: ${parsed.stats.courtReadiness}%. Mapped ${parsed.precedents?.length || 0} precedents.`,
-        editedBy: `${userName} (${userEmail})`
-      };
-      const updatedLogs = [...auditLogs, newLog];
-      setAuditLogs(updatedLogs);
-      await syncToDatabase({ auditLogs: updatedLogs });
+      setIsAuditing(true);
+      setStrategyResult(null);
+      setAuditStep('Contextualizing case facts...');
 
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to compile litigation strategy.", { id: toastId });
-    } finally {
-      setIsAuditing(false);
-      setAuditStep('');
-    }
+      const toastId = toast.loading("AI War Room calculating legal exposure & roadmap...");
+
+      try {
+        setAuditStep('Precedents database search...');
+        const response = await generateChatResponse(
+          [],
+          `Matter Title: ${currentTitle || 'Custom Courtroom Strategy'}\n\nCase Facts Scenario:\n${currentFacts}`,
+          LITIGATION_SYSTEM_PROMPT,
+          [],
+          'English',
+          null,
+          'legal'
+        );
+
+        const responseText = typeof response === 'string' ? response : (response?.reply || '');
+        
+        if (responseText.includes("System Busy") || responseText.includes("System Message") || responseText.includes("System Error")) {
+            throw new Error(responseText);
+        }
+        
+        let parsed = null;
+        try {
+          const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) || responseText.match(/(\{[\s\S]*\})/);
+          if (jsonMatch) {
+            parsed = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+          } else {
+            parsed = JSON.parse(responseText.trim());
+          }
+        } catch (err) {
+          console.error("JSON parsing failed. Raw response:", responseText);
+          throw new Error("AI returned invalid JSON format.");
+        }
+
+        if (!parsed || !parsed.stats) {
+          throw new Error("Unable to parse structured litigation strategy metrics.");
+        }
+
+        setStrategyResult(parsed);
+        
+        // Seed task manager with generated tasks
+        if (parsed.pendingTasks?.length > 0) {
+          const newTasks = parsed.pendingTasks.map((t, idx) => ({
+            id: `task_${Date.now()}_${idx}`,
+            task: t.task,
+            completed: false
+          }));
+          setTasks(newTasks);
+          await syncToDatabase({
+            activeStrategy: parsed,
+            tasks: newTasks
+          });
+        } else {
+          await syncToDatabase({
+            activeStrategy: parsed
+          });
+        }
+
+        toast.success("AI litigation strategy compiled!", { id: toastId });
+
+        // Save audit log
+        const timestamp = new Date().toISOString();
+        const userEmail = getUserData()?.email || 'System User';
+        const userName = getUserData()?.name || 'Advocate';
+        const newLog = {
+          timestamp,
+          action: 'AI Litigation Strategy Simulated',
+          details: `Simulated legal exposure. Winning Probability: ${parsed.stats.winningProbability}%. Risk Rating: ${parsed.stats.opponentRiskLevel}. Court Readiness: ${parsed.stats.courtReadiness}%. Mapped ${parsed.precedents?.length || 0} precedents.`,
+          editedBy: `${userName} (${userEmail})`
+        };
+        const updatedLogs = [...auditLogs, newLog];
+        setAuditLogs(updatedLogs);
+        await syncToDatabase({ auditLogs: updatedLogs });
+
+      } catch (e) {
+        console.error("Litigation Simulation Error:", e);
+        const errMsg = e.message || String(e);
+        toast.error(errMsg.length < 100 ? errMsg : "Failed to compile litigation strategy.", { id: toastId });
+      } finally {
+        setIsAuditing(false);
+        setAuditStep('');
+      }
+    }, 0);
   };
 
   // --- Exports & Sharing ---
@@ -885,21 +913,22 @@ ${isHi ? "AISA एआई मुकदमेबाजी रणनीति स�
     const toastId = toast.loading("AI War Room compiling litigation report...");
 
     try {
-      const systemPrompt = `You are a professional courtroom litigation attorney and judicial strategy architect.
-Analyze the provided legal matter facts. Output your complete strategy assessment as a single valid JSON object.
-Do NOT write conversational text outside the "json" code block. Double quote keys. Match the schema.`;
-
       const response = await generateChatResponse(
         [],
         `Matter Title: ${title}\n\nCase Facts Scenario:\n${factsText}`,
-        systemPrompt,
+        LITIGATION_SYSTEM_PROMPT,
         [],
         'English',
         null,
         'legal'
       );
 
-      const responseText = response.reply || response || '';
+      const responseText = typeof response === 'string' ? response : (response?.reply || '');
+      
+      if (responseText.includes("System Busy") || responseText.includes("System Message") || responseText.includes("System Error")) {
+          throw new Error(responseText);
+      }
+
       let parsed = null;
       try {
         const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) || responseText.match(/(\{[\s\S]*\})/);
@@ -909,7 +938,8 @@ Do NOT write conversational text outside the "json" code block. Double quote key
           parsed = JSON.parse(responseText.trim());
         }
       } catch (err) {
-        console.error("Simulation parse failed", err);
+        console.error("Simulation parse failed. Raw text:", responseText);
+        throw new Error("AI returned invalid JSON format.");
       }
 
       if (!parsed) throw new Error("Parse error.");
@@ -943,7 +973,9 @@ Do NOT write conversational text outside the "json" code block. Double quote key
       await syncToDatabase({ auditLogs: updatedLogs });
 
     } catch (e) {
-      toast.error("Failed to build litigation strategy.", { id: toastId });
+      console.error("Internal Simulation Error:", e);
+      const errMsg = e.message || String(e);
+      toast.error(errMsg.length < 100 ? errMsg : "Failed to build litigation strategy.", { id: toastId });
     } finally {
       setIsAuditing(false);
       setAuditStep('');

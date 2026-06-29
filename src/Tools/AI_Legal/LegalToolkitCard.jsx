@@ -103,7 +103,7 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
           onSelect(tool, isUnlocked);
         }
       }}
-      className={`group relative cursor-pointer rounded-[1.4rem] p-4 transition-colors duration-300 border overflow-hidden
+      className={`group relative cursor-pointer rounded-[1rem] sm:rounded-[1.4rem] p-3 sm:p-4 transition-colors duration-300 border overflow-hidden
         bg-white/65 border-white/75 backdrop-blur-[12px] shadow-[0_4px_16px_rgba(99,102,241,0.06)]
         dark:bg-[#1A2540]/60 dark:border-white/5 dark:shadow-none`}
     >
@@ -158,11 +158,11 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
         style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.04) 100%)' }}
       />
 
-      <div className="flex flex-col gap-4 relative z-10">
+      <div className="flex flex-col gap-2.5 sm:gap-4 relative z-10">
         <div className="flex items-start justify-between">
           <div className="flex flex-col items-center gap-1">
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${isUnlocked ? 'bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_6_16px_rgba(99,102,241,0.35)]' : 'bg-white/80 border border-white/80 shadow-sm'}`}>
-              <Icon className={`w-5.5 h-5.5 ${isUnlocked ? 'text-white' : 'text-slate-400'}`} />
+            <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${isUnlocked ? 'bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_6_16px_rgba(99,102,241,0.35)]' : 'bg-white/80 border border-white/80 shadow-sm'}`}>
+              <Icon className={`w-4 h-4 sm:w-5.5 sm:h-5.5 ${isUnlocked ? 'text-white' : 'text-slate-400'}`} />
             </div>
             {tool.id === 'legal_case_predictor' && (
               <span className={`text-[6px] font-black uppercase tracking-[0.1em] transition-colors ${isUnlocked ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`}>सत्यमेव जयते</span>
@@ -179,7 +179,7 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
 
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <h5 className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors tracking-tight text-[14px]">
+            <h5 className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors tracking-tight text-[12px] sm:text-[14px]">
               {tool.name}
             </h5>
             {isUnlocked ? (
@@ -188,7 +188,7 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
               <span className="text-[7.5px] font-black text-slate-400 bg-white/70 dark:bg-zinc-800/70 px-1.5 py-0.5 rounded-full border border-white/80 dark:border-white/10 uppercase tracking-tighter">Pro</span>
             )}
           </div>
-          <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed font-medium line-clamp-2">
+          <p className="text-slate-500 dark:text-slate-400 text-[9px] sm:text-[11px] leading-relaxed font-medium line-clamp-2">
             {tool.desc}
           </p>
         </div>
@@ -423,7 +423,7 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
 
                 {/* Professional Legal Engines */}
                 <SectionTitle>{tLegal('professionalLegalEngines')}</SectionTitle>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
                   {toolsList.map((tool, idx) => (
                     <ToolCard key={tool.id} tool={tool} index={idx} onClose={onClose} onSelect={onSelect} t={tLegal} />
                   ))}

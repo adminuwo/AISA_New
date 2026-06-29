@@ -9,7 +9,8 @@ import {
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
 import { apiService } from '../../../services/apiService';
-import { consumePrefillIntent, mapCaseToForm } from '../services/activeModuleService';
+import { mapCaseToForm } from '../services/activeModuleService';
+import { useActiveCase } from '../context/ActiveCaseContext';
 import { getUserData } from '../../../userStore/userData';
 import useOutputLanguage from '../hooks/useOutputLanguage';
 import LanguageToggle from './shared/LanguageToggle';
@@ -74,9 +75,12 @@ const ContractReview = ({ currentCase, onBack, theme, allProjects = [], onUpdate
   const [isChatSending, setIsChatSending] = useState(false);
 
   // UI state filters
-  const [toolsSearchQuery, setToolsSearchQuery] = useState('');
   const [toolsCategory, setToolsCategory] = useState('All');
   const [prefillBanner, setPrefillBanner] = useState(null);
+
+  // Get active case context
+  const activeCaseContext = useActiveCase();
+  const triggerAutoRun = activeCaseContext?.triggerAutoRun;
 
   const scrollRef = useRef(null);
   const chatBottomRef = useRef(null);
@@ -141,31 +145,39 @@ const ContractReview = ({ currentCase, onBack, theme, allProjects = [], onUpdate
     }
   }, [currentCase]);
 
-  // Handle active prefill intent from routing
+  // Handle active case auto-load and trigger auto-run
   useEffect(() => {
-    const intent = consumePrefillIntent('legal_contract_analyzer');
-    if (intent?.caseData) {
-      const mapped = mapCaseToForm(intent.caseData);
-      const caseId = intent.caseData?._id || intent.caseData?.id;
-      if (caseId) {
-        setLinkedCaseId(caseId);
-        hydrateFromCase(intent.caseData);
-      }
+    if (currentCase) {
+      const mapped = mapCaseToForm(currentCase);
 
       if (mapped.hasContract && mapped.contractFiles?.length) {
         const contractFile = mapped.contractFiles[0];
         setContractTitle(`${mapped.caseTitle} — ${contractFile.name}`);
         setContractText(mapped.caseFacts || '');
         setPrefillBanner({ type: 'success', caseTitle: mapped.caseTitle, message: `Contract found: ${contractFile.name}. Automatically staging context.` });
-        toast.success(`✓ Contract file detected — loaded for analysis`, { icon: '📄' });
       } else if (mapped.caseFacts) {
         setContractTitle(mapped.caseTitle || '');
         setContractText(mapped.caseFacts);
         setPrefillBanner({ type: 'warning', caseTitle: mapped.caseTitle, message: 'No contract files found in case. Seeding facts as review context.' });
-        toast(`⚠️ No contract found — case facts loaded`, { icon: '⚠️' });
       }
     }
-  }, []);
+  }, [currentCase]);
+
+  // Execute Auto-Run if intended by Context
+  useEffect(() => {
+    if (triggerAutoRun && currentCase && !auditResult && !isAuditing) {
+      toast.success(`✓ Case workspace prefilled successfully`, { icon: '📄', duration: 3000 });
+      setTimeout(() => {
+        const mapped = mapCaseToForm(currentCase);
+        let runTitle = mapped.caseTitle || currentCase.name || '';
+        let runText = mapped.caseFacts || currentCase.description || '';
+        if (mapped.hasContract && mapped.contractFiles?.length) {
+          runTitle = `${mapped.caseTitle} — ${mapped.contractFiles[0].name}`;
+        }
+        performContractAuditInternal(runTitle, runText, files, versions, auditLogs);
+      }, 100);
+    }
+  }, [triggerAutoRun, currentCase, auditResult, isAuditing]);
 
   const resetPlatformState = () => {
     setContractTitle('');

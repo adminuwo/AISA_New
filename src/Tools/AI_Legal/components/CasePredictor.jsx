@@ -7,8 +7,9 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
-import { consumePrefillIntent, mapCaseToForm } from '../services/activeModuleService';
 import { apiService } from '../../../services/apiService';
+import { mapCaseToForm } from '../services/activeModuleService';
+import { useActiveCase } from '../context/ActiveCaseContext';
 import useOutputLanguage from '../hooks/useOutputLanguage';
 import LanguageToggle from './shared/LanguageToggle';
 import { exportToPDF } from '../utils/exportToPDF';
@@ -39,6 +40,10 @@ const CasePredictor = ({ currentCase, onBack, theme, allProjects = [], onUpdateC
   const [historyVisible, setHistoryVisible] = useState(false);
   const [historyData, setHistoryData] = useState([]);
   const [prefillBanner, setPrefillBanner] = useState(null);
+  
+  // Get active case context
+  const activeCaseContext = useActiveCase();
+  const triggerAutoRun = activeCaseContext?.triggerAutoRun;
   
   // Results UI states
   const [activeTab, setActiveTab] = useState('caseStrength');
@@ -121,33 +126,27 @@ const originalReportText = useMemo(() => {
     return str.trim();
   };
 
-  // On mount: consume prefill intent from "Use Active Case" if redirected
+  // On mount: sync case data
   useEffect(() => {
-    const intent = consumePrefillIntent('legal_case_predictor');
-    if (intent?.caseData) {
-      const mapped = mapCaseToForm(intent.caseData);
-      if (mapped.caseFacts) setFacts(mapped.caseFacts);
-      if (mapped.courtName) setCourtName(mapped.courtName);
-      if (mapped.respondent) setOpponentDetails(`Opponent: ${mapped.respondent}`);
-      if (mapped.caseType) {
-        const t = mapped.caseType.toLowerCase();
-        if (t.includes('civil')) setCaseType('Civil');
-        else if (t.includes('corporate') || t.includes('arbitration')) setCaseType('Corporate');
-        else if (t.includes('cyber')) setCaseType('Cyber');
-        else if (t.includes('family')) setCaseType('Family');
-        else if (t.includes('property')) setCaseType('Property');
-        else if (t.includes('labour') || t.includes('labor')) setCaseType('Labour');
-        else if (t.includes('consumer')) setCaseType('Consumer');
-        else setCaseType('Criminal');
-      }
-      if (mapped.allDocuments?.length) {
-        setEvidenceList(mapped.allDocuments.map(d => d.name).join(', '));
-      }
-      if (mapped.provisions) setIpcSections(String(mapped.provisions).split(/[\n,;]/)[0]?.trim() || '');
-      setPrefillBanner({ caseTitle: mapped.caseTitle || intent.caseData?.name || 'Active Case' });
-      toast.success(`✓ Case data pre-loaded for prediction`, { icon: '⚖️', duration: 3000 });
+    if (currentCase) {
+      handlePrefillFromActiveCase(currentCase);
+      const mapped = mapCaseToForm(currentCase);
+      setPrefillBanner({ caseTitle: mapped.caseTitle || currentCase?.name || 'Active Case' });
     }
-  }, []);
+  }, [currentCase]);
+
+  // Execute Auto-Run if intended by Context
+  useEffect(() => {
+    if (triggerAutoRun && currentCase && !activePrediction && !isGenerating) {
+      toast.success(`✓ Case data pre-loaded for prediction`, { icon: '⚖️', duration: 3000 });
+      handlePrefillFromActiveCase(currentCase);
+      
+      setTimeout(() => {
+        const formData = buildFormDataFromCase(currentCase);
+        runOutcomePrediction(formData);
+      }, 100);
+    }
+  }, [triggerAutoRun, currentCase, activePrediction, isGenerating]);
 
   // Load history count on mount (from localStorage when no case is selected)
   useEffect(() => {
@@ -161,49 +160,7 @@ const originalReportText = useMemo(() => {
       } catch (e) {
         console.error(e);
       }
-    }
-  }, [currentCase]);
-
-  // Sync state values automatically when currentCase changes
-  useEffect(() => {
-    if (currentCase) {
-      setFacts(currentCase.summary || currentCase.caseSummary || currentCase.description || '');
-      setCourtName(currentCase.courtName || '');
-      setOpponentDetails(currentCase.opponentName ? `Opponent: ${currentCase.opponentName}` : '');
-      
-      let resolvedType = 'Criminal';
-      if (currentCase.caseType) {
-        const type = currentCase.caseType.toLowerCase();
-        if (type.includes('civil')) resolvedType = 'Civil';
-        else if (type.includes('corporate')) resolvedType = 'Corporate';
-        else if (type.includes('cyber')) resolvedType = 'Cyber';
-        else if (type.includes('family')) resolvedType = 'Family';
-        else if (type.includes('property')) resolvedType = 'Property';
-        else if (type.includes('labour') || type.includes('labor')) resolvedType = 'Labour';
-        else if (type.includes('consumer')) resolvedType = 'Consumer';
-      }
-      setCaseType(resolvedType);
-      
-      if (currentCase.documents) {
-        setEvidenceList(currentCase.documents.map(d => d.name).join(', '));
-      }
-      
-      if (currentCase.witnesses) {
-        if (Array.isArray(currentCase.witnesses)) {
-          setWitnessDetails(currentCase.witnesses.map(w => `${w.name} (${w.role || 'Witness'})`).join(', '));
-        } else {
-          setWitnessDetails(currentCase.witnesses);
-        }
-      } else {
-        setWitnessDetails('');
-      }
-
-      if (currentCase.provisions || currentCase.ipcSections || currentCase.statutes) {
-        setIpcSections(currentCase.provisions || currentCase.ipcSections || currentCase.statutes || '');
-      } else {
-        setIpcSections('');
-      }
-      
+    } else {
       loadPredictionHistory();
     }
   }, [currentCase]);
@@ -261,27 +218,20 @@ const originalReportText = useMemo(() => {
     }
   }, [currentCase, allProjects, activePrediction, onUpdateCase, selectedReportTab]);
 
-  // Handle case prefill sync trigger
-  const handlePrefillFromActiveCase = () => {
-    if (!currentCase) {
-      toast.error("No active case selected. Please select a case from the sidebar.");
-      return;
-    }
-    setFacts(currentCase.summary || currentCase.caseSummary || currentCase.description || '');
-    setCourtName(currentCase.courtName || '');
-    
+  // Helper to build Form Data directly from Case
+  const buildFormDataFromCase = (targetCase) => {
+    if (!targetCase) return null;
     let resolvedOpponent = '';
-    if (currentCase.opponentName) {
-      resolvedOpponent = `Opponent: ${currentCase.opponentName}`;
-      if (currentCase.opponentAdvocate) {
-        resolvedOpponent += ` (Advocate: ${currentCase.opponentAdvocate})`;
+    if (targetCase.opponentName) {
+      resolvedOpponent = `Opponent: ${targetCase.opponentName}`;
+      if (targetCase.opponentAdvocate) {
+        resolvedOpponent += ` (Advocate: ${targetCase.opponentAdvocate})`;
       }
     }
-    setOpponentDetails(resolvedOpponent);
 
     let resolvedType = 'Criminal';
-    if (currentCase.caseType) {
-      const type = currentCase.caseType.toLowerCase();
+    if (targetCase.caseType) {
+      const type = targetCase.caseType.toLowerCase();
       if (type.includes('civil')) resolvedType = 'Civil';
       else if (type.includes('corporate')) resolvedType = 'Corporate';
       else if (type.includes('cyber')) resolvedType = 'Cyber';
@@ -290,31 +240,50 @@ const originalReportText = useMemo(() => {
       else if (type.includes('labour') || type.includes('labor')) resolvedType = 'Labour';
       else if (type.includes('consumer')) resolvedType = 'Consumer';
     }
-    setCaseType(resolvedType);
-    
-    if (currentCase.documents && currentCase.documents.length > 0) {
-      setEvidenceList(currentCase.documents.map(d => d.name).join(', '));
-    } else {
-      setEvidenceList('');
+
+    let evidence = '';
+    if (targetCase.documents && targetCase.documents.length > 0) {
+      evidence = targetCase.documents.map(d => d.name).join(', ');
     }
 
-    if (currentCase.witnesses) {
-      if (Array.isArray(currentCase.witnesses)) {
-        setWitnessDetails(currentCase.witnesses.map(w => `${w.name} (${w.role || 'Witness'})`).join(', '));
+    let witnesses = '';
+    if (targetCase.witnesses) {
+      if (Array.isArray(targetCase.witnesses)) {
+        witnesses = targetCase.witnesses.map(w => `${w.name} (${w.role || 'Witness'})`).join(', ');
       } else {
-        setWitnessDetails(currentCase.witnesses);
+        witnesses = targetCase.witnesses;
       }
-    } else {
-      setWitnessDetails('');
     }
 
-    if (currentCase.provisions || currentCase.ipcSections || currentCase.statutes) {
-      setIpcSections(currentCase.provisions || currentCase.ipcSections || currentCase.statutes || '');
-    } else {
-      setIpcSections('');
-    }
+    return {
+      caseType: resolvedType,
+      ipcSections: targetCase.provisions || targetCase.ipcSections || targetCase.statutes || '',
+      courtName: targetCase.courtName || '',
+      facts: targetCase.summary || targetCase.caseSummary || targetCase.description || '',
+      evidenceList: evidence,
+      opponentDetails: resolvedOpponent,
+      witnessDetails: witnesses
+    };
+  };
 
-    toast.success("Active case data successfully synchronized!");
+  // Handle case prefill sync trigger
+  const handlePrefillFromActiveCase = (forceCase = null) => {
+    const targetCase = forceCase || currentCase;
+    if (!targetCase) {
+      toast.error("No active case selected. Please select a case from the sidebar.");
+      return;
+    }
+    const data = buildFormDataFromCase(targetCase);
+    
+    setFacts(data.facts);
+    setCourtName(data.courtName);
+    setOpponentDetails(data.opponentDetails);
+    setCaseType(data.caseType);
+    setEvidenceList(data.evidenceList);
+    setWitnessDetails(data.witnessDetails);
+    setIpcSections(data.ipcSections);
+
+    if (!forceCase) toast.success("Active case data successfully synchronized!");
   };
 
   // Sync predictions list to the case's database project

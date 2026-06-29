@@ -10,7 +10,8 @@ import {
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
 import { apiService } from '../../../services/apiService';
-import { consumePrefillIntent, mapCaseToForm } from '../services/activeModuleService';
+import { mapCaseToForm } from '../services/activeModuleService';
+import { useActiveCase } from '../context/ActiveCaseContext';
 import useOutputLanguage from '../hooks/useOutputLanguage';
 import LanguageToggle from './shared/LanguageToggle';
 
@@ -40,6 +41,10 @@ const EvidenceAnalysis = ({ currentCase, onBack, theme, allProjects = [], onUpda
 
   // Active Prefill Context Banner
   const [prefillBanner, setPrefillBanner] = useState(null);
+
+  // Get active case context
+  const activeCaseContext = useActiveCase();
+  const triggerAutoRun = activeCaseContext?.triggerAutoRun;
 
   // Forensic Analysis States
   const [isAuditing, setIsAuditing] = useState(false);
@@ -255,42 +260,39 @@ const EvidenceAnalysis = ({ currentCase, onBack, theme, allProjects = [], onUpda
   const [customUser, setCustomUser] = useState('Authorized Investigator');
   const [customLocation, setCustomLocation] = useState('Forensic Lab, Pune');
 
-  const reportRef = useRef(null);
-
-  // ── On mount: Load history and prefill intent ──
-  useEffect(() => {
-    const intent = consumePrefillIntent('legal_evidence_checker');
-    if (intent?.caseData) {
-      const mapped = mapCaseToForm(intent.caseData);
-      if (mapped.evidenceNotes) setEvidenceNotes(mapped.evidenceNotes);
-      if (mapped.caseTitle) setEvidenceTitle(`${mapped.caseTitle} - Evidence Review`);
-      const caseId = intent.caseData?._id || intent.caseData?.id;
-      if (caseId) {
-        setLinkedCaseId(caseId);
-        loadForensicHistory(caseId);
-      }
-      const docCount = mapped.allDocuments?.length || 0;
-      setPrefillBanner({
-        caseTitle: mapped.caseTitle || 'Active Case',
-        docCount,
-        docs: mapped.allDocuments?.slice(0, 5) || []
-      });
-      toast.success(`✓ Case loaded — ${docCount} evidence files available`, { icon: '💼', duration: 3500 });
-    }
-  }, []);
-
   // ── Sync states on currentCase prop change ──
   useEffect(() => {
     if (currentCase) {
       setLinkedCaseId(currentCase._id);
       loadForensicHistory(currentCase._id);
       resetWorkspaceForm();
+      const mapped = mapCaseToForm(currentCase);
+      if (mapped.evidenceNotes) setEvidenceNotes(mapped.evidenceNotes);
+      if (mapped.caseTitle) setEvidenceTitle(`${mapped.caseTitle} - Evidence Review`);
+      const docCount = mapped.allDocuments?.length || 0;
+      setPrefillBanner({
+        caseTitle: mapped.caseTitle || 'Active Case',
+        docCount,
+        docs: mapped.allDocuments?.slice(0, 5) || []
+      });
     } else {
       setHistoryData([]);
       setForensicResult(null);
       setSelectedFile(null);
     }
   }, [currentCase]);
+
+  // Execute Auto-Run if intended by Context
+  useEffect(() => {
+    if (triggerAutoRun && currentCase && !rawForensicResult && !isAuditing) {
+      handlePrefillFromCase(currentCase);
+      toast.success(`✓ Case workspace prefilled successfully`, { icon: '💼', duration: 3500 });
+      // Short delay to let state update before running
+      setTimeout(() => {
+        runForensicScanner(currentCase);
+      }, 100);
+    }
+  }, [triggerAutoRun, currentCase, rawForensicResult, isAuditing]);
 
   const resetWorkspaceForm = () => {
     setEvidenceTitle('');
@@ -391,9 +393,9 @@ const EvidenceAnalysis = ({ currentCase, onBack, theme, allProjects = [], onUpda
   };
 
   // ── Auto-fill details from active case facts ──
-  const handlePrefillFromCase = () => {
-    const targetCaseId = linkedCaseId || currentCase?._id;
-    const activeCase = allProjects.find(p => p._id === targetCaseId) || currentCase;
+  const handlePrefillFromCase = (forceCase = null) => {
+    const targetCaseId = linkedCaseId || forceCase?._id || currentCase?._id;
+    const activeCase = forceCase || allProjects.find(p => p._id === targetCaseId) || currentCase;
     if (!activeCase) {
       toast.error("No active case selected to fill details.");
       return;
@@ -526,8 +528,11 @@ const EvidenceAnalysis = ({ currentCase, onBack, theme, allProjects = [], onUpda
   };
 
   // ── Core Forensic AI Analysis Engine ──
-  const runForensicScanner = async () => {
-    if (!evidenceNotes.trim() && !selectedFile) {
+  const runForensicScanner = async (forceCase = null) => {
+    const targetCase = forceCase || currentCase;
+    const activeEvidenceNotes = evidenceNotes.trim() || targetCase?.description || '';
+    
+    if (!activeEvidenceNotes && !selectedFile) {
       toast.error("Please upload an evidence file or fill out the details.");
       return;
     }
@@ -630,9 +635,9 @@ JSON Schema:
         ${comparisonFacts}
 
         [Evidence Details]
-        File Name: ${evidenceTitle || 'Staged File'}
+        File Name: ${evidenceTitle || targetCase?.name || 'Staged File'}
         Selected Evidence Type: ${selectedEvidenceType}
-        Evidence Notes: ${evidenceNotes}
+        Evidence Notes: ${activeEvidenceNotes}
         Target Exhibit Tag: ${assignedExhibitNo}
         File Size: ${selectedFile ? Math.round(selectedFile.size / 1024) : 'Manual input'} KB
         Mime Type: ${selectedFile?.mimeType || 'unknown'}

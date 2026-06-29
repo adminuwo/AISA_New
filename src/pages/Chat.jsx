@@ -42,6 +42,7 @@ const StrategyEngine = React.lazy(() => import('../Tools/AI_Legal/components/Str
 const LegalResearch = React.lazy(() => import('../Tools/AI_Legal/components/LegalResearch').catch(() => ({ default: () => null })));
 const ComplianceCenter = React.lazy(() => import('../Tools/AI_Legal/components/ComplianceCenter').catch(() => ({ default: () => null })));
 const HearingManagement = React.lazy(() => import('../Tools/AI_Legal/components/HearingManagement').catch(() => ({ default: () => null })));
+import { ActiveCaseProvider } from '../Tools/AI_Legal/context/ActiveCaseContext';
 const LegalChatScreen = React.lazy(() => import('../Tools/AI_Legal/components/LegalChatScreen').catch(() => ({ default: () => null })));
 import axios from 'axios';
 import { apis, API } from '../types';
@@ -1231,6 +1232,7 @@ const Chat = () => {
           </div>
         </div>
       }>
+        <ActiveCaseProvider currentCase={currentCase} activeModuleId={selectedLegalTool.id}>
         {(() => {
           const props = {
             currentCase,
@@ -1271,6 +1273,7 @@ const Chat = () => {
               return null;
           }
         })()}
+        </ActiveCaseProvider>
       </React.Suspense>
     );
   };

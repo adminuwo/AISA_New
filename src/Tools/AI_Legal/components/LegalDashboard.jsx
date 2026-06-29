@@ -760,19 +760,13 @@ const CaseDetailView = ({ item, isDark, onBack, onDelete, onAskStrategy, onViewR
                 
                 <div className="flex flex-wrap gap-2.5 relative z-10">
                   <button onClick={() => {
-                    console.log("Button Clicked: Ask AI Strategy");
-                    console.log("Icon Clicked: Ask AI Strategy");
+                    console.log("Button Clicked: AI Legal Chat");
+                    console.log("Icon Clicked: AI Legal Chat");
                     onAskStrategy?.(caseData);
                   }} className="flex items-center gap-1.5 px-4 py-2.5 bg-white text-indigo-900 hover:bg-slate-100 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all shadow-md hover:shadow-lg active:scale-95 duration-150">
-                    <MessageSquare size={14} /> Ask AI Strategy
+                    <MessageSquare size={14} /> AI Legal Chat
                   </button>
-                  <button onClick={() => {
-                    console.log("Button Clicked: View Roadmap");
-                    console.log("Icon Clicked: View Roadmap");
-                    onViewRoadmap?.(caseData);
-                  }} className="flex items-center gap-1.5 px-4 py-2.5 bg-white/15 hover:bg-white/25 border border-white/10 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all active:scale-95 duration-150">
-                    <Eye size={14} /> View Roadmap
-                  </button>
+
                   <button onClick={() => {
                     console.log("Button Clicked: Open Case In");
                     console.log("Icon Clicked: Open Case In");
