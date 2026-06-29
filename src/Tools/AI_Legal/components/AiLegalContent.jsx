@@ -3,7 +3,8 @@ import {
   Scale, X, MessageSquare, Zap, Briefcase, FileText, Search, Brain, 
   ChevronRight, Shield, Clock, CheckCircle, TrendingUp, FileSearch, 
   Bookmark, Share2, Download, Plus, History, Filter, Sparkles,
-  Gavel, Landmark, ScrollText, FileScan, Swords, Target, FileCheck, Waypoints
+  Gavel, Landmark, ScrollText, FileScan, Swords, Target, FileCheck, Waypoints,
+  Folder, Library, Fingerprint, Radar, Network, MessageCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Transition, Dialog } from '@headlessui/react';
@@ -18,6 +19,16 @@ import LegalDashboard from './LegalDashboard';
 import HearingManagement from './HearingManagement';
 import ComplianceCenter from './ComplianceCenter';
 import CaseContextModal from './CaseContextModal';
+import iconMyCase from '../assets/icon_my_case.png';
+import iconDraftMaker from '../assets/icon_draft_maker.png';
+import iconArgumentBuilder from '../assets/icon_argument_builder.png';
+import iconLegalPrecedent from '../assets/icon_legal_precedent.png';
+import iconEvidenceAnalysis from '../assets/icon_evidence_analysis.png';
+import iconContractReview from '../assets/icon_contract_review.png';
+import iconCasePredictor from '../assets/icon_case_predictor.png';
+import iconStrategyEngine from '../assets/icon_strategy_engine.png';
+import headerLogo3d from '../assets/header_logo_3d.png';
+import heroGeneralChat3d from '../assets/hero_general_chat_3d.png';
 
 const ArrowLeft = ({ size = 20, className = '' }) => (
   <ChevronRight size={size} className={`transform rotate-180 ${className}`} />
@@ -53,6 +64,7 @@ const AiLegalContent = ({
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [stats, setStats] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [selectedChip, setSelectedChip] = useState('All');
 
   // --- Case Management Local State (for LegalDashboard sub-view) ---
   const [isRenamingCase, setIsRenamingCase] = useState(null);
@@ -160,7 +172,10 @@ const AiLegalContent = ({
   const legalSubTools = useMemo(() => [
     {
       id: 'legal_my_case',
-      icon: <Gavel size={24} strokeWidth={1.8} />,
+      iconImg: iconMyCase,
+      icon: <Briefcase size={28} strokeWidth={2} />,
+      iconBg: '#EEF2FF',
+      iconColor: '#5B5FEF',
       title: 'My Case',
       desc: 'Personal Legal CRM & Case Intelligence System',
       prompt: 'Show me my case intelligence for: ',
@@ -175,7 +190,10 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_research_assistant',
-      icon: <Landmark size={24} strokeWidth={1.8} />,
+      iconImg: iconLegalPrecedent,
+      icon: <Landmark size={28} strokeWidth={2} />,
+      iconBg: '#E0F2FE',
+      iconColor: '#0284C7',
       title: 'Legal Precedent',
       desc: 'Searchable Case Laws & Citation Generator',
       prompt: 'Find legal precedents for: ',
@@ -190,7 +208,10 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_draft_maker',
-      icon: <ScrollText size={24} strokeWidth={1.8} />,
+      iconImg: iconDraftMaker,
+      icon: <ScrollText size={28} strokeWidth={2} />,
+      iconBg: '#F3E8FF',
+      iconColor: '#7C3AED',
       title: 'Draft Maker',
       desc: 'FIR, Affidavit & Agreement Architect',
       prompt: 'I need to draft a legal document for: ',
@@ -205,7 +226,10 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_evidence_checker',
-      icon: <FileScan size={24} strokeWidth={1.8} />,
+      iconImg: iconEvidenceAnalysis,
+      icon: <FileSearch size={28} strokeWidth={2} />,
+      iconBg: '#ECFDF5',
+      iconColor: '#059669',
       title: 'Evidence Analysis',
       desc: 'OCR Scanning & Authenticity Scoring',
       prompt: 'Analyze this evidence for admissibility and risk: ',
@@ -220,7 +244,10 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_argument_builder',
-      icon: <Swords size={24} strokeWidth={1.8} />,
+      iconImg: iconArgumentBuilder,
+      icon: <Gavel size={28} strokeWidth={2} />,
+      iconBg: '#FCE7F3',
+      iconColor: '#DB2777',
       title: 'Argument Builder',
       desc: 'Courtroom-Ready Arguments & Counterpoints',
       prompt: 'Help me build a courtroom argument for: ',
@@ -235,7 +262,10 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_case_predictor',
-      icon: <Target size={24} strokeWidth={1.8} />,
+      iconImg: iconCasePredictor,
+      icon: <Target size={28} strokeWidth={2} />,
+      iconBg: '#ECFEFF',
+      iconColor: '#0891B2',
       title: 'Case Predictor',
       desc: 'Success Probability & AI Risk Analysis',
       prompt: 'Predict the outcome for this legal case: ',
@@ -250,7 +280,10 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_contract_analyzer',
-      icon: <FileCheck size={24} strokeWidth={1.8} />,
+      iconImg: iconContractReview,
+      icon: <FileCheck size={28} strokeWidth={2} />,
+      iconBg: '#FEF3C7',
+      iconColor: '#D97706',
       title: 'Contract Review',
       desc: 'Clause Detection & Risky Term Alerts',
       prompt: 'Please analyze this contract for: ',
@@ -265,7 +298,10 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_strategy_engine',
-      icon: <Waypoints size={24} strokeWidth={1.8} />,
+      iconImg: iconStrategyEngine,
+      icon: <Network size={28} strokeWidth={2} />,
+      iconBg: '#EEF2FF',
+      iconColor: '#4F46E5',
       title: 'Strategy Engine',
       desc: 'Litigation Roadmap & Tactical Suggestions',
       prompt: 'Develop a legal strategy for: ',
@@ -390,9 +426,10 @@ const AiLegalContent = ({
         showToast('Case updated successfully');
       } else {
         const created = await legalService.createCase(caseData);
-        if (created?.id) {
+        const createdId = created?._id || created?.id;
+        if (createdId) {
           if (setCurrentCase) setCurrentCase(created);
-          if (setCurrentProjectId) setCurrentProjectId(created.id);
+          if (setCurrentProjectId) setCurrentProjectId(createdId);
         }
         await loadDashboardData();
         setCaseRefreshKey(prev => prev + 1);
@@ -472,19 +509,51 @@ const AiLegalContent = ({
   };
 
   const filteredTools = useMemo(() => {
-    if (!debouncedQuery.trim()) return legalSubTools;
-    const q = debouncedQuery.toLowerCase();
-    return legalSubTools.filter(tool => {
-      const searchableText = [
-        tool.title,
-        tool.desc,
-        tool.badge,
-        ...(tool.features || []),
-        ...(tool.useCases || [])
-      ].join(' ').toLowerCase();
-      return searchableText.includes(q);
+    const toolOrder = [
+      'legal_my_case',
+      'legal_draft_maker',
+      'legal_argument_builder',
+      'legal_research_assistant',
+      'legal_evidence_checker',
+      'legal_contract_analyzer',
+      'legal_case_predictor',
+      'legal_strategy_engine'
+    ];
+
+    const filtered = legalSubTools.filter(tool => {
+      // Search query filter
+      let matchesSearch = true;
+      if (debouncedQuery.trim() !== '') {
+        const q = debouncedQuery.toLowerCase();
+        const searchableText = [
+          tool.title,
+          tool.desc,
+          ...(tool.features || []),
+          ...(tool.useCases || [])
+        ].join(' ').toLowerCase();
+        matchesSearch = searchableText.includes(q);
+      }
+
+      if (!matchesSearch) return false;
+
+      // Chip filter
+      if (selectedChip === 'All') return true;
+      if (selectedChip === 'Drafting') return tool.id === 'legal_draft_maker' || tool.id === 'legal_argument_builder';
+      if (selectedChip === 'Research') return tool.id === 'legal_research_assistant' || tool.id === 'legal_contract_analyzer';
+      if (selectedChip === 'Evidence') return tool.id === 'legal_evidence_checker';
+      if (selectedChip === 'Arguments') return tool.id === 'legal_argument_builder';
+      if (selectedChip === 'Cases') return tool.id === 'legal_my_case' || tool.id === 'legal_case_predictor';
+      if (selectedChip === 'Contracts') return tool.id === 'legal_contract_analyzer';
+
+      return true;
     });
-  }, [debouncedQuery, legalSubTools]);
+
+    return [...filtered].sort((a, b) => {
+      const idxA = toolOrder.indexOf(a.id);
+      const idxB = toolOrder.indexOf(b.id);
+      return idxA - idxB;
+    });
+  }, [debouncedQuery, legalSubTools, selectedChip]);
 
   const showHeroCard = useMemo(() => {
     if (!debouncedQuery.trim()) return true;
@@ -694,14 +763,12 @@ const AiLegalContent = ({
           >
             <ArrowLeft className="text-slate-600 dark:text-slate-400" />
           </button>
-          <div className="p-2.5 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-xl text-white shadow-xl shadow-indigo-500/20">
-            <Scale className="w-6 h-6" />
-          </div>
+          <img src={headerLogo3d} alt="AI Legal Logo" className="w-10 h-10 sm:w-11 sm:h-11 rounded-[14px] object-contain shrink-0" />
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">AI Legal™</h1>
-            <p className="text-[9px] text-subtext font-black uppercase tracking-widest mt-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Enterprise Legal Platform
+            <p className="text-[10px] sm:text-[11px] text-[#8B95A7] font-semibold uppercase tracking-[0.2em] mt-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+              AI-POWERED LEGAL INTELLIGENCE PLATFORM
             </p>
           </div>
         </div>
@@ -709,149 +776,7 @@ const AiLegalContent = ({
 
       {/* Content Area */}
       <div className="px-4 sm:px-6 md:px-10 lg:px-12 py-5 sm:py-6 space-y-5 sm:space-y-6">
-        {/* Stats Section */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 animate-pulse">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-24 bg-slate-100 dark:bg-zinc-800/40 rounded-2xl" />
-            ))}
-          </div>
-        ) : !stats ? (
-          <div className="border border-dashed border-slate-200 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/10 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-            <Briefcase className="w-10 h-10 text-slate-300 dark:text-slate-700 mb-3" />
-            <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">No Legal Activity Yet</h4>
-            <p className="text-xs text-subtext mt-1 max-w-sm leading-relaxed font-semibold">Create your first case to see analytics.</p>
-            <button 
-              onClick={() => setIsCreateCaseVisible(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-indigo-500/20 mt-4"
-            >
-              <Plus size={14} />
-              <span>Create Case</span>
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4">
-              {/* Active Cases */}
-              <button 
-                onClick={() => {
-                  console.log("Active Cases Card Clicked");
-                  console.log("Loading AISA-Mobile Active Cases Module");
-                  setCaseManagementFilter('Active');
-                  setActiveModule('CASE_MANAGEMENT');
-                }}
-                className="flex-1 flex flex-col justify-between p-4 bg-white dark:bg-[#1A2540] rounded-2xl shadow-sm text-left hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-650 dark:text-indigo-400 rounded-lg">
-                    <Briefcase size={16} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Active Cases</span>
-                </div>
-                <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{stats.activeCases}</span>
-              </button>
 
-              {/* Hearings */}
-              <button 
-                onClick={() => {
-                  console.log("Hearings Card Clicked");
-                  console.log("Loading AISA-Mobile Hearings Module");
-                  console.log("Hearings Route Loaded");
-                  setActiveModule('HEARING_MANAGEMENT');
-                }}
-                className="flex-1 flex flex-col justify-between p-4 bg-white dark:bg-[#1A2540] rounded-2xl shadow-sm text-left hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="p-1.5 bg-amber-50 dark:bg-amber-950/20 text-amber-550 dark:text-amber-400 rounded-lg">
-                    <Scale size={16} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Hearings</span>
-                </div>
-                <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">{stats.hearingsCount}</span>
-              </button>
-            </div>
-
-            {/* Risk bar */}
-            {(stats.riskScore || stats.aiInsights) && (
-              <div className="flex flex-wrap items-center justify-between gap-4 p-3 bg-indigo-500/5 border border-indigo-100/50 dark:border-indigo-950/20 rounded-xl px-4">
-                {stats.riskScore && (
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400">
-                    <Shield size={14} className="text-emerald-500" />
-                    <span>Risk Level: <span className="text-emerald-600 font-extrabold">{stats.riskScore}</span></span>
-                  </div>
-                )}
-                {stats.riskScore && stats.aiInsights && <div className="hidden sm:block w-[1px] h-4 bg-slate-200 dark:bg-zinc-800" />}
-                {stats.aiInsights && (
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400">
-                    <Sparkles size={14} className="text-violet-500" />
-                    <span>AI Insights: <span className="text-violet-600 font-extrabold">{stats.aiInsights}</span></span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Suggestion Bar */}
-        <div className="flex items-start gap-3 p-4 bg-indigo-600/5 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-950/20 rounded-2xl">
-          <Sparkles size={16} className="text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-slate-600 dark:text-slate-350 leading-relaxed font-semibold">
-            <span className="font-black uppercase text-indigo-650 dark:text-indigo-400 tracking-wider">AI Suggestion: </span>
-            Based on your recent drafts, we recommend the <span className="font-extrabold text-indigo-700 dark:text-indigo-400">Contract Analyzer</span> for your pending Property Case.
-          </p>
-        </div>
-
-        {/* Recent Activity Bar */}
-        {recentActivity.length > 0 && (
-          <div className="space-y-3.5">
-            <div className="flex items-center gap-2">
-              <History size={14} className="text-slate-400" />
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Recent Activity</span>
-            </div>
-            <div className="flex gap-2.5 overflow-x-auto pb-2 shrink-0 custom-scrollbar overscroll-contain">
-              {recentActivity.map(act => (
-                <div 
-                  key={act.id} 
-                  className="flex items-center gap-2.5 bg-white dark:bg-[#1e293b]/60 border border-slate-200 dark:border-white/5 rounded-full px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 shadow-sm"
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full ${act.type === 'analysis' ? 'bg-emerald-500' : 'bg-indigo-600'}`} />
-                  <span>{act.title}</span>
-                  <span className="text-[10px] text-slate-400 font-semibold">{act.time}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Search Bar + Bookmark */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 flex items-center bg-white dark:bg-[#1A2540] border border-slate-250 dark:border-white/5 rounded-2xl px-4 py-3 shadow-sm">
-            <Search size={18} className="text-slate-400 mr-2 shrink-0" />
-            <input 
-              type="text"
-              placeholder="Search legal tools, engines, or templates..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent border-none outline-none focus:ring-0 text-xs font-bold text-slate-800 dark:text-white"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="p-1 text-slate-400 hover:text-slate-600">
-                <X size={14} />
-              </button>
-            )}
-          </div>
-
-          <button 
-            onClick={() => setIsSavedToolsVisible(true)}
-            className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white dark:bg-[#1A2540] border border-slate-250 dark:border-white/5 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm hover:scale-105 active:scale-95 transition-all relative shrink-0"
-            title="Saved Tools"
-          >
-            <Bookmark size={20} className={savedTools.length > 0 ? 'fill-current' : ''} />
-            {savedTools.length > 0 && (
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-            )}
-          </button>
-        </div>
 
         {/* Hero Card - General Legal Chat */}
         {showHeroCard && (
@@ -876,22 +801,22 @@ const AiLegalContent = ({
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-[2.5s] ease-in-out" />
             <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
               <div className="flex items-center gap-4 w-full sm:w-auto">
-                <div className="w-14 h-14 bg-white/20 backdrop-blur-xl border border-white/25 rounded-2xl flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-                  <MessageSquare size={28} className="text-white" />
+                <div className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center shrink-0 transition-all duration-250 ease-out group-hover:-translate-y-1 group-hover:brightness-105 overflow-hidden">
+                  <img src={heroGeneralChat3d} alt="General Legal Chat" className="w-full h-full object-cover rounded-[14px]" />
                 </div>
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-md text-[7px] sm:text-[8px] font-black uppercase tracking-widest shrink-0">Enterprise Elite</span>
-                    <span className="flex items-center gap-1 text-[7px] sm:text-[8px] font-black text-emerald-400 shrink-0"><CheckCircle size={10} className="fill-current text-white" /> SECURE</span>
+                    <span className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-md text-[10px] font-semibold uppercase tracking-widest shrink-0">Enterprise Elite</span>
+                    <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400 shrink-0"><CheckCircle size={10} className="fill-current text-white" /> SECURE</span>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-black tracking-tight leading-tight">General Legal Chat</h3>
-                  <p className="text-xs text-indigo-100 font-semibold leading-relaxed max-w-md">
+                  <h3 className="text-[22px] sm:text-[24px] font-bold tracking-tight leading-tight">General Legal Chat</h3>
+                  <p className="text-[13px] text-indigo-100 font-medium leading-relaxed max-w-md">
                     Professional legal discourse, situational guidance, and citation Q&A.
                   </p>
                 </div>
               </div>
               <div className="w-full sm:w-auto shrink-0 flex justify-end">
-                <span className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 bg-white text-indigo-700 font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl sm:rounded-2xl shadow-lg shadow-black/10 shrink-0 group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
+                <span className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 bg-white text-indigo-700 font-semibold text-[13px] uppercase tracking-widest rounded-xl sm:rounded-2xl shadow-lg shadow-black/10 shrink-0 group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
                   START
                   <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                 </span>
@@ -901,92 +826,69 @@ const AiLegalContent = ({
         )}
 
         {/* Grid Tools Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">⋄ Professional Legal Engines</span>
-            <div className="flex-1 h-[1px] bg-slate-200/60 dark:bg-white/5" />
-          </div>
-
+        <div className="space-y-6">
           {filteredTools.length === 0 && !showHeroCard ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400 text-center">
               <Search size={32} className="opacity-30 mb-3" />
               <span className="text-xs font-bold">No templates match "{searchQuery}"</span>
             </div>
           ) : (
-            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {filteredTools.map(tool => {
                 const isSaved = savedTools.some(t => t.toolId === tool.id);
-                
-                // Tailored badge style mapping
-                const badge = (tool.badge || '').toUpperCase();
-                let badgeStyles = 'bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 border border-violet-500/20';
-                if (badge.includes('LIVE')) {
-                  badgeStyles = 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-650 dark:text-emerald-400 border border-emerald-500/20';
-                } else if (badge.includes('VERIFIED')) {
-                  badgeStyles = 'bg-blue-500/10 dark:bg-blue-500/20 text-blue-650 dark:text-blue-400 border border-blue-500/20';
-                } else if (badge.includes('PRO') || badge.includes('ACTIVE')) {
-                  badgeStyles = 'bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-650 dark:text-indigo-400 border border-indigo-500/20';
-                } else if (badge.includes('MOST USED') || badge.includes('RECOMMENDED')) {
-                  badgeStyles = 'bg-amber-500/10 dark:bg-amber-500/20 text-amber-650 dark:text-amber-400 border border-amber-500/20';
-                }
-
                 return (
                   <div 
                     key={tool.id}
-                    className="group bg-gradient-to-b from-white to-slate-50/50 dark:from-[#1b254b] dark:to-[#111936] rounded-[24px] p-5 flex flex-col justify-between gap-5 cursor-pointer shadow-sm hover:-translate-y-1.5 hover:scale-[1.025] hover:shadow-2xl hover:shadow-indigo-550/15 dark:hover:shadow-indigo-500/10 hover:border-indigo-500/40 dark:hover:border-indigo-400/40 active:scale-[0.985] focus-within:ring-2 focus-within:ring-indigo-500/30 transition-all duration-300 ease-out"
+                    className="group relative bg-white dark:bg-zinc-900 border border-[#ECECEC] dark:border-zinc-850 rounded-[18px] p-6 flex flex-col justify-between h-[230px] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:-translate-y-1 hover:border-violet-500 dark:hover:border-violet-500 hover:shadow-[0_8px_24px_rgba(124,58,237,0.08)] transition-all duration-300 ease-out select-none"
                     onClick={() => handleToolPress(tool)}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      setSelectedTool(tool);
-                      setShowPreview(true);
-                    }}
                   >
-                    <div>
-                      {/* Badge / Accuracy */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-4 shrink-0">
-                        <span className={`text-[8px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${badgeStyles}`}>
-                          {tool.badge}
-                        </span>
-                        <div className="flex items-center gap-1 text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/10 shrink-0">
-                          <Zap size={11} className="fill-current animate-pulse text-emerald-500" />
-                          <span>{tool.confidence}% Match</span>
-                        </div>
-                      </div>
+                    {/* Bookmark on Hover */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSavedTool(tool);
+                      }}
+                      className={`absolute top-4 right-4 p-2 rounded-lg text-slate-350 hover:text-violet-650 hover:bg-slate-50 dark:hover:bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
+                        isSaved ? 'text-violet-650 dark:text-violet-400 opacity-100' : ''
+                      }`}
+                      title="Bookmark Tool"
+                    >
+                      <Bookmark size={15} className={isSaved ? 'fill-current' : ''} />
+                    </button>
 
-                      {/* Icon Container */}
-                      <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 dark:border-indigo-400/20 flex items-center justify-center mb-4 transition-all duration-350 shadow-[0_0_12px_rgba(99,102,241,0.25)] dark:shadow-[0_0_12px_rgba(99,102,241,0.2)] group-hover:from-indigo-600 group-hover:to-violet-600 group-hover:text-white group-hover:border-transparent group-hover:shadow-lg group-hover:shadow-indigo-500/30 group-hover:scale-105">
-                        {tool.icon}
+                    <div>
+                      {/* Icon */}
+                      <div 
+                        className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-4 transition-all duration-250 ease-out group-hover:-translate-y-1 group-hover:brightness-105 shrink-0 overflow-hidden"
+                        style={{
+                          backgroundColor: tool.iconBg || '#EEF2FF',
+                          color: tool.iconColor || '#5B5FEF',
+                          boxShadow: '0 6px 18px rgba(110,75,255,.12)'
+                        }}
+                      >
+                        {tool.iconImg ? (
+                          <img src={tool.iconImg} alt={tool.title} className="w-full h-full object-cover rounded-[14px]" />
+                        ) : (
+                          tool.icon
+                        )}
                       </div>
 
                       {/* Info */}
-                      <div className="space-y-1.5">
-                        <h4 className="font-extrabold text-sm text-slate-800 dark:text-white tracking-tight leading-snug group-hover:text-indigo-650 dark:group-hover:text-indigo-400 transition-colors duration-300 truncate">
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-[17px] text-slate-900 dark:text-white leading-[1.25] transition-colors">
                           {tool.title}
                         </h4>
-                        <p className="text-xs leading-relaxed font-semibold line-clamp-2 min-h-[32px] text-slate-500 dark:text-slate-400">
+                        <p className="text-[13px] text-slate-500 dark:text-slate-400 font-normal leading-[1.55] line-clamp-2">
                           {tool.desc}
                         </p>
                       </div>
                     </div>
 
-                    {/* Footer Actions */}
-                    <div className="flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-4 mt-2">
-                      <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-750 dark:group-hover:text-indigo-300 transition-colors duration-300">
-                        <span>LAUNCH</span>
-                        <ChevronRight size={13} className="group-hover:translate-x-1.5 transition-transform duration-300" />
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSavedTool(tool);
-                        }}
-                        className={`p-2.5 rounded-xl text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-white/5 transition-all shadow-sm ${
-                          isSaved ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-500/10' : 'border border-transparent'
-                        }`}
-                        title="Bookmark Tool"
-                      >
-                        <Bookmark size={14} className={isSaved ? 'fill-current' : ''} />
-                      </button>
+                    {/* Action: Open → */}
+                    <div className="flex items-center gap-1.5 text-[13px] font-semibold text-violet-600 dark:text-violet-400 mt-2">
+                      <span>Open</span>
+                      <span className="transform group-hover:translate-x-1 transition-transform duration-300">→</span>
                     </div>
                   </div>
                 );
@@ -1113,14 +1015,6 @@ const AiLegalContent = ({
         </Dialog>
       </Transition.Root>
 
-      {/* FAB - Create Case */}
-      <button
-        onClick={() => setIsCreateCaseVisible(true)}
-        className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] right-4 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-full flex items-center justify-center shadow-xl shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-all z-[100000]"
-        title="Create New Case"
-      >
-        <Plus size={26} />
-      </button>
 
       {/* Create Case Modal */}
       <CreateCaseModal 

@@ -128,23 +128,23 @@ const RENDER_CSS = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body, .pdf-root {
-    font-family: 'Noto Sans Devanagari', 'Noto Sans', Arial, sans-serif;
-    font-size: 13px;
-    line-height: 1.75;
-    color: #111;
+    font-family: 'Times New Roman', Times, 'Noto Sans Devanagari', 'Noto Sans', Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.15;
+    color: #000;
     background: #fff;
-    padding: 40px 48px;
+    padding: 1in;
     width: 794px;          /* A4 at 96 dpi */
     word-break: break-word;
   }
 
-  h1 { font-size: 20px; font-weight: 700; margin: 18px 0 10px; border-bottom: 2px solid #222; padding-bottom: 4px; }
-  h2 { font-size: 17px; font-weight: 700; margin: 16px 0 8px; }
-  h3 { font-size: 15px; font-weight: 700; margin: 14px 0 6px; }
-  h4 { font-size: 13px; font-weight: 700; margin: 12px 0 4px; }
+  h1 { font-size: 13pt; font-weight: bold; margin: 14pt 0 6pt; border: none; padding: 0; text-transform: uppercase; text-align: left; }
+  h2 { font-size: 13pt; font-weight: bold; margin: 14pt 0 6pt; text-transform: uppercase; }
+  h3 { font-size: 11pt; font-weight: bold; margin: 12pt 0 6pt; }
+  h4 { font-size: 11pt; font-weight: bold; margin: 10pt 0 4pt; }
 
-  p  { margin: 6px 0; text-align: justify; }
-  br { display: block; content: ""; margin: 4px 0; }
+  p  { margin: 0 0 6pt 0; text-align: justify; }
+  br { display: block; content: ""; margin: 6pt 0; }
 
   ul { margin: 6px 0 6px 20px; list-style: disc; }
   ol { margin: 6px 0 6px 20px; list-style: decimal; }
@@ -347,24 +347,43 @@ export async function exportToPDF({ element, htmlContent, text, title, filename,
 
   let yOffset = 0;
   let pageIndex = 0;
+  const totalPages = Math.ceil(canvasH / pageH_px) || 1;
 
   while (yOffset < canvasH) {
     const sliceH = Math.min(pageH_px, canvasH - yOffset);
 
-    // Draw the slice onto a temporary canvas
+    // Draw the slice onto a temporary canvas of full A4 height to ensure alignment
     const sliceCanvas = document.createElement('canvas');
     sliceCanvas.width  = pageW_px;
-    sliceCanvas.height = sliceH;
+    sliceCanvas.height = pageH_px;
     const ctx = sliceCanvas.getContext('2d');
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, pageW_px, sliceH);
+    ctx.fillRect(0, 0, pageW_px, pageH_px);
     ctx.drawImage(canvas, 0, yOffset, pageW_px, sliceH, 0, 0, pageW_px, sliceH);
 
+    // Draw page footer metadata
+    const footerH = 80;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, pageH_px - footerH, pageW_px, footerH);
+
+    // Gray separator rule above footer
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(96, pageH_px - footerH);
+    ctx.lineTo(pageW_px - 96, pageH_px - footerH);
+    ctx.stroke();
+
+    // Centered footer details
+    ctx.font = "20px 'Times New Roman', Times, serif";
+    ctx.fillStyle = '#475569';
+    ctx.textAlign = 'center';
+    ctx.fillText(`AI LEGAL™   |   Confidential Legal Document   |   Page ${pageIndex + 1} of ${totalPages}`, pageW_px / 2, pageH_px - 30);
+
     const sliceImgData = sliceCanvas.toDataURL('image/png');
-    const sliceH_mm    = (sliceH / pageH_px) * A4_H_MM;
 
     if (pageIndex > 0) doc.addPage();
-    doc.addImage(sliceImgData, 'PNG', 0, 0, imgW_mm, sliceH_mm);
+    doc.addImage(sliceImgData, 'PNG', 0, 0, imgW_mm, A4_H_MM);
 
     yOffset += sliceH;
     pageIndex++;

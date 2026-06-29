@@ -1076,11 +1076,15 @@ const Chat = () => {
 
       const ws = getWorkspace(caseIdInUrl);
       if (ws?.activeTool) {
-        if (selectedLegalTool?.id !== ws.activeTool.id) setSelectedLegalTool(ws.activeTool);
-        if (activeTool !== ws.activeTool.name) setActiveTool(ws.activeTool.name);
+        if (!selectedLegalTool || selectedLegalTool.id === 'legal_general_chat' || selectedLegalTool.id === 'legal_my_case') {
+          if (selectedLegalTool?.id !== ws.activeTool.id) setSelectedLegalTool(ws.activeTool);
+          if (activeTool !== ws.activeTool.name) setActiveTool(ws.activeTool.name);
+        }
       } else {
-        if (selectedLegalTool?.id !== 'legal_my_case') setSelectedLegalTool({ id: 'legal_my_case', name: 'My Case Assistant' });
-        if (activeTool !== 'legal') setActiveTool('legal');
+        if (!selectedLegalTool || selectedLegalTool.id === 'legal_general_chat') {
+          setSelectedLegalTool({ id: 'legal_my_case', name: 'My Case Assistant' });
+          if (activeTool !== 'legal') setActiveTool('legal');
+        }
       }
 
       if (legalView !== 'CHAT') setLegalView('CHAT');
@@ -1228,6 +1232,24 @@ const Chat = () => {
             onUpdateCase: (updated) => {
               setCurrentCase(updated);
               setAllProjects(prev => prev.map(p => p._id === updated._id ? updated : p));
+              if (updated?._id) {
+                setCurrentProjectId(updated._id);
+                localStorage.setItem('aisa_active_project_id', updated._id);
+                
+                const searchParams = new URLSearchParams(window.location.search);
+                let changed = false;
+                if (searchParams.get('caseId') !== updated._id) {
+                  searchParams.set('caseId', updated._id);
+                  changed = true;
+                }
+                if (selectedLegalTool?.id && searchParams.get('tool') !== selectedLegalTool.id) {
+                  searchParams.set('tool', selectedLegalTool.id);
+                  changed = true;
+                }
+                if (changed) {
+                  navigate(`${window.location.pathname}?${searchParams.toString()}`, { replace: true });
+                }
+              }
             }
           };
           switch (selectedLegalTool.id) {
@@ -3731,7 +3753,9 @@ const Chat = () => {
             }
           } else if (currentCase?.isLegalCase) {
             setCurrentMode('LEGAL_TOOLKIT');
-            setSelectedLegalTool({ id: 'legal_my_case', name: 'My Case Assistant' });
+            if (!selectedLegalTool || selectedLegalTool.id === 'legal_general_chat' || selectedLegalTool.id === 'legal_my_case') {
+              setSelectedLegalTool({ id: 'legal_my_case', name: 'My Case Assistant' });
+            }
           }
 
           const user = getUserData();
@@ -6835,6 +6859,13 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                   onUpdateCase={(updated) => {
                     setCurrentCase(updated);
                     setAllProjects(prev => prev.map(c => c._id === updated._id ? updated : c));
+                    if (updated?._id) {
+                      const searchParams = new URLSearchParams(window.location.search);
+                      if (searchParams.get('caseId') !== updated._id) {
+                        searchParams.set('caseId', updated._id);
+                        navigate(`${window.location.pathname}?${searchParams.toString()}`, { replace: true });
+                      }
+                    }
                   }}
                   onCreateCase={() => setIsNewCaseModalOpen(true)}
                   onUseInArgument={handleUseInArgument}
@@ -6925,6 +6956,13 @@ If the user asks for an image (e.g., "generate", "create", "draw", "show me a pi
                       onUpdateCase={(updated) => {
                         setCurrentCase(updated);
                         setAllProjects(prev => prev.map(p => p._id === updated._id ? updated : p));
+                        if (updated?._id) {
+                          const searchParams = new URLSearchParams(window.location.search);
+                          if (searchParams.get('caseId') !== updated._id) {
+                            searchParams.set('caseId', updated._id);
+                            navigate(`${window.location.pathname}?${searchParams.toString()}`, { replace: true });
+                          }
+                        }
                       }}
                     />
                   </React.Suspense>

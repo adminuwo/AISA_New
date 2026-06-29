@@ -597,7 +597,7 @@ const CreateCaseModal = ({ isDark, isVisible, onClose, onSave, editingCase }) =>
                     onClick={handleSave}
                     className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-black text-sm uppercase tracking-widest rounded-2xl hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-indigo-500/20"
                   >
-                    {editingCase ? 'Update Case Record' : 'Initialize Case Engine'}
+                    {editingCase ? 'Update Case' : 'Create Case'}
                   </button>
                 </div>
 

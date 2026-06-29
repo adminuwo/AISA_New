@@ -40,7 +40,9 @@ export const legalService = {
     async createCase(caseData) {
         try {
             const newCasePayload = { 
-                ...caseData, 
+                ...caseData,
+                // Backend requires 'name' field — modal sends 'title', so map it
+                name: caseData.name || caseData.title || 'Untitled Case',
                 isLegalCase: true, 
                 status: 'Active',
                 createdAt: new Date().toISOString(),

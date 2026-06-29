@@ -43,12 +43,423 @@ const AI_ACTIONS = [
 ];
 
 // ─── SYSTEM INSTRUCTION ──────────────────────────────────────────────────────
-const LEGAL_SYSTEM = `You are an elite Senior Advocate and Indian legal AI assistant with 30+ years of experience. 
-You draft professional, court-ready legal documents strictly following Indian court formats.
-Use formal legal language, cite Indian law (BNS/IPC/CPC/BNSS/Evidence Act/Constitution etc.) precisely.
-Always structure documents with clear numbered headings and subheadings.
-Make arguments compelling, legally sound, and based on the facts provided.
-Do NOT use placeholders or ask for more information — work with what is given.`;
+const LEGAL_SYSTEM = `# AI LEGAL™ — MASTER PROMPT FOR ARGUMENT BUILDER OUTPUT (PRODUCTION VERSION)
+
+You are the official AI LEGAL Court Argument Engine.
+
+Your responsibility is to generate professionally drafted Written Arguments exactly like a senior advocate preparing submissions before an Indian Court.
+
+The output must NEVER resemble a ChatGPT article, essay, blog, notes, or AI-generated content.
+
+It must resemble an actual court filing.
+
+---
+
+## DOCUMENT STYLE
+
+Generate a clean court document.
+
+No markdown.
+
+No code blocks.
+
+No JSON.
+
+No bullets using *, -, or •.
+
+No AI explanations.
+
+No introductory sentence such as
+
+"Here is your document."
+
+Start directly with
+
+IN THE HON'BLE ...
+
+---
+
+## HEADER FORMAT
+
+Generate the following layout:
+
+AI LEGAL™
+
+WRITTEN ARGUMENTS
+
+IN THE HON'BLE __________ COURT
+
+Case No.
+
+Matter:
+
+PETITIONER
+
+Versus
+
+RESPONDENT
+
+Date:
+
+---
+
+## SECTION STRUCTURE
+
+Use Roman Numerals.
+
+I.
+INTRODUCTION
+
+II.
+FACTUAL BACKGROUND
+
+III.
+ISSUES FOR DETERMINATION
+
+IV.
+APPLICABLE LEGAL PROVISIONS
+
+V.
+EVIDENCE RELIED UPON
+
+VI.
+JUDICIAL PRECEDENTS
+
+VII.
+ARGUMENTS
+
+VIII.
+REBUTTAL
+
+IX.
+RELIEF SOUGHT
+
+X.
+PRAYER
+
+XI.
+SIGNATURE
+
+Never change this order.
+
+---
+
+## FACTS
+
+Present facts chronologically.
+
+Each paragraph should contain only one event.
+
+Example
+
+2.1
+
+Loan advanced.
+
+2.2
+
+Promise to repay.
+
+2.3
+
+Default.
+
+2.4
+
+Legal Notice.
+
+2.5
+
+Non-payment.
+
+Never merge multiple events into one paragraph.
+
+---
+
+## ISSUES
+
+Display separately.
+
+Issue No.1
+
+Issue No.2
+
+Issue No.3
+
+Keep them short.
+
+---
+
+## LEGAL PROVISIONS
+
+Format like
+
+Indian Contract Act, 1872
+
+Section 10
+
+Explanation
+
+Section 73
+
+Explanation
+
+Never dump section numbers together.
+
+Always explain relevance.
+
+---
+
+## EVIDENCE FORMAT
+
+Every evidence should contain
+
+Exhibit Number
+
+Title
+
+Purpose
+
+Legal Relevance
+
+Example
+
+Exhibit P-1
+
+Promissory Note
+
+Purpose
+
+Acknowledgement of debt.
+
+Legal Relevance
+
+Primary documentary evidence proving the transaction.
+
+---
+
+## PRECEDENTS FORMAT
+
+Always write
+
+Case Name
+
+Citation
+
+Ratio Decidendi
+
+Application to Present Case
+
+Example
+
+Kailash Nath Associates v. DDA
+
+(2015) 4 SCC 136
+
+Ratio
+
+The Supreme Court held...
+
+Application
+
+The present facts are directly governed because...
+
+Never simply list case names.
+
+---
+
+## ARGUMENTS
+
+Use formal courtroom language.
+
+Every argument must begin with phrases like
+
+It is respectfully submitted that...
+
+It is further submitted that...
+
+It is most respectfully submitted...
+
+Without prejudice...
+
+The Petitioner respectfully contends...
+
+Avoid repetitive wording.
+
+Arguments should flow logically.
+
+Every argument should be in a separate paragraph.
+
+---
+
+## REBUTTAL
+
+Address probable defence.
+
+Never simply deny.
+
+State why the defence is legally unsustainable.
+
+---
+
+## RELIEF
+
+Use lettering.
+
+(a)
+
+(b)
+
+(c)
+
+(d)
+
+instead of
+
+1
+
+2
+
+3
+
+---
+
+## PRAYER
+
+Always begin
+
+"In view of the facts, evidence, statutory provisions and judicial precedents stated hereinabove, it is most respectfully prayed that this Hon'ble Court may graciously be pleased to—"
+
+Use lettered reliefs.
+
+End with
+
+"Pass such other order(s) as this Hon'ble Court may deem fit and proper in the interest of justice."
+
+---
+
+## SIGNATURE BLOCK
+
+Respectfully Submitted,
+
+---
+
+(Advocate Name)
+
+Counsel for the Petitioner
+
+Enrollment No.: __________
+
+Place: __________
+
+Date: __________
+
+---
+
+## FORMATTING RULES
+
+Font
+
+Times New Roman
+
+Body
+
+11 pt
+
+Headings
+
+13 pt Bold
+
+Main Title
+
+16 pt Bold
+
+Line Spacing
+
+1.15
+
+Paragraph Spacing
+
+6 pt After
+
+Margins
+
+1 inch
+
+Alignment
+
+Justified
+
+Indent first line of each paragraph.
+
+---
+
+## PAGE LAYOUT
+
+Keep proper white space.
+
+Do not leave unnecessary blank pages.
+
+Avoid oversized gaps.
+
+Automatically insert page breaks only when necessary.
+
+Keep signature block together.
+
+---
+
+## FOOTER
+
+Every page should contain
+
+AI LEGAL™
+
+Confidential Legal Document
+
+Page X of Y
+
+---
+
+## WRITING STYLE
+
+Write exactly like a senior Indian litigation advocate.
+
+Professional.
+
+Formal.
+
+Court-ready.
+
+Natural legal language.
+
+No AI tone.
+
+No placeholders like
+
+"Relevant case law may be added."
+
+No sample text.
+
+No examples.
+
+No dummy content.
+
+If information is unavailable, omit it gracefully instead of writing placeholders.
+
+---
+
+## OUTPUT QUALITY
+
+The final document should be immediately suitable for:
+
+• PDF Export
+• DOCX Export
+• Court Filing
+• Client Submission
+• Advocate Review
+• Printing
+
+The document must look like it was drafted by an experienced High Court/Supreme Court advocate, not by an AI chatbot.`;
 
 // ─── PROMPT BUILDER ──────────────────────────────────────────────────────────
 const buildPrompt = (actionId, form) => {
@@ -61,202 +472,179 @@ const buildPrompt = (actionId, form) => {
 
   const date = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
 
-  const issuesList     = issues.filter(i => i.trim()).map((v, i) => `${i + 1}. ${v}`).join('\n') || 'Not specified';
-  const provList       = provisions.filter(p => p.act.trim()).map(p => `- ${p.act}${p.sections ? ` (${p.sections})` : ''}`).join('\n') || 'Not specified';
-  const evList         = evidences.filter(e => e.title.trim()).map((e, i) => `Evidence ${i+1}: ${e.title} — ${e.description}`).join('\n') || 'Not specified';
-  const lawList        = caseLaws.filter(c => c.name.trim()).map((c, i) => `${i+1}. ${c.name}${c.citation ? ` [${c.citation}]` : ''}${c.principle ? ` — ${c.principle}` : ''}`).join('\n') || 'Not specified';
-  const argsList       = arguments_.filter(a => a.heading.trim()).map((a, i) => `Argument ${i+1} [${a.strength}]: ${a.heading}\n   Details: ${a.detail}\n   Evidence: ${a.evidence || 'N/A'} | Provision: ${a.provision || 'N/A'} | Judgment: ${a.judgment || 'N/A'}`).join('\n\n') || 'Not specified';
-  const counterList    = counters.filter(c => c.opponent.trim()).map((c, i) => `${i+1}. Opponent: ${c.opponent}\n   Rebuttal: ${c.rebuttal}`).join('\n\n') || 'Not specified';
-  const reliefList     = reliefs.join(', ') || 'Not specified';
+  const issuesList     = issues.filter(i => i.trim()).map((v, i) => `Issue No.${i + 1}\n${v}`).join('\n\n') || '';
+  const provList       = provisions.filter(p => p.act.trim()).map(p => `${p.act}\nSection ${p.sections ? p.sections : '[Applicable Section]'}\nRelevance description...`).join('\n\n') || '';
+  const evList         = evidences.filter(e => e.title.trim()).map((e, i) => `Exhibit P-${i+1}\n${e.title}\nPurpose\n${e.description || 'Proving the transaction'}\nLegal Relevance\nDocumentary evidence on record.`).join('\n\n') || '';
+  const lawList        = caseLaws.filter(c => c.name.trim()).map((c, i) => `Case Name: ${c.name}\nCitation: ${c.citation || '[Citation]'}\nRatio Decidendi: ${c.principle || 'The court held...'}\nApplication to Present Case: The present facts are governed because...`).join('\n\n') || '';
+  const argsList       = arguments_.filter(a => a.heading.trim()).map((a, i) => `It is respectfully submitted that ${a.heading}. ${a.detail || ''}`).join('\n\n') || '';
+  const counterList    = counters.filter(c => c.opponent.trim()).map((c, i) => `Opponent Argument: ${c.opponent}\nRebuttal: It is submitted that the defence is legally unsustainable because ${c.rebuttal}`).join('\n\n') || '';
+  const reliefList     = reliefs.map((r, i) => `(${String.fromCharCode(97 + i)}) ${r}`).join('\n') || '';
 
   const ctx = `
-─────────────────────────────────────────────────────────────────
 CASE INFORMATION
-─────────────────────────────────────────────────────────────────
-Title       : ${caseTitle || 'N/A'}
-Case Number : ${caseNumber || 'N/A'}
-Court       : ${courtName || 'N/A'}
-Judge       : ${judgeName || 'Not specified'}
-Case Type   : ${caseType || 'N/A'}
+Title       : ${caseTitle || '[Case Title]'}
+Case Number : ${caseNumber || '[Case Number]'}
+Court       : ${courtName || '[Court Name]'}
+Judge       : ${judgeName || '[Judge Name]'}
+Case Type   : ${caseType || '[Case Type]'}
 Date        : ${date}
 
 PARTIES
-─────────────────────────────────────────────────────────────────
-Petitioner/Plaintiff : ${petitioner || 'N/A'}
-Respondent/Defendant : ${respondent || 'N/A'}
-Advocate             : ${advocateName || 'N/A'} (${advocateSide || 'N/A'})
+Petitioner/Plaintiff : ${petitioner || '[Petitioner Name]'}
+Respondent/Defendant : ${respondent || '[Respondent Name]'}
+Advocate             : ${advocateName || '[Advocate Name]'} (${advocateSide || '[Advocate Side]'})
 
 FACTS OF THE CASE
-─────────────────────────────────────────────────────────────────
-${caseFacts || 'Not provided'}
+${caseFacts || '[Facts of the Case]'}
 
 ISSUES FOR DETERMINATION
-─────────────────────────────────────────────────────────────────
-${issuesList}
+${issuesList || '[Issues]'}
 
 APPLICABLE LEGAL PROVISIONS
-─────────────────────────────────────────────────────────────────
-${provList}
+${provList || '[Provisions]'}
 
 EVIDENCE ON RECORD
-─────────────────────────────────────────────────────────────────
-${evList}
+${evList || '[Evidence]'}
 
 CASE LAWS & PRECEDENTS
-─────────────────────────────────────────────────────────────────
-${lawList}
+${lawList || '[Case Laws]'}
 
 MAIN ARGUMENTS
-─────────────────────────────────────────────────────────────────
-${argsList}
+${argsList || '[Arguments]'}
 
 COUNTER ARGUMENTS & REBUTTALS
-─────────────────────────────────────────────────────────────────
-${counterList}
+${counterList || '[Counter Arguments]'}
 
 RELIEF SOUGHT
-─────────────────────────────────────────────────────────────────
-${reliefList}`;
+${reliefList || '[Relief Sought]'}`;
 
   const instructions = {
-    written: `Draft a complete, court-ready WRITTEN ARGUMENT following the exact format below. Make every argument legally compelling and backed by the provisions and precedents provided.
+    written: `Generate WRITTEN ARGUMENT according to this exact structure:
 
-IN THE HON'BLE ${courtName?.toUpperCase() || 'COURT OF ______'}
+AI LEGAL™
 
-Case No. ${caseNumber || '___________'}
+WRITTEN ARGUMENTS
 
-BETWEEN
+IN THE HON'BLE ${courtName?.toUpperCase() || '[COURT NAME]'}
 
-${petitioner?.toUpperCase() || 'PETITIONER/PLAINTIFF'}
-                                         ...Petitioner/Plaintiff
+Case No. ${caseNumber || '[Case Number]'}
+
+Matter: ${caseTitle || '[Case Title]'}
+
+${petitioner?.toUpperCase() || '[PETITIONER NAME]'}
+                                         ...Petitioner
                         Versus
-${respondent?.toUpperCase() || 'RESPONDENT/DEFENDANT'}
-                                         ...Respondent/Defendant
+${respondent?.toUpperCase() || '[RESPONDENT NAME]'}
+                                         ...Respondent
 
-WRITTEN ARGUMENTS ON BEHALF OF THE ${(advocateSide || 'PETITIONER').toUpperCase()}
+Date: ${date}
 
-1. INTRODUCTION
-2. BRIEF FACTS OF THE CASE
-3. ISSUES FOR DETERMINATION
-4. APPLICABLE LAW & PROVISIONS
-5. ANALYSIS OF EVIDENCE
-6. JUDICIAL PRECEDENTS RELIED UPON
-7. ARGUMENTS ADVANCED (elaborate each argument in detail)
-8. REBUTTAL OF OPPOSING ARGUMENTS
-9. RELIEF SOUGHT
-10. PRAYER
+I. INTRODUCTION
+[Draft introduction]
 
-PRAYER
-In view of the foregoing facts, the evidence on record, the statutory provisions cited and the judicial precedents relied upon, it is most respectfully prayed that this Hon'ble Court may be pleased to:
-[List specific reliefs]
+II. FACTUAL BACKGROUND
+[Chronological events numbered 2.1, 2.2, 2.3, etc. with only one event per paragraph]
 
-And pass such other order/orders as this Hon'ble Court may deem fit and proper in the facts and circumstances of this case, in the interest of justice.
+III. ISSUES FOR DETERMINATION
+${issuesList || 'Issue No.1\n[Issue 1]\n\nIssue No.2\n[Issue 2]'}
 
+IV. APPLICABLE LEGAL PROVISIONS
+${provList || '[Provisions]'}
+
+V. EVIDENCE RELIED UPON
+${evList || '[Evidence]'}
+
+VI. JUDICIAL PRECEDENTS
+${lawList || '[Precedents]'}
+
+VII. ARGUMENTS
+[Arguments advanced in separate paragraphs starting with courtroom language like "It is respectfully submitted that..."]
+
+VIII. REBUTTAL
+[Address and deny opposing arguments]
+
+IX. RELIEF SOUGHT
+${reliefList || '(a) [Relief 1]\n(b) [Relief 2]'}
+
+X. PRAYER
+"In view of the facts, evidence, statutory provisions and judicial precedents stated hereinabove, it is most respectfully prayed that this Hon'ble Court may graciously be pleased to—"
+${reliefList || '(a) [Relief 1]\n(b) [Relief 2]'}
+"Pass such other order(s) as this Hon'ble Court may deem fit and proper in the interest of justice."
+
+XI. SIGNATURE
 Respectfully Submitted,
 
-${advocateName || 'Advocate for Petitioner/Plaintiff'}
-Date: ${date}
-Place: ${courtName || '___________'}`,
+(Signature)
 
-    oral: `Draft a comprehensive ORAL ARGUMENT script for a ${caseType || 'legal'} matter. This should be what a Senior Advocate actually says in court.
+${advocateName || '[Advocate Name]'}
+Counsel for the Petitioner
+Enrollment No.: [Enrollment No.]
+Place: ${courtName || '[Place]'}
+Date: ${date}`,
 
-Structure:
-1. OPENING ADDRESS TO THE COURT (Respectful salutation and introduction)
-2. BRIEF STATEMENT OF FACTS (2-3 minutes of speech)
-3. FRAMING THE ISSUES (Clear articulation of legal questions)
-4. MAIN ARGUMENTS (Each with clear speaking points, transitions, and emphasis)
-5. CITING PRECEDENTS (How to present case laws)
-6. REBUTTAL POINTS (Pre-empting opponent's likely arguments)
-7. CLOSING STATEMENT AND PRAYER
+    oral: `Generate ORAL ARGUMENT according to this exact structure:
 
-Include stage directions like [PAUSE], [HAND DOCUMENT TO JUDGE], [TURN TO OPPONENT] for dramatic effect.
-Make it persuasive, confident, and legally authoritative.`,
+1. OPENING ADDRESS TO THE COURT
+2. STATEMENT OF FACTS
+3. FRAME OF ISSUES
+4. MAIN ORAL ARGUMENTS
+5. JUDICIAL PRECEDENTS CITATION
+6. REBUTTALS TO OPPOSITION
+7. CLOSING AND PRAYER`,
 
-    final: `Draft the most comprehensive FINAL COURT SUBMISSION / WRITTEN STATEMENT OF ARGUMENTS for this ${caseType || 'legal'} case. This is the definitive legal document.
+    final: `Generate FINAL SUBMISSION according to this exact structure:
 
-Structure:
-IN THE HON'BLE ${courtName?.toUpperCase() || 'COURT'}
-Case No. ${caseNumber || '___'}
+IN THE HON'BLE ${courtName?.toUpperCase() || '[COURT NAME]'}
+Case No. ${caseNumber || '[Case Number]'}
 
 FINAL WRITTEN SUBMISSIONS ON BEHALF OF ${(advocateSide || 'PETITIONER').toUpperCase()}
 
-I.    SYNOPSIS OF THE CASE
-II.   LIST OF DATES AND EVENTS (Chronological)
-III.  STATEMENT OF FACTS
-IV.   ISSUES FRAMED FOR DETERMINATION
-V.    APPLICABLE STATUTES & PROVISIONS (with full text of relevant sections)
-VI.   COMPREHENSIVE ANALYSIS OF EVIDENCE
-VII.  JUDICIAL PRECEDENTS (with ratio decidendi)
-VIII. MAIN ARGUMENTS ADVANCED (exhaustive, well-structured)
-IX.   COUNTER-ARGUMENTS & REBUTTALS
-X.    PRINCIPLE OF EQUITY AND FAIRNESS
-XI.   RELIEF SOUGHT
-XII.  PRAYER
+I. SYNOPSIS OF THE CASE
+II. CHRONOLOGICAL LIST OF DATES AND EVENTS
+III. STATEMENT OF FACTS
+IV. ISSUES FOR DETERMINATION
+V. APPLICABLE STATUTES AND PROVISIONS
+VI. EVALUATION OF EVIDENCE
+VII. JUDICIAL PRECEDENTS
+VIII. DETAILED ARGUMENTS
+IX. REBUTTAL AND RESPONSES
+X. EQUITY PRINCIPLES
+XI. RELIEF SOUGHT
+XII. PRAYER`,
 
-CERTIFICATION OF CORRECTNESS
-INDEX OF DOCUMENTS`,
+    counter: `Generate COUNTER ARGUMENT according to this exact structure:
 
-    counter: `Perform a professional COUNTER ARGUMENT ANALYSIS for this ${caseType || 'legal'} case. Identify every possible opposing argument and prepare robust rebuttals.
-
-Format:
-1. ANTICIPATED ARGUMENTS BY OPPOSING COUNSEL (identify minimum 5-7 likely arguments even if not explicitly listed)
-2. FOR EACH OPPOSING ARGUMENT:
-   a) Summary of Opponent's Argument
-   b) Legal Weakness in their Argument
-   c) Our Counter-Argument
-   d) Supporting Legal Authority
-   e) Evidence that Defeats their Argument
-   f) Recommended Courtroom Response
-3. PRE-EMPTIVE STRATEGY (arguments to raise before opponent does)
-4. CROSS-EXAMINATION STRATEGY (questions to weaken opponent witnesses)
+1. ANTICIPATED ARGUMENTS BY OPPOSING COUNSEL
+2. DETAILED REBUTTALS
+3. PRE-EMPTIVE LITIGATION STRATEGY
+4. WITNESS CROSS EXAMINATION TOPICS
 5. FINAL DEFENCE ASSESSMENT`,
 
-    judge: `From the perspective of a Hon'ble Judge presiding over this ${caseType || 'legal'} case, provide an objective JUDICIAL ANALYSIS.
+    judge: `Generate JUDGE PERSPECTIVE according to this exact structure:
 
-Structure:
-1. FIRST IMPRESSION OF THE CASE (How the court views it initially)
-2. PRIMA FACIE ASSESSMENT (Is a case made out?)
-3. STRENGTH OF EVIDENCE EVALUATION (For both sides)
-4. LEGAL ISSUES ANALYSIS (Are they properly framed?)
-5. CREDIBILITY ASSESSMENT (Petitioner vs Respondent arguments)
-6. LIKELY QUESTIONS FROM THE BENCH (5-10 questions each side should prepare for)
-7. AREAS OF CONCERN — FOR PETITIONER (What might harm their case)
-8. AREAS OF CONCERN — FOR RESPONDENT (What might harm their case)
-9. MISSING EVIDENCE OR LEGAL POINTS
-10. LEGAL RISK PROBABILITY (0-100% scale)
-11. PROBABLE JUDICIAL OBSERVATIONS
-12. LIKELY OUTCOME ASSESSMENT WITH REASONING
+1. PRELIMINARY OBSERVATIONS
+2. PRIMA FACIE MERIT EVALUATION
+3. EVIDENCE WEIGHT AND ADMISSIBILITY
+4. MAIN CONTROVERSIES AND ISSUES
+5. CREDIBILITY OF PARTIES
+6. QUESTIONS FOR COUNSEL
+7. WEAKNESS OF PETITIONER
+8. WEAKNESS OF RESPONDENT
+9. SUGGESTED VERDICT OUTCOME`,
 
-Be completely neutral and judicial in tone.`,
+    strategy: `Generate WINNING STRATEGY according to this exact structure:
 
-    strategy: `Develop a comprehensive WINNING LEGAL STRATEGY AND LITIGATION ROADMAP for this ${caseType || 'legal'} case.
-
-Structure:
-1. CASE SWOT ANALYSIS (Strengths / Weaknesses / Opportunities / Threats)
-2. CORE WINNING ARGUMENTS (ranked by strength)
-3. EVIDENCE STRATEGY
-   - Evidence to prioritize
-   - How to present each piece
-   - Evidence gaps to fill
-4. WITNESS STRATEGY
-   - Witnesses to call
-   - Key testimony points
-   - Cross-examination guide
-5. LEGAL PRECEDENT STRATEGY
-   - Key precedents to cite and how
-   - Distinguishing opponent's precedents
-6. PROCEDURAL STRATEGY
-   - Applications to file
-   - Interim reliefs to seek
-   - Timeline planning
-7. RISK MITIGATION PLAN
-8. SETTLEMENT CONSIDERATIONS (when and how)
-9. APPEAL STRATEGY (if initial court goes against)
-10. COURTROOM CONDUCT RECOMMENDATIONS
-11. FINAL RECOMMENDATION (win probability and best approach)`
+1. CASE SWOT ANALYSIS
+2. CORE ARGUMENTS RANKING
+3. EVIDENCE SUBMISSION STRATEGY
+4. WITNESS EXAMINATION ROADMAP
+5. CASE LAW CITATION TACTICS
+6. INTERIM AND PROCEDURAL STRATEGIC OPTIONS
+7. RISK MITIGATION ROADMAP
+8. SETTLEMENT COMPROMISE EVALUATION`
   };
 
-  return `${instructions[actionId]}\n\n${ctx}`;
+  return `MODE: ${actionId.toUpperCase()}\n\n${instructions[actionId]}\n\n${ctx}`;
 };
 
 // ─── SHARED STYLES ───────────────────────────────────────────────────────────
@@ -264,41 +652,92 @@ const inputCls = 'w-full bg-white dark:bg-zinc-800/60 border border-slate-200 da
 const inputSmCls = 'bg-white dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-800 dark:text-white outline-none focus:border-violet-500 transition-all placeholder-slate-300 dark:placeholder-zinc-600';
 
 // ─── SECTION HEADER ──────────────────────────────────────────────────────────
-const SectionHdr = ({ n, title, sub, open, onToggle }) => (
+const SectionHdr = ({ title, open, onToggle }) => (
   <button type="button" onClick={onToggle}
-    className="w-full flex items-center justify-between py-4 px-5 bg-gradient-to-r from-slate-50 to-white dark:from-zinc-900/60 dark:to-zinc-900/30 group"
+    className="w-full flex items-center justify-between py-3.5 px-5 bg-slate-50/50 dark:bg-zinc-900/20 group hover:bg-slate-100/30 transition-colors"
   >
-    <div className="flex items-center gap-3">
-      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm shadow-indigo-500/20">
-        <span className="text-[10px] font-black text-white">{n}</span>
-      </div>
-      <div className="text-left">
-        <div className="text-sm font-black text-slate-800 dark:text-white">{title}</div>
-        {sub && <div className="text-[10px] text-slate-400 mt-0.5">{sub}</div>}
-      </div>
+    <div className="flex items-center gap-2">
+      <ChevronDown size={14} className={`text-slate-400 group-hover:text-violet-600 transition-transform duration-200 shrink-0 ${open ? '' : '-rotate-90'}`} />
+      <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{title}</span>
     </div>
-    <ChevronDown size={16} className={`text-slate-400 group-hover:text-violet-600 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
   </button>
 );
 
 // ─── RENDERED OUTPUT ──────────────────────────────────────────────────────────
 const RenderedOutput = ({ text }) => {
-  const lines = text.split('\n');
+  const cleanText = String(text || '')
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t');
+  const lines = cleanText.split('\n');
+
+  const renderLine = (line, i) => {
+    const cleanLine = line.replace(/\*\*/g, '').trim();
+
+    if (!cleanLine) {
+      return <div key={i} style={{ height: '8px' }} />;
+    }
+
+    // Detect if line matches a major heading (e.g. 1. INTRODUCTION, I. SYNOPSIS)
+    const isHeading = /^\d+\.\s+[A-Z\s]+$/.test(cleanLine) || /^[IVXLCDM]+\.\s+[A-Z\s]+$/.test(cleanLine);
+
+    if (isHeading) {
+      return (
+        <p 
+          key={i} 
+          className="font-bold text-black uppercase"
+          style={{ 
+            fontSize: '13pt', 
+            marginTop: '18px', 
+            marginBottom: '10px',
+            pageBreakAfter: 'avoid',
+            breakAfter: 'avoid'
+          }}
+        >
+          {cleanLine}
+        </p>
+      );
+    }
+
+    // Body paragraphs have 8px margin-bottom, 0.3in text-indent for paragraphs, except headings and signatures
+    const isSignatureDetail = cleanLine.includes("Counsel for") || cleanLine.includes("Enrollment No") || cleanLine.includes("Place:") || cleanLine.includes("Date:");
+    const hasIndent = !isSignatureDetail && cleanLine.length > 50 && !cleanLine.startsWith("Exhibit") && !cleanLine.startsWith("Case Name");
+
+    return (
+      <p 
+        key={i} 
+        style={{ 
+          marginBottom: '8px',
+          textIndent: hasIndent ? '0.3in' : '0'
+        }}
+      >
+        {cleanLine}
+      </p>
+    );
+  };
+
+  const sigIndex = lines.findIndex(l => l.includes("Respectfully Submitted,") || l.includes("Respectfully submitted,"));
+
   return (
-    <div className="text-xs sm:text-sm leading-relaxed text-slate-800 dark:text-slate-200 font-mono space-y-0.5 select-text">
-      {lines.map((line, i) => {
-        if (!line.trim()) return <div key={i} className="h-2" />;
-        if (line.startsWith('# ')) return <h1 key={i} className="text-base font-black text-slate-900 dark:text-white mt-3 mb-1 border-b border-slate-200 dark:border-zinc-700 pb-1">{line.slice(2)}</h1>;
-        if (line.startsWith('## ')) return <h2 key={i} className="text-sm font-black text-violet-700 dark:text-violet-400 mt-3 mb-1">{line.slice(3)}</h2>;
-        if (line.startsWith('### ')) return <h3 key={i} className="text-xs font-black text-indigo-600 dark:text-indigo-400 mt-2 mb-0.5 uppercase tracking-wide">{line.slice(4)}</h3>;
-        if (/^\*\*(.+)\*\*$/.test(line.trim())) return <p key={i} className="font-bold text-slate-900 dark:text-white">{line.replace(/\*\*/g, '')}</p>;
-        if (line.startsWith('---') || line.startsWith('───')) return <hr key={i} className="border-slate-200 dark:border-zinc-700 my-2" />;
-        const formatted = line
-          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\*(.+?)\*/g, '<em>$1</em>')
-          .replace(/`(.+?)`/g, '<code class="bg-slate-100 dark:bg-zinc-800 px-1 rounded text-[10px]">$1</code>');
-        return <p key={i} className="leading-relaxed" dangerouslySetInnerHTML={{ __html: formatted }} />;
-      })}
+    <div 
+      className="bg-white text-black border border-slate-300 dark:border-zinc-800 shadow-md select-text"
+      style={{
+        fontFamily: "'Times New Roman', Times, serif",
+        fontSize: '11pt',
+        lineHeight: '1.45',
+        textAlign: 'justify',
+        padding: '40px'
+      }}
+    >
+      {sigIndex === -1 ? (
+        lines.map((line, i) => renderLine(line, i))
+      ) : (
+        <>
+          {lines.slice(0, sigIndex).map((line, i) => renderLine(line, i))}
+          <div style={{ pageBreakInside: 'avoid', breakInside: 'avoid', marginTop: '18px' }}>
+            {lines.slice(sigIndex).map((line, i) => renderLine(line, i + sigIndex))}
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -476,6 +915,9 @@ const BuildArgumentModal = ({ isOpen, onClose, currentCase, onUpdateCase }) => {
           s7: filled.has('caseLaws'),
           s8: filled.has('arguments_'),
         }));
+        if (filled.has('issues') || filled.has('provisions') || filled.has('evidences') || filled.has('caseLaws') || filled.has('arguments_')) {
+          setShowAdvanced(true);
+        }
         toast.success(`✓ ${filled.size} fields auto-filled from case data`, { icon: '💼', duration: 3500 });
       }
     } else {
@@ -490,6 +932,7 @@ const BuildArgumentModal = ({ isOpen, onClose, currentCase, onUpdateCase }) => {
 
   // sections open/close
   const [sec, setSec] = useState({ s1:true,s2:true,s3:true,s4:false,s5:false,s6:false,s7:false,s8:false,s9:false,s10:false });
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const tog = k => setSec(p => ({ ...p, [k]: !p[k] }));
 
   // AI state
@@ -625,6 +1068,7 @@ const BuildArgumentModal = ({ isOpen, onClose, currentCase, onUpdateCase }) => {
   };
 
   // ── EXPORT PDF ──────────────────────────────────────────────────────────────
+  // ── EXPORT PDF ──────────────────────────────────────────────────────────────
   const handlePDF = async () => {
     if (!displayOutput) { toast.error('Generate an argument first.'); return; }
     const isHi = outputLang === 'hi';
@@ -632,9 +1076,10 @@ const BuildArgumentModal = ({ isOpen, onClose, currentCase, onUpdateCase }) => {
     const toastId = toast.loading(isHi ? 'PDF तैयार किया जा रहा है...' : 'Generating PDF...');
     try {
       const el = document.getElementById('argument-rendered-output');
+      const cleanText = displayOutput.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\*\*/g, '');
       await exportToPDF({
         element: el,
-        text: displayOutput,
+        text: cleanText,
         title: isHi ? 'AISA™ एआई कानूनी — कोर्ट आर्गुमेंट दस्तावेज़' : 'AISA™ AI Legal — Court Argument Document',
         filename: `AISA_${cleanOutputLabel.replace(/\s+/g, '_')}_${(form.caseTitle || 'Case').replace(/\s+/g, '_')}`,
         lang: outputLang,
@@ -662,7 +1107,8 @@ const BuildArgumentModal = ({ isOpen, onClose, currentCase, onUpdateCase }) => {
       ? `AISA एआई कानूनी — कोर्ट आर्गुमेंट दस्तावेज़\n${'='.repeat(60)}\nमामला: ${form.caseTitle || 'N/A'}\nमामला संख्या: ${form.caseNumber || 'N/A'} | न्यायालय: ${form.courtName || 'N/A'}\nउत्पन्न तिथि: ${new Date().toLocaleString('hi-IN')}\n${'='.repeat(60)}\n\n`
       : `AISA AI LEGAL — COURT ARGUMENT DOCUMENT\n${'='.repeat(60)}\nCase: ${form.caseTitle || 'N/A'}\nCase No: ${form.caseNumber || 'N/A'} | Court: ${form.courtName || 'N/A'}\nGenerated: ${new Date().toLocaleString('en-IN')}\n${'='.repeat(60)}\n\n`;
       
-    const blob = new Blob([header + displayOutput], { type: 'application/msword;charset=utf-8' });
+    const cleanText = displayOutput.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\*\*/g, '');
+    const blob = new Blob([header + cleanText], { type: 'application/msword;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url;
     a.download = `AISA_${cleanOutputLabel.replace(/\s+/g, '_')}_${(form.caseTitle || 'Case').replace(/\s+/g, '_')}_${Date.now()}.doc`;
@@ -685,20 +1131,45 @@ const BuildArgumentModal = ({ isOpen, onClose, currentCase, onUpdateCase }) => {
     const dateText = isHi ? "दिनांक" : "Date";
     const dateStr = isHi ? new Date().toLocaleDateString('hi-IN') : new Date().toLocaleDateString('en-IN');
 
-    const clean = displayOutput.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,3}\s*/g, '');
+    const clean = displayOutput
+      .replace(/\\n/g, '\n')
+      .replace(/\\t/g, '\t')
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/#{1,3}\s*/g, '');
+
+    const lines = clean.split('\n');
+    const contentHTML = lines.map(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return '<div style="height: 6pt;"></div>';
+      
+      const isHeading = /^\d+\.\s+[A-Z\s]+$/.test(trimmed) || /^[IVXLCDM]+\.\s+[A-Z\s]+$/.test(trimmed);
+      if (isHeading) {
+        return `<p class="heading-13pt">${trimmed}</p>`;
+      }
+      return `<p>${trimmed}</p>`;
+    }).join('\n');
+
     win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>${cleanOutputLabel} — ${form.caseTitle}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,700;1,400&family=Noto+Sans+Devanagari:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
-  @page { margin: 25mm 20mm; }
-  body { font-family: 'Noto Sans Devanagari', 'Noto Sans', Arial, sans-serif; font-size: 13pt; line-height: 1.9; color: #000; }
-  h1 { font-size: 15pt; text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 12px; }
-  .meta { font-size: 9pt; border-bottom: 1px solid #aaa; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; }
-  .content { text-align: justify; white-space: pre-wrap; }
+  @page { margin: 1in; }
+  body { 
+    font-family: 'Times New Roman', Times, 'Noto Sans Devanagari', 'Noto Sans', serif; 
+    font-size: 11pt; 
+    line-height: 1.15; 
+    color: #000; 
+    margin: 0;
+    padding: 0;
+  }
+  h1 { font-size: 13pt; font-weight: bold; text-align: center; margin-bottom: 12px; text-transform: uppercase; }
+  .meta { font-size: 9pt; border-bottom: 1px solid #aaa; padding-bottom: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; font-family: sans-serif; }
+  .content { text-align: justify; }
+  p { margin: 0 0 6pt 0; }
+  .heading-13pt { font-size: 13pt; font-weight: bold; margin-top: 12pt; margin-bottom: 6pt; text-transform: uppercase; }
 </style></head><body>
 <h1>${titleText}</h1>
 <div class="meta"><span><b>${caseText}:</b> ${form.caseTitle} | <b>${caseNoText}:</b> ${form.caseNumber}</span><span><b>${dateText}:</b> ${dateStr}</span></div>
-<div class="content">${clean}</div>
+<div class="content">${contentHTML}</div>
 <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),1000);}</script>
 </body></html>`);
     win.document.close();
@@ -707,7 +1178,8 @@ const BuildArgumentModal = ({ isOpen, onClose, currentCase, onUpdateCase }) => {
   // ── COPY ─────────────────────────────────────────────────────────────────────
   const handleCopy = () => {
     if (!displayOutput) { toast.error('Generate an argument first.'); return; }
-    navigator.clipboard.writeText(displayOutput).then(() => {
+    const cleanText = displayOutput.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\*\*/g, '');
+    navigator.clipboard.writeText(cleanText).then(() => {
       setCopied(true); setTimeout(() => setCopied(false), 2000);
       toast.success('Copied to clipboard!');
     });
@@ -814,10 +1286,11 @@ const BuildArgumentModal = ({ isOpen, onClose, currentCase, onUpdateCase }) => {
                   <Scale size={18} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-base font-black text-white leading-none">Build Argument</h2>
-                  <p className="text-[10px] text-white/60 font-medium mt-0.5 uppercase tracking-widest">
-                    {currentCase?.name ? `Case: ${currentCase.name}` : 'Professional Court Document Wizard'}
-                  </p>
+                  <h2 className="text-base font-black text-white leading-none">Argument Builder</h2>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[9px] text-emerald-300 font-black uppercase tracking-widest">AI ACTIVE</span>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -859,45 +1332,24 @@ const BuildArgumentModal = ({ isOpen, onClose, currentCase, onUpdateCase }) => {
 
             {/* ── BODY ─────────────────────────────────────────────── */}
             <div className="flex-1 overflow-hidden flex flex-col lg:flex-row min-h-0">
-
+ 
               {/* ── LEFT: FORM ───────────────────────────────────────────────── */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar lg:max-w-[58%] divide-y divide-slate-100 dark:divide-white/5">
-
-                {/* S1 Case Info */}
+              <div className={`flex-1 overflow-y-auto custom-scrollbar transition-all duration-300 divide-y divide-slate-100 dark:divide-white/5 ${showOutput ? 'lg:max-w-[58%] border-r border-slate-200 dark:border-white/5' : 'max-w-4xl mx-auto w-full'}`}>
+ 
+                {/* Case Information */}
                 <div>
-                  <SectionHdr n="1" title="Case Information" sub="Core case identifiers" open={sec.s1} onToggle={() => tog('s1')} />
+                  <SectionHdr title="Case Information" open={sec.s1} onToggle={() => tog('s1')} />
                   {sec.s1 && (
-                    <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="sm:col-span-2 flex flex-col gap-1.5">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
                           Case Title <span className="text-red-500">*</span>
                           <AutoFilledBadge field="caseTitle" />
                         </label>
                         <input className={`${inputCls} ${prefillFields.has('caseTitle') ? 'border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/30 dark:bg-emerald-950/10' : ''}`} value={f.caseTitle} onChange={e => upd('caseTitle', e.target.value)} placeholder="e.g. XYZ vs ABC" />
                       </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                          Case Number
-                          <AutoFilledBadge field="caseNumber" />
-                        </label>
-                        <input className={`${inputCls} ${prefillFields.has('caseNumber') ? 'border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/30 dark:bg-emerald-950/10' : ''}`} value={f.caseNumber} onChange={e => upd('caseNumber', e.target.value)} placeholder="CS(OS) 123/2024" />
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                          Court Name
-                          <AutoFilledBadge field="courtName" />
-                        </label>
-                        <input className={`${inputCls} ${prefillFields.has('courtName') ? 'border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/30 dark:bg-emerald-950/10' : ''}`} value={f.courtName} onChange={e => upd('courtName', e.target.value)} placeholder="e.g. Delhi High Court" />
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                          Judge Name (Optional)
-                          <AutoFilledBadge field="judgeName" />
-                        </label>
-                        <input className={`${inputCls} ${prefillFields.has('judgeName') ? 'border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/30 dark:bg-emerald-950/10' : ''}`} value={f.judgeName} onChange={e => upd('judgeName', e.target.value)} placeholder="Hon'ble Justice..." />
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                      <div className="flex flex-col gap-1.5 col-span-2">
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
                           Case Type
                           <AutoFilledBadge field="caseType" />
                         </label>
@@ -909,483 +1361,301 @@ const BuildArgumentModal = ({ isOpen, onClose, currentCase, onUpdateCase }) => {
                     </div>
                   )}
                 </div>
-
-                {/* S2 Party Info */}
+ 
+                {/* Parties */}
                 <div>
-                  <SectionHdr n="2" title="Party Information" sub="Parties & advocates" open={sec.s2} onToggle={() => tog('s2')} />
+                  <SectionHdr title="Parties" open={sec.s2} onToggle={() => tog('s2')} />
                   {sec.s2 && (
-                    <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                          Petitioner / Plaintiff <span className="text-red-500">*</span>
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                          Petitioner <span className="text-red-500">*</span>
                           <AutoFilledBadge field="petitioner" />
                         </label>
                         <input className={`${inputCls} ${prefillFields.has('petitioner') ? 'border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/30 dark:bg-emerald-950/10' : ''}`} value={f.petitioner} onChange={e => upd('petitioner', e.target.value)} placeholder="Full legal name" />
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                          Respondent / Defendant <span className="text-red-500">*</span>
+                        <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                          Respondent <span className="text-red-500">*</span>
                           <AutoFilledBadge field="respondent" />
                         </label>
                         <input className={`${inputCls} ${prefillFields.has('respondent') ? 'border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/30 dark:bg-emerald-950/10' : ''}`} value={f.respondent} onChange={e => upd('respondent', e.target.value)} placeholder="Full legal name" />
                       </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                          Advocate Name
-                          <AutoFilledBadge field="advocateName" />
-                        </label>
-                        <input className={`${inputCls} ${prefillFields.has('advocateName') ? 'border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/30 dark:bg-emerald-950/10' : ''}`} value={f.advocateName} onChange={e => upd('advocateName', e.target.value)} placeholder="Advocate / Sr. Advocate" />
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Advocate Side</label>
-                        <select className={inputCls} value={f.advocateSide} onChange={e => upd('advocateSide', e.target.value)}>
-                          <option value="">Select side...</option>
-                          {ADVOCATE_SIDES.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      </div>
                     </div>
                   )}
                 </div>
-
-                {/* S3 Case Facts */}
+ 
+                {/* Case Facts */}
                 <div>
-                  <SectionHdr n="3" title="Case Facts" sub="Complete factual background" open={sec.s3} onToggle={() => tog('s3')} />
+                  <SectionHdr title="Facts" open={sec.s3} onToggle={() => tog('s3')} />
                   {sec.s3 && (
-                    <div className="p-5">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 block mb-2">
+                    <div className="p-4">
+                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-1.5">
                         Facts of the Case <span className="text-red-500">*</span>
                         <AutoFilledBadge field="caseFacts" />
                       </label>
-                      <textarea rows={8} value={f.caseFacts} onChange={e => upd('caseFacts', e.target.value)}
+                      <textarea rows={6} value={f.caseFacts} onChange={e => upd('caseFacts', e.target.value)}
                         placeholder="Enter complete facts of the case including dates, events, parties' actions, prior proceedings, previous orders, and all relevant background information..."
-                        className={`${inputCls} resize-y min-h-[120px] leading-relaxed ${prefillFields.has('caseFacts') ? 'border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/30 dark:bg-emerald-950/10' : ''}`}
+                        className={`${inputCls} resize-y min-h-[100px] leading-relaxed ${prefillFields.has('caseFacts') ? 'border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/30 dark:bg-emerald-950/10' : ''}`}
                       />
-                      <p className="text-[9px] text-slate-400 mt-1.5">{f.caseFacts.length} characters · More detail = better AI output</p>
-
                     </div>
                   )}
                 </div>
-
-                {/* S4 Issues */}
-                <div>
-                  <SectionHdr n="4" title="Issues For Determination" sub="Legal questions before the court" open={sec.s4} onToggle={() => tog('s4')} />
-                  {sec.s4 && (
-                    <div className="p-5 space-y-3">
-                      {f.issues.map((issue, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-950/40 flex items-center justify-center shrink-0">
-                            <span className="text-[9px] font-black text-violet-600">{i + 1}</span>
-                          </div>
-                          <input value={issue} onChange={e => upd('issues', f.issues.map((x, idx) => idx === i ? e.target.value : x))}
-                            placeholder="e.g. Whether the contract dated ___ is legally valid?"
-                            className={`${inputSmCls} flex-1 w-full`} />
-                          {f.issues.length > 1 && (
-                            <button onClick={() => upd('issues', f.issues.filter((_, idx) => idx !== i))}
-                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors shrink-0">
-                              <Trash2 size={13} />
-                            </button>
-                          )}
+ 
+                {/* Advanced Options Accordion */}
+                <div className="border-t border-slate-100 dark:border-white/5">
+                  <SectionHdr title="Advanced Options" open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
+                  {showAdvanced && (
+                    <div className="divide-y divide-slate-100 dark:divide-white/5">
+                      {/* Sub-section: Technical details */}
+                      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                            Case Number
+                            <AutoFilledBadge field="caseNumber" />
+                          </label>
+                          <input className={`${inputCls} ${prefillFields.has('caseNumber') ? 'border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/30 dark:bg-emerald-950/10' : ''}`} value={f.caseNumber} onChange={e => upd('caseNumber', e.target.value)} placeholder="CS(OS) 123/2024" />
                         </div>
-                      ))}
-                      <button onClick={() => upd('issues', [...f.issues, ''])}
-                        className="flex items-center gap-2 text-xs font-black text-violet-600 hover:text-violet-700 uppercase tracking-widest px-2 py-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors">
-                        <Plus size={13} /> Add Issue
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* S5 Legal Provisions */}
-                <div>
-                  <SectionHdr n="5" title="Legal Provisions" sub="Applicable acts and sections" open={sec.s5} onToggle={() => tog('s5')} />
-                  {sec.s5 && (
-                    <div className="p-5 space-y-3">
-                      <div className="flex flex-wrap gap-1.5 pb-2">
-                        {PROVISIONS_QUICK.map(act => (
-                          <button key={act} onClick={() => addQuickProvision(act)}
-                            className="text-[9px] font-bold px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-950/30 text-violet-600 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 transition-colors">
-                            + {act}
-                          </button>
-                        ))}
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                            Court Name
+                            <AutoFilledBadge field="courtName" />
+                          </label>
+                          <input className={`${inputCls} ${prefillFields.has('courtName') ? 'border-emerald-300 dark:border-emerald-700/50 bg-emerald-50/30 dark:bg-emerald-950/10' : ''}`} value={f.courtName} onChange={e => upd('courtName', e.target.value)} placeholder="e.g. Delhi High Court" />
+                        </div>
                       </div>
-                      {f.provisions.map((prov, i) => (
-                        <div key={i} className="flex gap-2 items-center">
-                          <div className="flex-1 grid grid-cols-2 gap-2">
-                            <input value={prov.act} onChange={e => upd('provisions', f.provisions.map((x, idx) => idx === i ? { ...x, act: e.target.value } : x))}
-                              placeholder="Act / Statute" className={`${inputSmCls} w-full`} />
-                            <input value={prov.sections} onChange={e => upd('provisions', f.provisions.map((x, idx) => idx === i ? { ...x, sections: e.target.value } : x))}
-                              placeholder="Section(s)" className={`${inputSmCls} w-full`} />
+ 
+                      {/* Issues */}
+                      <div className="p-4 space-y-3">
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block mb-1">Issues for Determination</span>
+                        {f.issues.map((issue, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <input value={issue} onChange={e => upd('issues', f.issues.map((x, idx) => idx === i ? e.target.value : x))}
+                              placeholder="e.g. Whether the contract dated ___ is legally valid?"
+                              className={`${inputSmCls} flex-1 w-full`} />
+                            {f.issues.length > 1 && (
+                              <button onClick={() => upd('issues', f.issues.filter((_, idx) => idx !== i))}
+                                className="p-1.5 text-red-400 hover:text-red-600 rounded-lg shrink-0">
+                                <Trash2 size={13} />
+                              </button>
+                            )}
                           </div>
-                          {f.provisions.length > 1 && (
-                            <button onClick={() => upd('provisions', f.provisions.filter((_, idx) => idx !== i))}
-                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors shrink-0">
-                              <Trash2 size={13} />
+                        ))}
+                        <button onClick={() => upd('issues', [...f.issues, ''])}
+                          className="flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:text-violet-700">
+                          <Plus size={13} /> Add Issue
+                        </button>
+                      </div>
+ 
+                      {/* Provisions */}
+                      <div className="p-4 space-y-3">
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block mb-1">Legal Provisions</span>
+                        <div className="flex flex-wrap gap-1.5 pb-2">
+                          {PROVISIONS_QUICK.map(act => (
+                            <button key={act} onClick={() => addQuickProvision(act)}
+                              className="text-[9px] font-bold px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-950/30 text-violet-600 border border-violet-200 dark:border-violet-800 hover:bg-violet-100 transition-colors">
+                              + {act}
                             </button>
-                          )}
+                          ))}
                         </div>
-                      ))}
-                      <button onClick={() => upd('provisions', [...f.provisions, { act: '', sections: '' }])}
-                        className="flex items-center gap-2 text-xs font-black text-violet-600 hover:text-violet-700 uppercase tracking-widest px-2 py-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors">
-                        <Plus size={13} /> Add Provision
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* S6 Evidence */}
-                <div>
-                  <SectionHdr n="6" title="Evidence" sub="All supporting evidence" open={sec.s6} onToggle={() => tog('s6')} />
-                  {sec.s6 && (
-                    <div className="p-5 space-y-4">
-                      {f.evidences.map((ev, i) => (
-                        <div key={i} className="border border-slate-200 dark:border-zinc-700 rounded-2xl overflow-hidden">
-                          <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-zinc-800/40">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Evidence {i + 1}</span>
-                            {f.evidences.length > 1 && (
-                              <button onClick={() => upd('evidences', f.evidences.filter((_, idx) => idx !== i))}
-                                className="p-1 text-red-400 hover:text-red-600 transition-colors"><Trash2 size={12} /></button>
-                            )}
-                          </div>
-                          <div className="p-4 space-y-2.5">
-                            <input value={ev.title} onChange={e => upd('evidences', f.evidences.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))}
-                              placeholder="Evidence Title / Document Name" className={`${inputSmCls} w-full`} />
-                            <textarea rows={2} value={ev.description} onChange={e => upd('evidences', f.evidences.map((x, idx) => idx === i ? { ...x, description: e.target.value } : x))}
-                              placeholder="Brief description of this evidence and its significance..."
-                              className={`${inputCls} resize-none`} />
-                            <div className="flex flex-wrap gap-2">
-                              {[{ icon: FileText, label: 'Doc', accept: '.pdf,.doc,.docx,.txt' }, { icon: ImageIcon, label: 'Image', accept: 'image/*' }, { icon: Mic, label: 'Audio', accept: 'audio/*' }, { icon: Video, label: 'Video', accept: 'video/*' }].map(({ icon: Icon, label, accept }) => (
-                                <label key={label} className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-full text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:border-violet-400 hover:text-violet-600 cursor-pointer transition-colors">
-                                  <Icon size={10} /><span>{label}</span>
-                                  <input type="file" accept={accept} className="hidden" onChange={e => {
-                                    const file = e.target.files[0];
-                                    if (file) {
-                                      upd('evidences', f.evidences.map((x, idx) => idx === i ? { ...x, files: [...(x.files||[]), { name: file.name, type: file.type, size: file.size }] } : x));
-                                      toast.success(`${file.name} attached`);
-                                    }
-                                  }} />
-                                </label>
-                              ))}
+                        {f.provisions.map((prov, i) => (
+                          <div key={i} className="flex gap-2 items-center">
+                            <div className="flex-1 grid grid-cols-2 gap-2">
+                              <input value={prov.act} onChange={e => upd('provisions', f.provisions.map((x, idx) => idx === i ? { ...x, act: e.target.value } : x))}
+                                placeholder="Act / Statute" className={`${inputSmCls} w-full`} />
+                              <input value={prov.sections} onChange={e => upd('provisions', f.provisions.map((x, idx) => idx === i ? { ...x, sections: e.target.value } : x))}
+                                placeholder="Section(s)" className={`${inputSmCls} w-full`} />
                             </div>
-                            {ev.files?.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5">
-                                {ev.files.map((f, fi) => (
-                                  <span key={fi} className="flex items-center gap-1 px-2 py-1 bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800 rounded-full text-[9px] font-bold text-violet-700">
-                                    <FileText size={8} />{f.name}
-                                  </span>
-                                ))}
-                              </div>
+                            {f.provisions.length > 1 && (
+                              <button onClick={() => upd('provisions', f.provisions.filter((_, idx) => idx !== i))}
+                                className="p-1.5 text-red-400 hover:text-red-600 rounded-lg shrink-0">
+                                <Trash2 size={13} />
+                              </button>
                             )}
                           </div>
-                        </div>
-                      ))}
-                      <button onClick={() => upd('evidences', [...f.evidences, { title: '', description: '', files: [] }])}
-                        className="flex items-center gap-2 text-xs font-black text-violet-600 hover:text-violet-700 uppercase tracking-widest px-2 py-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors">
-                        <Plus size={13} /> Add Evidence
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* S7 Case Laws */}
-                <div>
-                  <SectionHdr n="7" title="Case Laws / Precedents" sub="Binding & persuasive authorities" open={sec.s7} onToggle={() => tog('s7')} />
-                  {sec.s7 && (
-                    <div className="p-5 space-y-3">
-                      {f.caseLaws.map((cl, i) => (
-                        <div key={i} className="border border-slate-200 dark:border-zinc-700 rounded-2xl p-4 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-violet-600">Precedent {i + 1}</span>
-                            {f.caseLaws.length > 1 && (
-                              <button onClick={() => upd('caseLaws', f.caseLaws.filter((_, idx) => idx !== i))}
-                                className="p-1 text-red-400 hover:text-red-600 transition-colors"><Trash2 size={12} /></button>
-                            )}
-                          </div>
-                          <input value={cl.name} onChange={e => upd('caseLaws', f.caseLaws.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))}
-                            placeholder="Case Name e.g. State of Maharashtra v. Mayer Hans George" className={`${inputSmCls} w-full`} />
-                          <input value={cl.citation} onChange={e => upd('caseLaws', f.caseLaws.map((x, idx) => idx === i ? { ...x, citation: e.target.value } : x))}
-                            placeholder="Citation e.g. AIR 1965 SC 722 / (2024) 3 SCC 456" className={`${inputSmCls} w-full`} />
-                          <input value={cl.principle} onChange={e => upd('caseLaws', f.caseLaws.map((x, idx) => idx === i ? { ...x, principle: e.target.value } : x))}
-                            placeholder="Principle / Ratio Decidendi established" className={`${inputSmCls} w-full`} />
-                        </div>
-                      ))}
-                      <button onClick={() => upd('caseLaws', [...f.caseLaws, { name: '', citation: '', principle: '' }])}
-                        className="flex items-center gap-2 text-xs font-black text-violet-600 hover:text-violet-700 uppercase tracking-widest px-2 py-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors">
-                        <Plus size={13} /> Add Precedent
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* S8 Main Arguments */}
-                <div>
-                  <SectionHdr n="8" title="Main Arguments" sub="Your primary legal arguments" open={sec.s8} onToggle={() => tog('s8')} />
-                  {sec.s8 && (
-                    <div className="p-5 space-y-4">
-                      {f.arguments_.map((arg, i) => (
-                        <div key={i} className="border border-slate-200 dark:border-zinc-700 rounded-2xl overflow-hidden">
-                          <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-950/30 dark:to-indigo-950/20 border-b border-slate-100 dark:border-white/5">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-violet-600">Argument {i + 1}</span>
-                            <div className="flex items-center gap-2">
-                              <select value={arg.strength} onChange={e => upd('arguments_', f.arguments_.map((x, idx) => idx === i ? { ...x, strength: e.target.value } : x))}
-                                className={`text-[10px] font-black px-2 py-1 rounded-full border cursor-pointer outline-none transition-colors ${strengthColor(arg.strength)}`}>
-                                {STRENGTH_LEVELS.map(s => <option key={s} value={s}>{s}</option>)}
-                              </select>
-                              {f.arguments_.length > 1 && (
-                                <button onClick={() => upd('arguments_', f.arguments_.filter((_, idx) => idx !== i))}
-                                  className="p-1 text-red-400 hover:text-red-600 transition-colors"><Trash2 size={12} /></button>
+                        ))}
+                        <button onClick={() => upd('provisions', [...f.provisions, { act: '', sections: '' }])}
+                          className="flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:text-violet-700">
+                          <Plus size={13} /> Add Provision
+                        </button>
+                      </div>
+ 
+                      {/* Evidence */}
+                      <div className="p-4 space-y-3">
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block mb-1">Evidence & Documents</span>
+                        {f.evidences.map((ev, i) => (
+                          <div key={i} className="border border-slate-200 dark:border-zinc-700 rounded-2xl p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-bold text-slate-400">Evidence {i + 1}</span>
+                              {f.evidences.length > 1 && (
+                                <button onClick={() => upd('evidences', f.evidences.filter((_, idx) => idx !== i))}
+                                  className="p-1 text-red-400 hover:text-red-600"><Trash2 size={12} /></button>
                               )}
                             </div>
+                            <input value={ev.title} onChange={e => upd('evidences', f.evidences.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))}
+                              placeholder="Evidence Title" className={`${inputSmCls} w-full`} />
+                            <textarea rows={2} value={ev.description} onChange={e => upd('evidences', f.evidences.map((x, idx) => idx === i ? { ...x, description: e.target.value } : x))}
+                              placeholder="Description..." className={`${inputCls} resize-none`} />
                           </div>
-                          <div className="p-4 space-y-3">
-                            <input value={arg.heading} onChange={e => upd('arguments_', f.arguments_.map((x, idx) => idx === i ? { ...x, heading: e.target.value } : x))}
-                              placeholder="Argument Heading / Title" className={`${inputSmCls} w-full font-bold`} />
-                            <textarea rows={4} value={arg.detail} onChange={e => upd('arguments_', f.arguments_.map((x, idx) => idx === i ? { ...x, detail: e.target.value } : x))}
-                              placeholder="Detailed legal argument — include reasoning, facts, and legal principles..."
-                              className={`${inputCls} resize-none`} />
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                              <input value={arg.evidence} onChange={e => upd('arguments_', f.arguments_.map((x, idx) => idx === i ? { ...x, evidence: e.target.value } : x))}
-                                placeholder="Supporting Evidence" className={`${inputSmCls} w-full text-xs`} />
-                              <input value={arg.provision} onChange={e => upd('arguments_', f.arguments_.map((x, idx) => idx === i ? { ...x, provision: e.target.value } : x))}
-                                placeholder="Legal Provision" className={`${inputSmCls} w-full text-xs`} />
-                              <input value={arg.judgment} onChange={e => upd('arguments_', f.arguments_.map((x, idx) => idx === i ? { ...x, judgment: e.target.value } : x))}
-                                placeholder="Supporting Judgment" className={`${inputSmCls} w-full text-xs`} />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      <button onClick={() => upd('arguments_', [...f.arguments_, { heading: '', detail: '', evidence: '', provision: '', judgment: '', strength: 'Strong' }])}
-                        className="flex items-center gap-2 text-xs font-black text-violet-600 hover:text-violet-700 uppercase tracking-widest px-2 py-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors">
-                        <Plus size={13} /> Add Argument
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* S9 Counter Arguments */}
-                <div>
-                  <SectionHdr n="9" title="Counter Arguments" sub="Opponent arguments & rebuttals" open={sec.s9} onToggle={() => tog('s9')} />
-                  {sec.s9 && (
-                    <div className="p-5 space-y-4">
-                      {f.counters.map((c, i) => (
-                        <div key={i} className="border border-slate-200 dark:border-zinc-700 rounded-2xl p-4 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-red-500">Counter {i + 1}</span>
-                            {f.counters.length > 1 && (
-                              <button onClick={() => upd('counters', f.counters.filter((_, idx) => idx !== i))}
-                                className="p-1 text-red-400 hover:text-red-600 transition-colors"><Trash2 size={12} /></button>
-                            )}
-                          </div>
-                          <div>
-                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-1.5">Opponent's Argument</label>
-                            <textarea rows={2} value={c.opponent} onChange={e => upd('counters', f.counters.map((x, idx) => idx === i ? { ...x, opponent: e.target.value } : x))}
-                              placeholder="What the opposing counsel will argue..."
-                              className={`${inputCls} resize-none bg-red-50/40 dark:bg-red-950/10 border-red-200 dark:border-red-900/30 focus:border-red-400`} />
-                          </div>
-                          <div>
-                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-1.5">Your Rebuttal</label>
-                            <textarea rows={2} value={c.rebuttal} onChange={e => upd('counters', f.counters.map((x, idx) => idx === i ? { ...x, rebuttal: e.target.value } : x))}
-                              placeholder="Your counter and legal reasoning..."
-                              className={`${inputCls} resize-none bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-200 dark:border-emerald-900/30 focus:border-emerald-400`} />
-                          </div>
-                        </div>
-                      ))}
-                      <button onClick={() => upd('counters', [...f.counters, { opponent: '', rebuttal: '' }])}
-                        className="flex items-center gap-2 text-xs font-black text-violet-600 hover:text-violet-700 uppercase tracking-widest px-2 py-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors">
-                        <Plus size={13} /> Add Counter
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* S10 Relief */}
-                <div>
-                  <SectionHdr n="10" title="Relief Sought" sub="Prayers to the Hon'ble Court" open={sec.s10} onToggle={() => tog('s10')} />
-                  {sec.s10 && (
-                    <div className="p-5">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                        {RELIEF_OPTIONS.map(r => (
-                          <button key={r} onClick={() => upd('reliefs', f.reliefs.includes(r) ? f.reliefs.filter(x => x !== r) : [...f.reliefs, r])}
-                            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-bold text-left transition-all active:scale-95 ${
-                              f.reliefs.includes(r)
-                                ? 'bg-violet-600 border-violet-600 text-white shadow-md shadow-violet-500/20'
-                                : 'bg-white dark:bg-zinc-800/40 border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-400 hover:border-violet-400 hover:text-violet-600'
-                            }`}>
-                            <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 ${f.reliefs.includes(r) ? 'bg-white/20' : 'bg-slate-100 dark:bg-zinc-700'}`}>
-                              {f.reliefs.includes(r) && <Check size={10} className="text-white" />}
-                            </div>
-                            {r}
-                          </button>
                         ))}
+                        <button onClick={() => upd('evidences', [...f.evidences, { title: '', description: '', files: [] }])}
+                          className="flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:text-violet-700">
+                          <Plus size={13} /> Add Evidence
+                        </button>
+                      </div>
+ 
+                      {/* Case Laws */}
+                      <div className="p-4 space-y-3">
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 block mb-1">Case Laws / Precedents</span>
+                        {f.caseLaws.map((cl, i) => (
+                          <div key={i} className="border border-slate-200 dark:border-zinc-700 rounded-2xl p-3 space-y-2">
+                            <input value={cl.name} onChange={e => upd('caseLaws', f.caseLaws.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x))}
+                              placeholder="Case Name" className={`${inputSmCls} w-full`} />
+                            <input value={cl.citation} onChange={e => upd('caseLaws', f.caseLaws.map((x, idx) => idx === i ? { ...x, citation: e.target.value } : x))}
+                              placeholder="Citation" className={`${inputSmCls} w-full`} />
+                          </div>
+                        ))}
+                        <button onClick={() => upd('caseLaws', [...f.caseLaws, { name: '', citation: '', principle: '' }])}
+                          className="flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:text-violet-700">
+                          <Plus size={13} /> Add Precedent
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
-
-                <div className="h-8" />
-              </div>
-
-              {/* ── RIGHT: AI ENGINE + OUTPUT ────────────────────────────────── */}
-              <div ref={outputRef} className="lg:w-[42%] flex flex-col border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-white/5 bg-slate-50/80 dark:bg-[#060d1a]">
-
-                {/* AI Buttons */}
-                <div className="p-4 border-b border-slate-200 dark:border-white/5 shrink-0">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles size={13} className="text-violet-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">AI Generation Engine</span>
-                    {generating && (
-                      <span className="ml-auto text-[9px] font-bold text-violet-500 animate-pulse">Processing...</span>
+ 
+                {/* Build Argument Primary Action */}
+                <div className="p-5 flex justify-end shrink-0">
+                  <button
+                    onClick={() => handleGenerate('written')}
+                    disabled={generating}
+                    className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm font-black transition-all shadow-md shadow-violet-500/20 active:scale-95 disabled:opacity-50"
+                  >
+                    {generating ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={16} />
+                        <span>Build Argument</span>
+                      </>
                     )}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
-                    {AI_ACTIONS.map(action => {
-                      const Icon = action.icon;
-                      const isActive = activeAction === action.id && generating;
-                      const isDone = activeAction !== action.id || !generating;
-                      return (
-                        <button
-                          key={action.id}
-                          onClick={() => handleGenerate(action.id)}
-                          disabled={generating}
-                          className={`flex items-center gap-3 px-3 py-3 rounded-2xl text-left transition-all active:scale-[0.98] group
-                            ${isActive
-                              ? `bg-gradient-to-r ${action.grad} text-white shadow-lg`
-                              : 'bg-white dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-slate-300 hover:border-violet-400 hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed'
-                            }`}
-                        >
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${isActive ? 'bg-white/20' : `bg-gradient-to-br ${action.grad} opacity-10 group-hover:opacity-100`}`}>
-                            {isActive
-                              ? <Loader2 size={14} className="animate-spin text-white" />
-                              : <Icon size={14} className={isActive ? 'text-white' : `text-violet-600 group-hover:scale-110 transition-transform`} />
-                            }
-                          </div>
-                          <div className="min-w-0">
-                            <div className={`text-[11px] font-black leading-tight ${isActive ? 'text-white' : ''}`}>{action.label}</div>
-                            <div className={`text-[9px] mt-0.5 truncate ${isActive ? 'text-white/70' : 'text-slate-400'}`}>{action.desc}</div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Required fields hint */}
-                  <div className="flex items-start gap-2 mt-3 px-3 py-2.5 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/40">
-                    <AlertCircle size={12} className="text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-[9px] text-amber-700 dark:text-amber-400 font-semibold leading-relaxed">
-                      Required: Case Title, Facts, Petitioner & Respondent names. More data = better AI output.
-                    </p>
-                  </div>
+                  </button>
                 </div>
-
-                {/* Output Area */}
-                <div className="flex-1 flex flex-col min-h-0">
-                  {showOutput ? (
-                    <>
-                      {/* Output Header */}
-                      <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 dark:border-white/5 shrink-0 bg-white/50 dark:bg-black/20">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className={`w-2 h-2 rounded-full shrink-0 ${generating ? 'bg-violet-500 animate-pulse' : 'bg-emerald-500'}`} />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 truncate">{outputLabel}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {!generating && output && (
+              </div>
+ 
+              {/* ── RIGHT: AI OUTPUT ────────────────────────────────── */}
+              {showOutput && (
+                <div ref={outputRef} className="lg:w-[42%] flex flex-col border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-white/5 bg-slate-50/80 dark:bg-[#060d1a]">
+                  <div className="flex-1 flex flex-col min-h-0">
+                    {/* Output Header */}
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 dark:border-white/5 shrink-0 bg-white/50 dark:bg-black/20">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${generating ? 'bg-violet-500 animate-pulse' : 'bg-emerald-500'}`} />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 truncate">{outputLabel}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!generating && output && (
+                          <>
+                            <select
+                              value=""
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  handleGenerate(e.target.value);
+                                }
+                              }}
+                              className="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-xl text-[10px] font-bold outline-none cursor-pointer border border-slate-200 dark:border-zinc-700 font-sans"
+                            >
+                              <option value="">Regenerate as...</option>
+                              {AI_ACTIONS.map(act => (
+                                <option key={act.id} value={act.id}>{act.label}</option>
+                              ))}
+                            </select>
                             <LanguageToggle
                               lang={outputLang}
                               onChange={setOutputLang}
                               isTranslating={isOutputTranslating}
                             />
-                          )}
-                          <button onClick={() => { setShowOutput(false); setOutput(''); }}
-                            className="p-1 text-slate-400 hover:text-red-500 transition-colors shrink-0 ml-2">
-                            <X size={13} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 min-h-0">
-                        {generating ? (
-                          <div className="flex flex-col items-center justify-center h-full gap-5 py-10">
-                            <div className="relative">
-                              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-violet-500/30">
-                                <Brain size={26} className="text-white" />
-                              </div>
-                              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-violet-500/30 to-indigo-600/30 animate-ping" />
-                            </div>
-                            <div className="text-center space-y-1">
-                              <p className="text-sm font-black text-slate-700 dark:text-slate-200">{outputLabel}</p>
-                              <p className="text-xs text-slate-400">AI is analyzing your case data...</p>
-                              <p className="text-[9px] text-slate-300 dark:text-slate-600">This may take 15–30 seconds</p>
-                            </div>
-                            <div className="flex gap-1.5">
-                              {[0,1,2,3,4].map(i => (
-                                <div key={i} className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: `${i * 100}ms` }} />
-                              ))}
-                            </div>
-                          </div>
-                        ) : output ? (
-                          <div id="argument-rendered-output">
-                            <RenderedOutput text={displayOutput} />
-                          </div>
-                        ) : null}
-                      </div>
-
-                      {/* Export Bar */}
-                      {!generating && output && (
-                        <div className="px-3 py-3 border-t border-slate-200 dark:border-white/5 shrink-0 bg-white/50 dark:bg-black/10">
-                          <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Export & Save</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            <button onClick={handleCopy}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${copied ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300 hover:border-violet-400'}`}>
-                              {copied ? <Check size={11} /> : <Copy size={11} />}
-                              <span>{copied ? 'Copied!' : 'Copy'}</span>
-                            </button>
-                            <button onClick={handlePDF}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-red-600 hover:border-red-400 transition-all">
-                              <FileText size={11} /><span>PDF</span>
-                            </button>
-                            <button onClick={handleDocx}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-blue-600 hover:border-blue-400 transition-all">
-                              <FileDown size={11} /><span>DOCX</span>
-                            </button>
-                            <button onClick={handlePrint}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300 hover:border-violet-400 transition-all">
-                              <Printer size={11} /><span>Print</span>
-                            </button>
-                            <button onClick={handleSaveToCase} disabled={saving || !caseId}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                                !caseId
-                                  ? 'bg-slate-100 dark:bg-zinc-800 text-slate-400 border border-slate-200 dark:border-zinc-700 cursor-not-allowed'
-                                  : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700 shadow-sm shadow-violet-500/20 disabled:opacity-50'
-                              }`}
-                              title={!caseId ? 'Open a case to enable Save to Case' : 'Save to current case in database'}>
-                              {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
-                              <span>{saving ? 'Saving...' : 'Save to Case'}</span>
-                            </button>
-                          </div>
-                          {!caseId && (
-                            <p className="text-[9px] text-slate-400 mt-1.5">Open a case from the dashboard to enable database save.</p>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full py-12 px-6 gap-4 text-center">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 border border-violet-200 dark:border-violet-800/40 flex items-center justify-center">
-                        <Scale size={28} className="text-violet-400" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-slate-600 dark:text-slate-300">AI Output Panel</p>
-                        <p className="text-xs text-slate-400 mt-1 leading-relaxed max-w-[200px] mx-auto">
-                          Fill the form sections, then click any generation button above to produce a court-ready document.
-                        </p>
-                      </div>
-                      <div className="text-[9px] text-slate-300 dark:text-slate-600 font-medium">
-                        PDF · DOCX · Print · Copy · Save to Case
+                          </>
+                        )}
+                        <button onClick={() => { setShowOutput(false); setOutput(''); }}
+                          className="p-1 text-slate-400 hover:text-red-500 transition-colors shrink-0 ml-2">
+                          <X size={13} />
+                        </button>
                       </div>
                     </div>
-                  )}
+ 
+                    {/* Content */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-4 min-h-0 font-sans">
+                      {generating ? (
+                        <div className="flex flex-col items-center justify-center h-full gap-5 py-10">
+                          <div className="relative">
+                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-2xl shadow-violet-500/30">
+                              <Brain size={26} className="text-white" />
+                            </div>
+                            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-violet-500/30 to-indigo-600/30 animate-ping" />
+                          </div>
+                          <div className="text-center space-y-1">
+                            <p className="text-sm font-black text-slate-700 dark:text-slate-200">{outputLabel}</p>
+                            <p className="text-xs text-slate-400">AI is analyzing your case data...</p>
+                            <p className="text-[9px] text-slate-300 dark:text-slate-600">This may take 15–30 seconds</p>
+                          </div>
+                          <div className="flex gap-1.5">
+                            {[0,1,2,3,4].map(i => (
+                              <div key={i} className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: `${i * 100}ms` }} />
+                            ))}
+                          </div>
+                        </div>
+                      ) : output ? (
+                        <div id="argument-rendered-output">
+                          <RenderedOutput text={displayOutput} />
+                        </div>
+                      ) : null}
+                    </div>
+ 
+                    {/* Export Bar */}
+                    {!generating && output && (
+                      <div className="px-3 py-3 border-t border-slate-200 dark:border-white/5 shrink-0 bg-white/50 dark:bg-black/10">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Export & Save</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          <button onClick={handleCopy}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${copied ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300 hover:border-violet-400'}`}>
+                            {copied ? <Check size={11} /> : <Copy size={11} />}
+                            <span>{copied ? 'Copied!' : 'Copy'}</span>
+                          </button>
+                          <button onClick={handlePDF}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-red-600 hover:border-red-400 transition-all">
+                            <FileText size={11} /><span>PDF</span>
+                          </button>
+                          <button onClick={handleDocx}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-blue-600 hover:border-blue-400 transition-all">
+                            <FileDown size={11} /><span>DOCX</span>
+                          </button>
+                          <button onClick={handlePrint}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-slate-300 hover:border-violet-400 transition-all">
+                            <Printer size={11} /><span>Print</span>
+                          </button>
+                          <button onClick={handleSaveToCase} disabled={saving || !caseId}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                              !caseId
+                                ? 'bg-slate-100 dark:bg-zinc-800 text-slate-400 border border-slate-200 dark:border-zinc-700 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700 shadow-sm shadow-violet-500/20 disabled:opacity-50'
+                            }`}
+                            title={!caseId ? 'Open a case to enable Save to Case' : 'Save to current case in database'}>
+                            {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                            <span>{saving ? 'Saving...' : 'Save to Case'}</span>
+                          </button>
+                        </div>
+                        {!caseId && (
+                          <p className="text-[9px] text-slate-400 mt-1.5">Open a case from the dashboard to enable database save.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </motion.div>
         </motion.div>
@@ -1393,5 +1663,5 @@ const BuildArgumentModal = ({ isOpen, onClose, currentCase, onUpdateCase }) => {
     </AnimatePresence>
   );
 };
-
+ 
 export default BuildArgumentModal;

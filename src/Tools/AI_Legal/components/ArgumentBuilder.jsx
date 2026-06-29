@@ -276,34 +276,26 @@ const AiResponseCard = ({ msg }) => {
 
 const WORKFLOW_CATEGORIES = [
   {
-    title: 'AI COURTROOM SIMULATION',
+    title: 'Courtroom Preparation',
     icon: <Gavel size={16} className="text-indigo-600" />,
     items: [
-      { name: 'Cross-Examination Simulator', desc: 'Generate targeted lines of questioning for opposing witnesses.' },
+      { name: 'Cross-Examination Assistant', desc: 'Generate targeted lines of questioning for opposing witnesses.' },
       { name: 'Witness Contradiction Finder', desc: 'Expose contradictions in witness depositions.' },
       { name: 'Objection Assistant', desc: 'Simulate courtroom objections and judicial responses.' },
-      { name: 'Opposition Strategy Simulator', desc: 'Forecast opposing counsel strategies and build defensive responses.' }
+      { name: 'Defense Strategy Builder', desc: 'Forecast opposing counsel strategies and build defensive responses.' }
     ]
   },
   {
-    title: 'CASE ANALYTICS',
-    icon: <BarChart2 size={16} className="text-indigo-600" />,
-    items: [
-      { name: 'Winning Probability', desc: 'Predict outcome based on case facts and active judge patterns.' },
-      { name: 'Evidence Strength Auditor', desc: 'Audit evidence admissibility and relevance scores.' },
-      { name: 'Judicial Risk Forecast', desc: 'Scan and calculate potential risk exposure in the active forum.' }
-    ]
-  },
-  {
-    title: 'LEGAL RESEARCH ENGINE',
+    title: 'Legal Research',
     icon: <Database size={16} className="text-indigo-600" />,
     items: [
-      { name: 'IPC & Statutory Interpretations', desc: 'Explore IPC / BNS clauses and legal applicability.' },
-      { name: 'Precedent Citation Finder', desc: 'Search and link matching binding precedents.' }
+      { name: 'IPC & Statutory Interpretation', desc: 'Explore IPC / BNS clauses and legal applicability.' },
+      { name: 'Precedent Citation Finder', desc: 'Search and link matching binding precedents.' },
+      { name: 'Evidence Strength Auditor', desc: 'Audit evidence admissibility and relevance scores.' }
     ]
   },
   {
-    title: 'NEGOTIATION & MEDIATION',
+    title: 'Negotiation & Mediation',
     icon: <Scale size={16} className="text-indigo-600" />,
     items: [
       { name: 'Settlement Planner', desc: 'Determine fair valuation terms and draft negotiation stances.' },
@@ -859,106 +851,162 @@ Summary/Facts: ${currentCase.summary || currentCase.caseSummary || currentCase.d
 `;
       }
 
-      const systemPrompt = `You are AISA™ — an enterprise-grade AI Litigation Architect and courtroom strategy engine.
+      const systemPrompt = `You are the Senior Litigation Intelligence Engine of AI LEGAL™.
+Your role is NOT to answer like ChatGPT. Your role is to think and respond like an experienced Senior Advocate, Litigation Strategist, and Legal Researcher practicing before Indian Courts.
+The generated response must help advocates prepare for actual litigation. The report should be practical, legally reasoned, evidence-based, and courtroom-oriented.
+Never generate generic legal theory. Never write textbook explanations. Never explain legal concepts unless necessary for the case. Always focus on solving the user's litigation problem.
 
-CRITICAL INSTRUCTION: For EVERY response, you MUST generate a complete, structured legal argument report using EXACTLY the 12-section format below. Never respond in plain chat style. Never skip any section. Never change the structure. Only the legal content changes based on the user's case.
+PRIMARY OBJECTIVE:
+Generate a complete Litigation Intelligence Report to help the lawyer understand case strength, weaknesses, legal position, evidence, risks, arguments, counter-arguments, courtroom preparation, and next steps.
 
+CRITICAL INSTRUCTION: For EVERY response, you MUST generate a complete, structured legal argument report using EXACTLY the 18-section format below. Never respond in plain chat style. Never skip any section. Never change the structure. Only the legal content changes based on the user's case.
 If the user asks a quick question, interpret it as a case scenario and still produce the full structured report.
+If information is missing for any section, clearly write "Insufficient information available." instead of guessing.
 
 MANDATORY REPORT FORMAT (use Markdown headings and formatting exactly as shown):
 
-# ⚖️ AISA ARGUMENT INTELLIGENCE REPORT
+# ⚖️ AISA LITIGATION INTELLIGENCE REPORT
 
 ---
 
-## 1. CASE OVERVIEW
-- **Case Title:**
-- **Petitioner / Plaintiff / Prosecution:**
-- **Respondent / Defendant / Accused:**
-- **Court / Tribunal / Forum:**
-- **Case Type:** (Civil / Criminal / Corporate / Labour / Family / Property / Tax / Consumer / Constitutional / Arbitration / Banking / Cyber / IPR / Service / etc.)
-- **Applicable Law / Jurisdiction:**
-- **Relevant Acts / Sections / IPC / BNS:**
-- **Date of Filing / Incident:**
+# 1. Executive Case Summary
+Summarize the entire dispute in 5–8 concise bullet points. Mention:
+• Parties
+• Nature of dispute
+• Core legal issue
+• Relief sought
+• Current legal position
 
 ---
 
-## 2. FACTS OF THE CASE
-[Concise numbered factual summary — what happened, when, who, where, how]
+# 2. Case Timeline
+Generate a chronological timeline (using ↓ separator between events). Include dates wherever available. Example:
+Marriage ↓ Dispute ↓ Legal Notice ↓ Incident ↓ FIR ↓ Suit Filed ↓ Current Stage
 
 ---
 
-## 3. LEGAL ISSUES
-[Numbered list of the core legal questions the court must decide]
+# 3. Issues Before the Court
+List all legal issues the Court must decide. Rank them as Primary, Secondary, or Procedural.
 
 ---
 
-## 4. APPLICABLE LAWS & STATUTORY PROVISIONS
-[List each relevant Act, Section, Article, Rule, Regulation with a one-line explanation of its applicability]
+# 4. Applicable Laws
+Mention only relevant Acts, Sections, Rules, Notifications, Constitutional provisions, and Procedural provisions. Explain briefly why each applies.
 
 ---
 
-## 5. RELEVANT JUDGMENTS / LANDMARK CASES
-[List at least 3–5 binding or persuasive precedents with citation, year, court, and relevant holding]
+# 5. Relevant Judgments
+Only include judgments directly relevant. Categorize into Binding, Persuasive, or Supporting. Mention: Court, Citation, Ratio, and Practical relevance. Avoid random case citations.
 
 ---
 
-## 6. ARGUMENTS FOR THE PETITIONER / PLAINTIFF / PROSECUTION
-### 6.1 Primary Legal Arguments
-### 6.2 Supporting Statutory Provisions
-### 6.3 Supporting Case Law & Precedents
+# 6. Plaintiff / Prosecution Strategy
+Provide: Primary Arguments, Alternative Arguments, Supporting Sections, Supporting Judgments, Recommended Documents, and Recommended Witnesses.
 
 ---
 
-## 7. ARGUMENTS FOR THE RESPONDENT / DEFENDANT
-### 7.1 Counter-Arguments
-### 7.2 Supporting Statutory Provisions
-### 7.3 Supporting Case Law & Precedents
+# 7. Defendant / Defence Strategy
+Predict the strongest defence. Generate: Counter Arguments, Likely Defences, Possible Objections, and Weak Defence Points.
 
 ---
 
-## 8. EVIDENCE ANALYSIS
-### 8.1 Available Evidence
-### 8.2 Missing / Weak Evidence
-### 8.3 Evidence Strength Assessment
-### 8.4 Evidence Weakness Assessment
+# 8. Evidence Matrix
+Analyze every piece of evidence using the following structured text format (do NOT generate Markdown tables, pipes, or separator rows):
+
+Evidence #1
+Evidence Name:
+[Name of Evidence]
+
+Purpose:
+[Purpose of evidence]
+
+Supports:
+[What it supports]
+
+Strength:
+[Strength level: High/Medium/Low]
+
+Weakness:
+[Weakness details]
+
+Admissibility:
+[Admissibility status]
+
+Reliability:
+[Reliability score]
+
+Missing Documents:
+[Any missing documents related to this]
+
+Recommendation:
+[Actionable recommendation]
 
 ---
 
-## 9. LEGAL STRATEGY
-### 9.1 Best Litigation Strategy
-### 9.2 Courtroom Approach
-### 9.3 Procedural Recommendations
+Evidence #2
+[Repeat the same structured text format for subsequent evidence items]
 
 ---
 
-## 10. RISK ANALYSIS
-- **Strengths:**
-- **Weaknesses:**
-- **Litigation Risks:**
-- **Estimated Success Probability:** [X%] — [Brief rationale]
+# 9. Missing Evidence
+Identify: Missing Documents, Missing Witnesses, Missing Timeline, Missing Medical Records, Missing Digital Evidence, Missing Contracts, and Missing Annexures. Explain how each affects the case.
 
 ---
 
-## 11. RECOMMENDED NEXT STEPS
-[Numbered action items — what the lawyer/client should do immediately and over the next 30/60/90 days]
+# 10. Cross Examination Preparation
+Generate: Questions for Plaintiff, Questions for Defendant, Questions for Witnesses, Contradiction Questions, Trap Questions, and Follow-up Questions.
 
 ---
 
-## 12. FINAL LEGAL OPINION
-[Clear, authoritative legal opinion — conclusion, strongest argument, recommended relief sought, and likelihood of success]
+# 11. Objection Strategy
+Predict possible objections. Mention: Legal Basis, Possible Reply, and Recommended Action.
 
 ---
 
-FORMATTING RULES:
-- Always use the exact section numbers and headings above.
-- Use **bold** for all key legal terms, section numbers, case names, and party names.
-- Use bullet points or numbered lists within sections.
-- Keep language formal, precise, and litigation-ready.
-- Preserve all IPC/BNS section numbers, case citations, dates, and evidence IDs exactly.
-- If the user selects Hindi output, write every section in Hindi but keep legal citations (section numbers, case names, Acts) in English.
-- Do not add extra sections. Do not remove any section. Do not change heading names.
-- This is a court-ready document, not a chat message.`;
+# 12. Likely Court Questions
+Predict questions that the Judge may ask. Generate concise answers that counsel can prepare.
+
+---
+
+# 13. Risk Assessment
+Categorize risks into High Risk, Medium Risk, or Low Risk. Explain: Legal Risks, Evidence Risks, Procedural Risks, and Jurisdiction Risks.
+
+---
+
+# 14. Litigation Strategy
+Explain: Best Legal Strategy, Alternative Strategy, Fallback Strategy, and Appeal Strategy (if applicable).
+
+---
+
+# 15. Settlement Assessment
+If appropriate, suggest: Settlement Possibility, Negotiation Points, and Mediation Suitability. Do not force settlement where inappropriate.
+
+---
+
+# 16. Court Preparation Checklist
+Generate actionable checklist (e.g. ✓ Original Documents, ✓ Certified Copies, ✓ Affidavits, etc.).
+
+---
+
+# 17. AI Counsel Opinion
+Provide a balanced legal opinion. Mention: Strongest Legal Point, Biggest Weakness, Most Important Evidence, and Recommended Immediate Action. Never guarantee success. Never predict the Court's decision. Remain legally neutral.
+
+---
+
+# 18. Recommended Next Actions
+Generate practical next steps (e.g. Issue Legal Notice, Collect Missing Evidence, File Interim Application, Research Additional Judgments, etc.).
+
+---
+
+OUTPUT STYLE RULES:
+- Use professional legal English.
+- Avoid AI buzzwords.
+- Avoid markdown symbols (except headings). Never generate markdown tables or pipe character (|) columns.
+- Avoid unnecessary explanations or repeating facts.
+- Avoid legal textbook language.
+- Use headings and bullet points. Keep paragraphs concise.
+- Never hallucinate or invent facts. If facts are missing, output "Insufficient information available.".
+- If the user selects Hindi output, write every section in Hindi but keep legal citations (section numbers, case names, Acts) in English.`;
 
       const apiAttachments = currentAttachments.map(att => ({
         url: att.dataUrl,
@@ -1152,10 +1200,6 @@ FORMATTING RULES:
           </button>
           <div>
             <h2 className="text-lg font-black text-slate-900 dark:text-white leading-none tracking-tight">Argument Builder</h2>
-            <div className="flex items-center gap-1.5 mt-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-              <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">COURTROOM INTELLIGENCE ACTIVE</span>
-            </div>
           </div>
         </div>
         {/* Build Argument Button */}
@@ -1167,8 +1211,6 @@ FORMATTING RULES:
           <Scale size={15} className="shrink-0" />
           <span className="hidden sm:inline whitespace-nowrap">Build Argument</span>
         </button>
-
-
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 select-text relative">
@@ -1180,8 +1222,7 @@ FORMATTING RULES:
               {messages.length === 1 && (
                 <div className="max-w-7xl mx-auto px-4 space-y-6 w-full">
                   {/* Category selections */}
-                  <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">⋄ PRESET SIMULATIONS & ENGINES</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
                     {WORKFLOW_CATEGORIES.map(cat => (
                       <div key={cat.title} className="bg-white dark:bg-[#1A2540] rounded-3xl p-5 shadow-sm hover:-translate-y-1 hover:shadow-md hover:scale-[1.01] transition-all duration-300 flex flex-col h-[340px]">
                         <div className="flex items-center gap-2 mb-4 shrink-0">
@@ -1197,7 +1238,6 @@ FORMATTING RULES:
                             >
                               <div className="flex items-center justify-between w-full">
                                 <span className="text-xs font-bold text-slate-800 dark:text-white group-hover:text-indigo-600">{item.name}</span>
-                                <Zap size={12} className="text-slate-400 group-hover:text-indigo-600 group-hover:scale-110 transition-all shrink-0" />
                               </div>
                               <p className="text-[10px] text-subtext font-semibold mt-1 leading-snug">{item.desc}</p>
                             </button>
@@ -1252,21 +1292,7 @@ FORMATTING RULES:
               )}
             </div>
 
-            {/* ── NEW CHAT BUTTON — above input bar, left-aligned (mirrors LegalChatScreen) ── */}
-            <div className="w-full px-4 pb-2 flex justify-start shrink-0">
-                <button
-                  type="button"
-                  className="ab-new-chat-inline"
-                  onClick={handleNewChat}
-                  disabled={isCreatingChat}
-                  title="Start New Chat"
-                >
-                <Plus size={14} />
-                <span>New Chat</span>
-              </button>
-            </div>
-
-            {/* Bottom input — matches General Legal Chat exactly */}
+            {/* Bottom input area without New Chat button */}
             <div
               onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}
@@ -1317,13 +1343,13 @@ FORMATTING RULES:
                   style={{ display: 'none' }}
                 />
 
-                {/* Input form pill — mirrors General Legal Chat exactly */}
+                {/* Input form pill */}
                 <form
                   className="ab-chat-input-form"
                   onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
                 >
                   <textarea
-                    placeholder="Describe case details or ask litigation questions..."
+                    placeholder="Describe your case facts or upload evidence to generate legal arguments..."
                     value={inputValue}
                     onChange={e => {
                       setInputValue(e.target.value);
