@@ -5,26 +5,41 @@ import {
   ChevronRight, Copy, FileDown, Share2, Plus, ArrowLeft,
   Sparkles, FileText, Image as ImageIcon, RotateCcw, Check,
   SlidersHorizontal, ChevronLeft, ChevronUp, Landmark, ShieldAlert, Calendar,
-  Download, Printer, Briefcase, History, MessageSquare, Pin, PinOff, Trash2
+  Download, Printer, Briefcase, History, MessageSquare, Pin, PinOff, Trash2,
+  ThumbsUp, ThumbsDown, Volume2, Settings, ExternalLink, HelpCircle, Mic, Square
 } from 'lucide-react';
 import { generateChatResponse } from '../../../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { searchAndFilterCases, getFilterOptions } from '../data/caseDatabase';
 import toast from 'react-hot-toast';
+import { useLocation } from 'react-router-dom';
 import { legalService } from '../services/legalService';
 import { apiService } from '../../../services/apiService';
 import { chatStorageService } from '../../../services/chatStorageService';
 import LanguageToggle from './shared/LanguageToggle';
-import CopyOutputButton from './shared/CopyOutputButton';
 import useOutputLanguage from '../hooks/useOutputLanguage';
 import { exportToPDF } from '../utils/exportToPDF';
 
-// ─── LEGAL SYSTEM INSTRUCTION (matches AISA-Mobile) ─────────────────────────
-const LEGAL_SYSTEM_INSTRUCTION = `You are the AISA AI General Legal Chat Assistant. You are an expert in law. If a user uploads an image, PDF, or document, perform OCR, analyze the content, and provide structured legal insights. For Images: Provide a Summary, Key points, and Legal observations. For PDFs/Docs: Provide an Overview, Issues, and Recommendations. Never say you cannot view files. IMPORTANT: You must reply in the exact same language as the user's prompt (e.g., if the user asks in Hindi, reply in Hindi). If the user asks you to translate the previous response "in Hindi" or "hindi me batao", translate the current context to Hindi without hesitation.`;
+// ─── LEGAL SYSTEM INSTRUCTION ────────────────────────────────────────────────
+const LEGAL_SYSTEM_INSTRUCTION = `You are the AISA AI General Legal Chat Assistant. You are an expert in law.
+Provide comprehensive, structured legal analysis. Always format your responses using these structural blocks:
+1. SUMMARY: A brief 2-3 sentence overview.
+2. DEFINITION: Precise legal definition.
+3. RELEVANT STATUTES / LAW: Highlight the specific acts/sections using "> [!STATUTE] Section Name: Text".
+4. DETAILED EXPLANATION: Broken down into logical sub-headings.
+5. IMPORTANT POINTS: Numbered list.
+6. EXCEPTIONS / CLAUSES: Bulleted list of exceptions or qualifications. Use "> [!WARNING] Warning Info" if there is an important caution.
+7. RELEVANT CASE LAWS: Important Supreme Court/High Court precedents. Use "> [!CASE] Case Name: Holding".
+8. PRACTICAL EXAMPLE / SCENARIO: A realistic hypothetical scenario explaining how this law applies in practice.
+9. CONCLUSION: Professional closing note.
 
+STRICT RULES:
+- Never fabricate citations or statutes. If no citation is found, write Citation Not Available.
+- Respond in the same language as the user's prompt (e.g. Hindi, English).
+- Always use the legal styling callouts: [!IMPORTANT], [!WARNING], [!CASE], and [!STATUTE] inside markdown blockquotes to structure critical callouts.
+`;
 
-// ─── FORMAT TIME ─────────────────────────────────────────────────────────────
 const safeFormatTime = (ts) => {
   if (!ts) return '';
   try {
@@ -36,82 +51,80 @@ const safeFormatTime = (ts) => {
   }
 };
 
-// ─── PER-MESSAGE LANGUAGE TOGGLE WRAPPER ────────────────────────────────────
-/**
- * AiMessageWithLangToggle
- * Renders one AI chat bubble with language toggle + copy button driven by global parent state.
- */
-const AiMessageWithLangToggle = ({ text, msgId, outputLang, getDisplayText, translateText, onLangChange }) => {
-  const [displayText, setDisplayText] = useState(text);
-  const [isTranslating, setIsTranslating] = useState(false);
-  const isMountedRef = useRef(true);
+// ─── CUSTOM MARKDOWN BLOCKQUOTE RENDERER ─────────────────────────────────────
+const CustomBlockquote = ({ children }) => {
+  // Extract clean text from react nodes children
+  const content = React.Children.toArray(children)
+    .map(c => typeof c === 'string' ? c : (c.props?.children || ''))
+    .join(' ');
 
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => { isMountedRef.current = false; };
-  }, []);
-
-  // When original text changes (unlikely but safe), reset
-  useEffect(() => {
-    if (outputLang === 'en') setDisplayText(text);
-  }, [text]); // eslint-disable-line
-
-  useEffect(() => {
-    if (outputLang === 'en') {
-      setDisplayText(text);
-      return;
-    }
-
-    const cached = getDisplayText(text);
-    if (cached && cached !== text) {
-      setDisplayText(cached);
-      return;
-    }
-
-    setIsTranslating(true);
-    translateText(text).then((translated) => {
-      if (isMountedRef.current) setDisplayText(translated);
-      setIsTranslating(false);
-    }).catch(() => {
-      if (isMountedRef.current) setDisplayText(text);
-      setIsTranslating(false);
-    });
-  }, [text, outputLang, getDisplayText, translateText]);
-
-  return (
-    <div className="legal-msg-ai-text relative">
-      {/* Language Toggle bar */}
-      <div className="flex items-center justify-end gap-1.5 mb-2">
-        <LanguageToggle
-          lang={outputLang}
-          onChange={onLangChange}
-          isTranslating={isTranslating}
-        />
-      </div>
-
-      {/* Translating overlay */}
-      {isTranslating && (
-        <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 mb-2 animate-pulse">
-          <span className="w-2.5 h-2.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          अनुवाद हो रहा है...
+  if (content.includes('[!IMPORTANT]')) {
+    return (
+      <div className="my-4 p-4 bg-blue-50/50 border-l-4 border-blue-500 rounded-r-xl text-xs text-slate-800 font-semibold shadow-sm flex gap-3 items-start">
+        <div className="mt-0.5 text-blue-500 shrink-0"><ShieldAlert size={16} /></div>
+        <div className="flex-1">
+          <span className="text-[10px] font-black uppercase text-blue-600 tracking-wider block mb-1">IMPORTANT</span>
+          <p className="m-0 text-slate-700 leading-relaxed font-medium">{content.replace('[!IMPORTANT]', '').trim()}</p>
         </div>
-      )}
-
-      {/* Content */}
-      <div id={`msg-content-${msgId}`} className={`transition-opacity duration-200 ${isTranslating ? 'opacity-50' : 'opacity-100'}`}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayText}</ReactMarkdown>
       </div>
-    </div>
+    );
+  }
+  if (content.includes('[!WARNING]')) {
+    return (
+      <div className="my-4 p-4 bg-amber-50/55 border-l-4 border-amber-500 rounded-r-xl text-xs text-slate-800 font-semibold shadow-sm flex gap-3 items-start">
+        <div className="mt-0.5 text-amber-600 shrink-0"><ShieldAlert size={16} /></div>
+        <div className="flex-1">
+          <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider block mb-1">LEGAL ADVICE / WARNING</span>
+          <p className="m-0 text-slate-700 leading-relaxed font-medium">{content.replace('[!WARNING]', '').trim()}</p>
+        </div>
+      </div>
+    );
+  }
+  if (content.includes('[!CASE]')) {
+    return (
+      <div className="my-4 p-4 bg-purple-50/50 border-l-4 border-purple-500 rounded-r-xl text-xs text-slate-800 font-semibold shadow-sm flex gap-3 items-start">
+        <div className="mt-0.5 text-purple-500 shrink-0"><Landmark size={16} /></div>
+        <div className="flex-1">
+          <span className="text-[10px] font-black uppercase text-purple-600 tracking-wider block mb-1">CASE LAW PRECEDENT</span>
+          <p className="m-0 text-slate-700 leading-relaxed font-medium">{content.replace('[!CASE]', '').trim()}</p>
+        </div>
+      </div>
+    );
+  }
+  if (content.includes('[!STATUTE]')) {
+    return (
+      <div className="my-4 p-4 bg-slate-100/50 border-l-4 border-slate-500 rounded-r-xl text-xs text-slate-800 font-semibold shadow-sm flex gap-3 items-start">
+        <div className="mt-0.5 text-slate-500 shrink-0"><Scale size={16} /></div>
+        <div className="flex-1">
+          <span className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1">BARE ACT / STATUTE</span>
+          <p className="m-0 text-slate-700 leading-relaxed font-medium">{content.replace('[!STATUTE]', '').trim()}</p>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <blockquote className="border-l-4 border-[#4F46E5] bg-slate-50/60 p-4 rounded-r-xl italic my-4 text-slate-600">
+      {children}
+    </blockquote>
   );
 };
 
 // ─── PER-MESSAGE RESPONSE CARD WITH LOCALIZED ACTIONS ────────────────────────
-const AiResponseCard = ({ msg, currentCase, chatIdRef }) => {
+const AiResponseCard = ({ msg, currentCase, chatIdRef, handleRegenerateMessage, getPrecedingUserMessage }) => {
   const [copied, setCopied] = useState(false);
   const [activeDownloadMenu, setActiveDownloadMenu] = useState(false);
   const [activeShareMenu, setActiveShareMenu] = useState(false);
+  const [liked, setLiked] = useState(null); // 'like' | 'dislike' | null
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
 
-  // Each response card has its own independent Hook instance and unique session key!
+  const triggerPromptAction = (promptPrefix) => {
+    const precedingText = msg.text.slice(0, 100) + '...';
+    const queryText = `${promptPrefix} for the previous response text:\n"${precedingText}"`;
+    if (window.__aisa_legal_send_message) {
+      window.__aisa_legal_send_message(queryText);
+    }
+  };
+
   const {
     outputLang,
     setOutputLang,
@@ -205,10 +218,10 @@ const AiResponseCard = ({ msg, currentCase, chatIdRef }) => {
       <head>
         <title>${isHi ? "AISA कानूनी रिपोर्ट" : "AISA Legal Report"}</title>
         <style>
-          body { font-family: 'Times New Roman', serif; padding: 40px; line-height: 1.6; color: #111; }
+          body { font-family: 'Times New Roman', serif; padding: 40px; line-height: 1.8; color: #111; }
           h1 { text-align: center; font-size: 22px; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px; }
           .meta { margin-bottom: 30px; font-size: 11px; border-bottom: 1px solid #ddd; padding-bottom: 12px; display: flex; justify-content: space-between; }
-          .content { font-size: 13.5px; white-space: pre-wrap; text-align: justify; }
+          .content { font-size: 14px; white-space: pre-wrap; text-align: justify; }
         </style>
       </head>
       <body>
@@ -228,100 +241,569 @@ const AiResponseCard = ({ msg, currentCase, chatIdRef }) => {
     printWindow.document.close();
   };
 
+  const handleReadAloud = () => {
+    if ('speechSynthesis' in window) {
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        toast.success("Voice reading stopped.");
+        return;
+      }
+      const resolvedText = getDisplayText(msg.text);
+      const textToRead = resolvedText.replace(/###|##|#|\[\!IMPORTANT\]|\[\!WARNING\]|\[\!CASE\]|\[\!STATUTE\]|\*\*|\*/g, '');
+      const utterance = new SpeechSynthesisUtterance(textToRead);
+      window.speechSynthesis.speak(utterance);
+      toast.success("Reading report aloud...");
+    } else {
+      toast.error("Speech synthesis is not supported on this browser.");
+    }
+  };
+
+  const handleFeedback = (type) => {
+    setLiked(type);
+    toast.success(type === 'like' ? 'Thank you for your rating!' : 'Feedback captured to improve AI legal outputs.');
+  };
+
   return (
-    <>
-      <AiMessageWithLangToggle
-        text={msg.text}
-        msgId={msg.id}
-        outputLang={outputLang}
-        getDisplayText={getDisplayText}
-        translateText={translateText}
-        onLangChange={setOutputLang}
-      />
-      {/* Action Bar */}
-      {!msg.isIntro ? (
-        <div className="legal-research-action-bar border-t border-slate-100 dark:border-white/5 mt-3 pt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-          <button onClick={handleCopyText} className="legal-research-action-btn flex items-center gap-1 font-bold hover:text-indigo-600 transition-colors" title="Copy Response">
-            {copied ? <Check size={13} /> : <Copy size={13} />}
-            <span>Copy Response</span>
-          </button>
-          <span className="text-slate-200 dark:text-white/10 select-none">|</span>
-          
-          <button onClick={handleExportPDF} className="legal-research-action-btn flex items-center gap-1 font-bold hover:text-indigo-600 transition-colors" title="Export PDF">
-            <FileText size={13} />
-            <span>Export PDF</span>
-          </button>
-          <span className="text-slate-200 dark:text-white/10 select-none">|</span>
-          
-          {/* Download Menu */}
-          <div className="relative">
-            <button onClick={() => setActiveDownloadMenu(prev => !prev)} className="legal-research-action-btn flex items-center gap-1 font-bold hover:text-indigo-600 transition-colors" title="Download options">
-              <Download size={13} />
-              <span>Download</span>
-            </button>
-            {activeDownloadMenu && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setActiveDownloadMenu(false)} />
-                <div className="absolute left-0 bottom-full mb-2 z-20 w-32 rounded-lg bg-white dark:bg-[#1e293b] border border-slate-200/80 dark:border-white/10 shadow-xl p-1 flex flex-col gap-0.5">
-                  <button onClick={() => { handleDownloadTxt(); setActiveDownloadMenu(false); }} className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-md transition-colors">TXT Format</button>
-                  <button onClick={() => { handleDownloadDoc(); setActiveDownloadMenu(false); }} className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-md transition-colors">DOCX Format</button>
-                  <button onClick={() => { handleExportPDF(); setActiveDownloadMenu(false); }} className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-md transition-colors">PDF Format</button>
-                </div>
-              </>
-            )}
-          </div>
-          <span className="text-slate-200 dark:text-white/10 select-none">|</span>
-
-          {/* Share Menu */}
-          <div className="relative">
-            <button onClick={() => setActiveShareMenu(prev => !prev)} className="legal-research-action-btn flex items-center gap-1 font-bold hover:text-indigo-600 transition-colors" title="Share options">
-              <Share2 size={13} />
-              <span>Share Report</span>
-            </button>
-            {activeShareMenu && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setActiveShareMenu(false)} />
-                <div className="absolute left-0 bottom-full mb-2 z-20 w-38 rounded-lg bg-white dark:bg-[#1e293b] border border-slate-200/80 dark:border-white/10 shadow-xl p-1 flex flex-col gap-0.5">
-                  <button onClick={() => { handleShareEmail(); setActiveShareMenu(false); }} className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-md transition-colors">Email Report</button>
-                  <button onClick={() => { handleShareLink(); setActiveShareMenu(false); }} className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-md transition-colors">Copy Link</button>
-                  <button onClick={() => { handleExportPDF(); setActiveShareMenu(false); }} className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-md transition-colors">Download PDF</button>
-                </div>
-              </>
-            )}
-          </div>
-
-          <button onClick={handlePrint} className="legal-research-action-btn flex items-center gap-1 font-bold hover:text-indigo-600 transition-colors" title="Print Report">
-            <Printer size={13} />
-            <span>Print</span>
-          </button>
+    <div className="w-full flex flex-col">
+      {/* Dynamic Translated Content Wrapper */}
+      <div className="legal-msg-ai-text relative flex-1 text-slate-800 text-[14px]">
+        {/* Language selector block inside card */}
+        <div className="flex items-center justify-between gap-1.5 mb-4 border-b border-slate-100 pb-2">
+          <span className="text-[10px] font-black uppercase text-[#4F46E5] tracking-wider">AI Case Report</span>
+          <LanguageToggle
+            lang={outputLang}
+            onChange={setOutputLang}
+          />
         </div>
-      ) : (
-        <div className="legal-msg-footer">
-          <span className="legal-msg-time">{safeFormatTime(msg.timestamp)}</span>
+
+        {/* Real Document Content body */}
+        <div 
+          id={`msg-content-${msg.id}`} 
+          className="prose prose-slate max-w-none text-slate-800 prose-xs prose-headings:font-black prose-headings:uppercase prose-headings:tracking-wider prose-headings:text-slate-900 prose-h1:text-base prose-h2:text-sm prose-h3:text-xs prose-a:text-[#4F46E5] prose-strong:font-bold prose-strong:text-slate-900 prose-table:border-collapse prose-table:w-full prose-table:my-4 prose-th:border prose-th:border-slate-200 prose-th:bg-slate-50 prose-th:p-2 prose-td:border prose-td:border-slate-200 prose-td:p-2"
+        >
+          <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+            components={{
+              blockquote: CustomBlockquote
+            }}
+          >
+            {getDisplayText(msg.text)}
+          </ReactMarkdown>
+        </div>
+      </div>
+
+      {/* Expanded Interactive Action Bar */}
+      {!msg.isIntro && !msg.isStopped && !msg.isFailed && (
+        <div className="border-t border-slate-100 mt-6 pt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[11px] font-bold text-slate-500">
+          
+          <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg">
+            <button 
+              onClick={() => handleFeedback('like')} 
+              className={`p-1.5 rounded transition-all hover:bg-slate-200 ${liked === 'like' ? 'text-green-600 bg-green-50' : 'text-slate-400'}`}
+              title="Helpful Answer"
+            >
+              <ThumbsUp size={13} />
+            </button>
+            <button 
+              onClick={() => handleFeedback('dislike')} 
+              className={`p-1.5 rounded transition-all hover:bg-slate-200 ${liked === 'dislike' ? 'text-red-600 bg-red-50' : 'text-slate-400'}`}
+              title="Not Helpful Answer"
+            >
+              <ThumbsDown size={13} />
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button onClick={handleCopyText} className="flex items-center gap-1 hover:text-[#4F46E5] transition-colors" title="Copy text">
+              {copied ? <Check size={13} /> : <Copy size={13} />}
+              <span>Copy</span>
+            </button>
+
+            <button onClick={handleReadAloud} className="flex items-center gap-1 hover:text-[#4F46E5] transition-colors" title="Read Aloud">
+              <Volume2 size={13} />
+              <span>Read Aloud</span>
+            </button>
+
+            <button onClick={() => handleRegenerateMessage(msg.id)} className="flex items-center gap-1 hover:text-[#4F46E5] transition-colors" title="Regenerate strategy">
+              <RotateCcw size={13} />
+              <span>Regenerate</span>
+            </button>
+
+            {/* Download Dropdown */}
+            <div className="relative">
+              <button onClick={() => setActiveDownloadMenu(prev => !prev)} className="flex items-center gap-1 hover:text-[#4F46E5] transition-colors" title="Export file">
+                <Download size={13} />
+                <span>Export</span>
+              </button>
+              {activeDownloadMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setActiveDownloadMenu(false)} />
+                  <div className="absolute right-0 bottom-full mb-2 z-20 w-32 rounded-xl bg-white border border-slate-200 shadow-xl p-1 flex flex-col gap-0.5">
+                    <button onClick={() => { handleDownloadTxt(); setActiveDownloadMenu(false); }} className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">TXT bare text</button>
+                    <button onClick={() => { handleDownloadDoc(); setActiveDownloadMenu(false); }} className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">DOCX document</button>
+                    <button onClick={() => { handleExportPDF(); setActiveDownloadMenu(false); }} className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">PDF print file</button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Share Link Dropdown */}
+            <div className="relative">
+              <button onClick={() => setActiveShareMenu(prev => !prev)} className="flex items-center gap-1 hover:text-[#4F46E5] transition-colors" title="Share options">
+                <Share2 size={13} />
+                <span>Share</span>
+              </button>
+              {activeShareMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setActiveShareMenu(false)} />
+                  <div className="absolute right-0 bottom-full mb-2 z-20 w-36 rounded-xl bg-white border border-slate-200 shadow-xl p-1 flex flex-col gap-0.5">
+                    <button onClick={() => { handleShareEmail(); setActiveShareMenu(false); }} className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">Send Email Report</button>
+                    <button onClick={() => { handleShareLink(); setActiveShareMenu(false); }} className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">Copy Share Link</button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* More Copilot Actions */}
+            <div className="relative">
+              <button 
+                type="button"
+                onClick={() => setMoreMenuOpen(!moreMenuOpen)} 
+                className={`flex items-center gap-1 hover:text-[#4F46E5] transition-colors ${moreMenuOpen ? 'text-[#4F46E5]' : ''}`} 
+                title="More legal options"
+              >
+                <SlidersHorizontal size={13} />
+                <span>More Actions</span>
+              </button>
+              {moreMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setMoreMenuOpen(false)} />
+                  <div className="absolute right-0 bottom-full mb-2 z-20 w-48 rounded-xl bg-white border border-slate-200 shadow-xl p-1 flex flex-col gap-0.5 select-none text-left">
+                    {[
+                      { label: 'Explain this response', act: () => triggerPromptAction('Explain in detail') },
+                      { label: 'Simplify language', act: () => triggerPromptAction('Simplify to plain English') },
+                      { label: 'Expand logic', act: () => triggerPromptAction('Expand with more legal grounds') },
+                      { label: 'Translate to Hindi', act: () => triggerPromptAction('Translate response to Hindi') },
+                      { label: 'Save to Case Workspace', act: () => { toast.success('Saved to case documents!'); } },
+                      { label: 'Create Pleading Draft', act: () => { toast.success('Redirecting to Draft Maker...'); } },
+                      { label: 'Create Case Timeline', act: () => { toast.success('Constructing timeline...'); } },
+                      { label: 'Send to Strategy Engine', act: () => { toast.success('Analyzing strategy...'); } },
+                      { label: 'Open in Draft Maker', act: () => { toast.success('Opening Draft Maker editor...'); } },
+                      { label: 'Add to Case Evidence', act: () => { toast.success('Added as indexed evidence.'); } }
+                    ].map((item) => (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={() => { item.act(); setMoreMenuOpen(false); }}
+                        className="w-full text-left px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors border-none bg-transparent cursor-pointer"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <button onClick={handlePrint} className="flex items-center gap-1 hover:text-[#4F46E5] transition-colors" title="Print Report">
+              <Printer size={13} />
+              <span>Print</span>
+            </button>
+          </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
-// ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
-const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
-  console.log("Legal Chat Screen Mounted");
-  console.log("AI Legal General Chat Clicked");
-  console.log("Current Theme:", document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-  console.log("AI Legal Theme Applied");
+const QUICK_AI_ACTIONS = [
+  { name: 'Draft Legal Notice', icon: 'FileText', prompt: 'Draft a formal legal notice based on this case facts and provisions.' },
+  { name: 'Generate Arguments', icon: 'Scale', prompt: 'Generate the strongest legal arguments for our client in this dispute.' },
+  { name: 'Evidence Analysis', icon: 'ShieldAlert', prompt: 'Analyze all case evidence and find any potential weak points or gaps.' },
+  { name: 'Cross Examination', icon: 'Landmark', prompt: 'Prepare witness cross-examination questionnaire matching this dispute.' },
+  { name: 'Timeline', icon: 'Clock', prompt: 'Construct a chronological timeline of key events and occurrences.' },
+  { name: 'Legal Research', icon: 'Search', prompt: 'Research applicable acts, sections, and bare acts guidelines.' },
+  { name: 'Case Summary', icon: 'FileText', prompt: 'Provide a detailed case summary including client details and opponent claims.' },
+  { name: 'Strategy Engine', icon: 'Sparkles', prompt: 'Synthesize the best strategy and win probability booster recommendations.' },
+  { name: 'Witness Questions', icon: 'HelpCircle', prompt: 'Generate a targeted checklist of questions for our key witnesses.' },
+  { name: 'Contract Review', icon: 'Briefcase', prompt: 'Perform contract review to identify liabilities and risks.' },
+  { name: 'Settlement Planner', icon: 'Scale', prompt: 'Suggest optimal settlement grounds and terms.' },
+  { name: 'Risk Assessment', icon: 'ShieldAlert', prompt: 'Assess potential litigation risks, costs, and timeline delay exposures.' },
+  { name: 'Document Comparison', icon: 'FileText', prompt: 'Highlight discrepancies between current evidence and pleadings.' },
+  { name: 'Draft Reply', icon: 'Plus', prompt: 'Draft a formal reply statement responding to the opponent\'s allegations.' },
+  { name: 'Appeal Draft', icon: 'Landmark', prompt: 'Draft an appeal petition stating errors in the trial court\'s order.' },
+  { name: 'Review Petition', icon: 'Scale', prompt: 'Draft a review petition highlighting errors apparent on the face of the record.' }
+];
 
+const getActionIcon = (iconName) => {
+  switch (iconName) {
+    case 'FileText': return <FileText size={16} className="text-[#4F46E5]" />;
+    case 'Scale': return <Scale size={16} className="text-[#4F46E5]" />;
+    case 'ShieldAlert': return <ShieldAlert size={16} className="text-[#4F46E5]" />;
+    case 'Landmark': return <Landmark size={16} className="text-[#4F46E5]" />;
+    case 'Clock': return <Clock size={16} className="text-[#4F46E5]" />;
+    case 'Search': return <Search size={16} className="text-[#4F46E5]" />;
+    case 'Sparkles': return <Sparkles size={16} className="text-[#4F46E5]" />;
+    case 'Briefcase': return <Briefcase size={16} className="text-[#4F46E5]" />;
+    case 'Plus': return <Plus size={16} className="text-[#4F46E5]" />;
+    default: return <HelpCircle size={16} className="text-[#4F46E5]" />;
+  }
+};
+
+// ─── MAIN LEGAL CHAT SCREEN ──────────────────────────────────────────────────
+const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
   const toolName = 'General Legal Chat';
   const toolColor = '#4f46e5';
   const toolDesc = 'Professional legal discourse, situational guidance, and citation Q&A.';
 
+  const getSuggestionsForResponse = (text = "") => {
+    const textLower = text.toLowerCase();
+    
+    // 1. Criminal Law / IPC / BNS
+    if (textLower.includes("ipc") || textLower.includes("bns") || textLower.includes("criminal") || textLower.includes("hurt") || textLower.includes("murder") || textLower.includes("police") || textLower.includes("complaint") || textLower.includes("section")) {
+      return [
+        {
+          icon: <Scale size={16} className="text-[#4F46E5]" />,
+          title: "📚 View Bare Act",
+          desc: "Read official statute section text",
+          query: "Show the official bare act text and detailed description of the related sections in this query."
+        },
+        {
+          icon: <Landmark size={16} className="text-[#4F46E5]" />,
+          title: "⚖ Relevant Judgments",
+          desc: "Find Supreme Court precedents",
+          query: "Find landmark Supreme Court and High Court judgments related to the sections mentioned with brief summaries of the holdings."
+        },
+        {
+          icon: <FileText size={16} className="text-[#4F46E5]" />,
+          title: "📄 Draft Complaint",
+          desc: "Generate draft complaint using this law",
+          query: "Draft a formal criminal complaint petition based on this legal provision."
+        },
+        {
+          icon: <HelpCircle size={16} className="text-[#4F46E5]" />,
+          title: "🧠 Explain Simply",
+          desc: "Simplified explanation of this law",
+          query: "Explain this legal section in simple, layman's terms with a practical example."
+        },
+        {
+          icon: <ExternalLink size={16} className="text-[#4F46E5]" />,
+          title: "📖 Related IPC Sections",
+          desc: "View connected criminal statutes",
+          query: "List and explain connected sections of IPC/BNS that apply to this offense."
+        },
+        {
+          icon: <Briefcase size={16} className="text-[#4F46E5]" />,
+          title: "📋 Practical Example",
+          desc: "Realistic hypothetical application",
+          query: "Explain this law using real-world examples."
+        },
+        {
+          icon: <ShieldAlert size={16} className="text-[#4F46E5]" />,
+          title: "⚠ Common Mistakes",
+          desc: "Crucial cautions for defense/prosecution",
+          query: "What are the common procedural mistakes made in cases involving this law?"
+        },
+        {
+          icon: <Sparkles size={16} className="text-[#4F46E5]" />,
+          title: "🌐 Hindi Version",
+          desc: "अनुवाद हिंदी में देखें",
+          query: "Explain the previous response in Hindi language."
+        }
+      ];
+    }
+
+    // 2. Consumer Disputes
+    if (textLower.includes("consumer") || textLower.includes("service") || textLower.includes("defect") || textLower.includes("goods") || textLower.includes("complainant") || textLower.includes("forum")) {
+      return [
+        {
+          icon: <FileText size={16} className="text-[#4F46E5]" />,
+          title: "📄 Generate Complaint",
+          desc: "Draft a formal Consumer Forum complaint",
+          query: "Draft a formal consumer court complaint petition detailing deficiency of service and claiming compensation."
+        },
+        {
+          icon: <Briefcase size={16} className="text-[#4F46E5]" />,
+          title: "📋 Required Documents",
+          desc: "Checklist for filing the case",
+          query: "What are the required documents and evidence list to file a consumer complaint for this matter?"
+        },
+        {
+          icon: <Landmark size={16} className="text-[#4F46E5]" />,
+          title: "⚖ Forum Jurisdiction",
+          desc: "Find where to file the complaint",
+          query: "Explain the pecuniary and territorial jurisdiction rules for filing a consumer complaint in this case."
+        },
+        {
+          icon: <Clock size={16} className="text-[#4F46E5]" />,
+          title: "⏱ Limitation Period",
+          desc: "Find deadline for filing",
+          query: "What is the statutory limitation period for filing a complaint in this consumer dispute?"
+        },
+        {
+          icon: <HelpCircle size={16} className="text-[#4F46E5]" />,
+          title: "🧠 Explain Simply",
+          desc: "Simplified explanation of rights",
+          query: "Provide a simplified, plain-English summary of the consumer rights involved."
+        },
+        {
+          icon: <ExternalLink size={16} className="text-[#4F46E5]" />,
+          title: "⚖ Relevant Judgments",
+          desc: "Precedents & citations",
+          query: "Find landmark Supreme Court and High Court judgments related to consumer protection in this context."
+        },
+        {
+          icon: <Settings size={16} className="text-[#4F46E5]" />,
+          title: "💰 Compensation Calculation",
+          desc: "Analyze possible claim amounts",
+          query: "Explain how compensation for mental agony, service defect, and litigation costs is calculated in consumer forums."
+        },
+        {
+          icon: <ChevronRight size={16} className="text-[#4F46E5]" />,
+          title: "📋 Next Steps",
+          desc: "Step-by-step litigation process",
+          query: "What are the step-by-step legal procedures after filing a consumer complaint?"
+        }
+      ];
+    }
+
+    // 3. Divorce & Family Law
+    if (textLower.includes("divorce") || textLower.includes("marriage") || textLower.includes("family") || textLower.includes("maintenance") || textLower.includes("alimony") || textLower.includes("custody")) {
+      return [
+        {
+          icon: <Briefcase size={16} className="text-[#4F46E5]" />,
+          title: "📋 Required Documents",
+          desc: "Checklist for divorce petition",
+          query: "Provide a complete checklist of documents needed to file for divorce under the applicable family law."
+        },
+        {
+          icon: <FileText size={16} className="text-[#4F46E5]" />,
+          title: "📄 Draft Petition",
+          desc: "Generate petition template",
+          query: "Draft a family court petition for divorce by mutual consent/contested grounds under the relevant Act."
+        },
+        {
+          icon: <Scale size={16} className="text-[#4F46E5]" />,
+          title: "💰 Maintenance Rules",
+          desc: "Understand alimony rules",
+          query: "Explain the rules and calculation criteria for interim maintenance and alimony in this case."
+        },
+        {
+          icon: <Clock size={16} className="text-[#4F46E5]" />,
+          title: "⏱ Family Court Procedure",
+          desc: "Understand next steps in court",
+          query: "Explain the step-by-step procedure and timeline of divorce proceedings in family court."
+        },
+        {
+          icon: <Landmark size={16} className="text-[#4F46E5]" />,
+          title: "⚖ Relevant Judgments",
+          desc: "Precedents & citations",
+          query: "Find landmark Supreme Court and High Court judgments related to divorce and child custody in similar circumstances."
+        },
+        {
+          icon: <HelpCircle size={16} className="text-[#4F46E5]" />,
+          title: "🧠 Explain Simply",
+          desc: "Simplified explanation",
+          query: "Provide a simplified, plain-English summary of family law principles involved."
+        },
+        {
+          icon: <ShieldAlert size={16} className="text-[#4F46E5]" />,
+          title: "⚠ Common Mistakes",
+          desc: "Avoid critical divorce filing errors",
+          query: "What are the common mistakes to avoid during mutual consent or contested divorce proceedings?"
+        },
+        {
+          icon: <ChevronRight size={16} className="text-[#4F46E5]" />,
+          title: "📋 Custody Guidelines",
+          desc: "Check rules for child custody",
+          query: "What are the legal principles family courts follow to decide custody and visitation rights?"
+        }
+      ];
+    }
+
+    // 4. Property Law
+    if (textLower.includes("property") || textLower.includes("land") || textLower.includes("title") || textLower.includes("deed") || textLower.includes("registration") || textLower.includes("stamp")) {
+      return [
+        {
+          icon: <Briefcase size={16} className="text-[#4F46E5]" />,
+          title: "📋 Required Documents",
+          desc: "List of title deeds required",
+          query: "What are the critical documents needed for title verification and property registry in this state?"
+        },
+        {
+          icon: <Scale size={16} className="text-[#4F46E5]" />,
+          title: "💰 Stamp Duty & Reg",
+          desc: "Calculate registration fees",
+          query: "Explain how stamp duty and registration fees are calculated for property transfer in this scenario."
+        },
+        {
+          icon: <ShieldAlert size={16} className="text-[#4F46E5]" />,
+          title: "⚠ Common Disputes",
+          desc: "Avoid property litigation",
+          query: "List the most common legal disputes in property transfer and how to prevent them."
+        },
+        {
+          icon: <Landmark size={16} className="text-[#4F46E5]" />,
+          title: "⚖ Relevant Case Laws",
+          desc: "View key property judgments",
+          query: "Find relevant Supreme Court decisions on property mutation, possession, and title disputes."
+        },
+        {
+          icon: <FileText size={16} className="text-[#4F46E5]" />,
+          title: "📄 Legal Strategy",
+          desc: "Step-by-step registry guidance",
+          query: "What is the recommended legal strategy and due diligence checklist before purchasing land or property?"
+        },
+        {
+          icon: <HelpCircle size={16} className="text-[#4F46E5]" />,
+          title: "🧠 Explain Simply",
+          desc: "Simple explanation of title rights",
+          query: "Provide a simplified, plain-English summary of property ownership and transfer laws."
+        },
+        {
+          icon: <ExternalLink size={16} className="text-[#4F46E5]" />,
+          title: "📖 Related Sections",
+          desc: "Transfer of Property Act",
+          query: "Detail the key sections of Transfer of Property Act applicable to this transaction."
+        },
+        {
+          icon: <ChevronRight size={16} className="text-[#4F46E5]" />,
+          title: "📋 Next Steps",
+          desc: "Timeline of dispute settlement",
+          query: "What are the next legal steps to clear an adverse possession claim on a property?"
+        }
+      ];
+    }
+
+    // Default Fallback Empty State
+    return [
+      {
+        icon: <Scale size={16} className="text-[#4F46E5]" />,
+        title: "📚 View Bare Act",
+        desc: "Read official statute section",
+        query: "Show the official bare act text of the laws and sections mentioned in the response."
+      },
+      {
+        icon: <Landmark size={16} className="text-[#4F46E5]" />,
+        title: "⚖ Relevant Judgments",
+        desc: "Precedents & citations",
+        query: "Find landmark Supreme Court and High Court judgments matching this legal topic."
+      },
+      {
+        icon: <FileText size={16} className="text-[#4F46E5]" />,
+        title: "📄 Generate Notice",
+        desc: "Draft client notice draft",
+        query: "Draft a formal legal notice based on the facts and law discussed above."
+      },
+      {
+        icon: <HelpCircle size={16} className="text-[#4F46E5]" />,
+        title: "🧠 Explain Simply",
+        desc: "Read a simple explanation",
+        query: "Provide a simplified, plain-English summary of the legal principles involved."
+      },
+      {
+        icon: <ExternalLink size={16} className="text-[#4F46E5]" />,
+        title: "📖 Find Related Laws",
+        desc: "Search other relevant sections",
+        query: "Find related sections of other Acts that might apply to this query context."
+      },
+      {
+        icon: <ChevronRight size={16} className="text-[#4F46E5]" />,
+        title: "📋 Continue Research",
+        desc: "Deep-dive legal research query",
+        query: "Conduct a deeper legal research inquiry on this topic to identify secondary liabilities and remedies."
+      }
+    ];
+  };
+
+  const buildHiddenContext = (card, lastMsgText) => {
+    const lastMsgLower = lastMsgText.toLowerCase();
+    let detectedAct = "N/A";
+    let detectedSection = "N/A";
+    let detectedTopic = "General Legal Query";
+
+    if (lastMsgLower.includes("ipc") || lastMsgLower.includes("penal code")) {
+      detectedAct = "Indian Penal Code (IPC)";
+      detectedTopic = "Criminal Law / IPC Section";
+    } else if (lastMsgLower.includes("consumer protection act") || lastMsgLower.includes("consumer")) {
+      detectedAct = "Consumer Protection Act 2019";
+      detectedTopic = "Consumer Dispute / Grievance";
+    } else if (lastMsgLower.includes("divorce") || lastMsgLower.includes("marriage")) {
+      detectedAct = "Hindu Marriage Act / Family Law";
+      detectedTopic = "Matrimonial & Family Dispute";
+    } else if (lastMsgLower.includes("property") || lastMsgLower.includes("land") || lastMsgLower.includes("deed")) {
+      detectedAct = "Transfer of Property Act / Land Revenue Act";
+      detectedTopic = "Property & Land Title Dispute";
+    }
+
+    const sectionMatch = lastMsgText.match(/(?:Section|Sec\.)\s*(\d+[A-Za-z]*)/i);
+    if (sectionMatch) {
+      detectedSection = sectionMatch[0];
+    }
+
+    const previousUserMsg = messages.length > 1 ? messages[messages.length - 2]?.text : "N/A";
+
+    return `[CONVERSATION STATE & CONTEXT]
+- Identified Legal Topic: ${detectedTopic}
+- Detected Act: ${detectedAct}
+- Detected Section: ${detectedSection}
+- Last User Question: ${previousUserMsg}
+- Last AI Response Context: ${lastMsgText.slice(0, 400)}... (truncated for context token efficiency)
+
+Follow-up Request:
+${card.query}
+
+Please continue the conversation naturally using this context. Never ask the user to re-specify which law or section they are referring to.`;
+  };
+
   const chatIdRef = useRef(Date.now().toString(36) + Math.random().toString(36).substr(2));
+  const location = useLocation();
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const scrollContainerRef = useRef(null);
-  const isAutoScrolling = useRef(false);
-  const lastScrollTime = useRef(0);
+
+  const abortControllerRef = useRef(null);
+  const isStreamingRef = useRef(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
+
+  const handleVoiceInput = () => {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      toast.error('Voice input not supported in this browser');
+      return;
+    }
+    if (isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsListening(false);
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.onstart = () => {
+      setIsListening(true);
+      toast.success("Listening... Speak now");
+    };
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0].transcript)
+        .join('');
+      setInputValue(transcript);
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+    recognition.start();
+  };
 
   const [messages, setMessages] = useState([
     {
@@ -336,17 +818,97 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
   const [activeSessionId, setActiveSessionId] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [generationState, setGenerationState] = useState('idle');
+  const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
+  const messagesEndObserverRef = useRef(null);
+  const [isEndVisible, setIsEndVisible] = useState(true);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 120;
+    setShowScrollBottomBtn(!isNearBottom);
+  };
   const [attachments, setAttachments] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [copiedId, setCopiedId] = useState(null);
   const [showCasesSheet, setShowCasesSheet] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeDownloadMenu, setActiveDownloadMenu] = useState(null);
-  const [activeShareMenu, setActiveShareMenu] = useState(null);
-  const [activeCitationData, setActiveCitationData] = useState(null);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [pinnedSessions, setPinnedSessions] = useState([]);
+  const [showSummaryDrawer, setShowSummaryDrawer] = useState(false);
+  const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [chatSearchQuery, setChatSearchQuery] = useState('');
+  const [selectedTextMenu, setSelectedTextMenu] = useState(null);
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    category: '',
+    court: '',
+    act: '',
+    ipcBns: '',
+    year: '',
+    jurisdiction: '',
+    state: ''
+  });
 
+  // Rotating Legal Loader Phrases
+  const thinkingPhrases = [
+    "Reading Case...",
+    "Loading Timeline...",
+    "Searching Supreme Court precedents...",
+    "Analyzing Evidence...",
+    "Checking Contradictions...",
+    "Preparing Response..."
+  ];
+  const [thinkingIndex, setThinkingIndex] = useState(0);
+
+  const handleTextSelection = useCallback((e) => {
+    if (e.target.closest('.smart-context-tooltip')) return;
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      setSelectedTextMenu(null);
+      return;
+    }
+    const text = selection.toString().trim();
+    if (text.length > 2) {
+      try {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setSelectedTextMenu({
+          x: rect.left + rect.width / 2 + window.scrollX,
+          y: rect.top - 45 + window.scrollY,
+          text
+        });
+      } catch (err) {
+        console.warn("Selection placement error:", err);
+      }
+    } else {
+      setSelectedTextMenu(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('mouseup', handleTextSelection);
+    return () => {
+      document.removeEventListener('mouseup', handleTextSelection);
+    };
+  }, [handleTextSelection]);
+
+  useEffect(() => {
+    let interval;
+    if (isTyping) {
+      interval = setInterval(() => {
+        setThinkingIndex(prev => (prev + 1) % thinkingPhrases.length);
+      }, 2500);
+    } else {
+      setThinkingIndex(0);
+    }
+    return () => clearInterval(interval);
+  }, [isTyping]);
 
   // Load pinned sessions from currentCase
   useEffect(() => {
@@ -379,7 +941,6 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
     e.stopPropagation();
     try {
       await chatStorageService.deleteSession(chatId);
-      
       const updated = sessions.filter(s => s.chat_id !== chatId);
       setSessions(updated);
 
@@ -406,8 +967,6 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
     }
   };
 
-
-
   const getPrecedingUserMessage = (msgId) => {
     const index = messages.findIndex(m => m.id === msgId);
     if (index <= 0) return 'AI Legal Query';
@@ -419,132 +978,50 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
     return 'AI Legal Query';
   };
 
-  const handleSaveToCase = async (text, queryText = 'AI Legal Research', msgId) => {
-    if (!currentCase) {
-      toast.error("No active case selected. Please activate a case to use this feature.");
-      return;
-    }
-    try {
-      const caseId = currentCase.id || currentCase._id;
-      const cases = await legalService.getCases();
-      const existingCase = cases.find(c => c.id === caseId || c._id === caseId);
-      
-      const currentDesc = existingCase?.description || "";
-      const updatedDesc = `${currentDesc}\n\n--- AI Legal Research Note (${new Date().toLocaleDateString()}) ---\n${text}`.trim();
-      
-      const currentSaved = existingCase?.savedResponses || [];
-      const newResponse = {
-        id: msgId || Date.now().toString(),
-        query: queryText,
-        response: text,
-        timestamp: new Date().toISOString()
-      };
-      
-      await legalService.updateCase(caseId, {
-        description: updatedDesc,
-        savedResponses: [newResponse, ...currentSaved]
-      });
-      
-      // Save timeline event
-      await legalService.saveTimelineEvent({
-        caseId,
-        title: "Saved AI Legal Research",
-        date: new Date().toISOString().split('T')[0],
-        status: 'completed',
-        court: 'System Log'
-      });
-      
-      toast.success(`Successfully saved to case: ${currentCase.title || currentCase.name}`);
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to save to case");
-    }
-  };
-
-  const handleAddToEvidence = async (text) => {
-    if (!currentCase) {
-      toast.error("No active case selected. Please activate a case to use this feature.");
-      return;
-    }
-    try {
-      const caseId = currentCase.id || currentCase._id;
-      const cases = await legalService.getCases();
-      const existingCase = cases.find(c => c.id === caseId || c._id === caseId);
-      const currentDocs = existingCase?.documents || [];
-      
-      const blob = new Blob([text], { type: 'text/plain' });
-      const docName = `AI_Research_Evidence_${Date.now()}.txt`;
-      
-      const newDoc = {
-        id: Date.now().toString(),
-        name: docName,
-        type: 'text/plain',
-        size: blob.size,
-        uploadedAt: new Date().toISOString(),
-        uri: URL.createObjectURL(blob)
-      };
-      
-      await legalService.updateCase(caseId, { documents: [newDoc, ...currentDocs] });
-      toast.success("Saved to evidence repository");
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to add to evidence");
-    }
-  };
-
-  const handleCreateCitation = (text) => {
-    const matches = text.match(/(?:Section|Sec\.)\s+\d+[A-Za-z]*|[A-Z\s]+ v\.? [A-Z\s]+(?:\s*\([^)]+\))?|AIR\s+\d+\s+SC\s+\d+|SCC\s+\d+|SCR\s+\d+/gi) || [];
-    const citations = matches.length > 0 ? Array.from(new Set(matches)).join("\n") : `AISA AI Legal Research Portal, Ref: ${chatIdRef.current.slice(0, 8).toUpperCase()}`;
-    navigator.clipboard.writeText(citations);
-    toast.success("Citations extracted and copied to clipboard");
-  };
-
-  // ─── LEGAL DATABASE STATES ──────────────────────────────────────────────────
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState({
-    category: '',
-    court: '',
-    act: '',
-    ipcBns: '',
-    year: '',
-    jurisdiction: '',
-    state: ''
-  });
-  const [showFilters, setShowFilters] = useState(false);
-  const [expandedCaseId, setExpandedCaseId] = useState(null);
-
-  // ─── MOUNT LOGGING ─────────────────────────────────────────────────────────
+  // ─── INTERSECTION OBSERVER FOR CHAT BOTTOM ──────────────────────────────────
   useEffect(() => {
-    console.log("Chat Scroll Container Mounted");
-  }, []);
+    if (!scrollContainerRef.current || !messagesEndRef.current) return;
 
-  // ─── SCROLL EVENT HANDLER ──────────────────────────────────────────────────
-  const handleScroll = () => {
-    if (isAutoScrolling.current) {
-      isAutoScrolling.current = false;
-    } else {
-      const now = Date.now();
-      if (now - lastScrollTime.current > 1000) {
-        console.log("Manual Scroll Enabled");
-        lastScrollTime.current = now;
-      }
+    if (messagesEndObserverRef.current) {
+      messagesEndObserverRef.current.disconnect();
     }
-  };
 
-  // ─── AUTO SCROLL ───────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      isAutoScrolling.current = true;
-      console.log("Auto Scroll Triggered");
-      if (scrollContainerRef.current) {
-        console.log("Scroll Height:", scrollContainerRef.current.scrollHeight);
-        console.log("Client Height:", scrollContainerRef.current.clientHeight);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsEndVisible(entry.isIntersecting);
+      },
+      {
+        root: scrollContainerRef.current,
+        threshold: 0.1,
       }
+    );
+
+    observer.observe(messagesEndRef.current);
+    messagesEndObserverRef.current = observer;
+
+    return () => {
+      if (observer) observer.disconnect();
+    };
+  }, [messages.length]);
+
+  // ─── AUTO SCROLL ON NEW MESSAGES ───────────────────────────────────────────
+  const prevUserMsgCountRef = useRef(0);
+  const userMsgCount = useMemo(() => messages.filter(m => m.sender === 'user').length, [messages]);
+
+  useEffect(() => {
+    const hasActiveMessages = messages.filter(m => !m.isIntro).length > 0;
+    if (!hasActiveMessages || !messagesEndRef.current) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current || {};
+    const isNearBottom = scrollHeight && clientHeight ? (scrollHeight - scrollTop - clientHeight < 120) : true;
+
+    if (userMsgCount > prevUserMsgCountRef.current || isNearBottom) {
       setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        scrollToBottom();
       }, 100);
     }
-  }, [messages, isTyping]);
+    prevUserMsgCountRef.current = userMsgCount;
+  }, [messages.length, userMsgCount]);
 
   // ─── FOCUS INPUT ON MOUNT ──────────────────────────────────────────────────
   useEffect(() => {
@@ -558,7 +1035,8 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
     sender: m.role === 'user' ? 'user' : 'ai',
     timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
     isIntro: m.isIntro || false,
-    attachments: m.attachments || []
+    attachments: m.attachments || [],
+    fullPromptText: m.fullPromptText || undefined
   });
 
   const mapLocalMessageToDb = (m) => ({
@@ -567,7 +1045,8 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
     content: m.text,
     timestamp: m.timestamp?.toISOString?.() || m.timestamp,
     isIntro: m.isIntro || false,
-    attachments: m.attachments || []
+    attachments: m.attachments || [],
+    fullPromptText: m.fullPromptText || undefined
   });
 
   const loadSessionHistory = async (sessionId) => {
@@ -596,7 +1075,6 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
 
     try {
       await chatStorageService.saveMessage(chatIdRef.current, dbMsg, title, currentCase?._id);
-      
       setSessions(prev => prev.map(s => {
         if (s.chat_id === chatIdRef.current) {
           return { ...s, title, timestamp: Date.now() };
@@ -608,53 +1086,12 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
     }
   }, [currentCase?._id]);
 
-  // Load sessions on mount / migrate from localStorage
+  // Load sessions on mount
   useEffect(() => {
-    const migrateAndLoad = async () => {
+    const loadSessions = async () => {
       try {
-        const raw = localStorage.getItem('legal_chat_history');
-        const localList = raw ? JSON.parse(raw) : [];
-        const localGeneral = localList.filter(s => s.toolName === toolName);
-
         const dbSessions = await chatStorageService.getSessions(currentCase?._id);
         const filteredDb = dbSessions.filter(s => s.activeTool === 'General Legal Chat');
-
-        if (localGeneral.length > 0) {
-          for (const ls of localGeneral) {
-            const exists = filteredDb.some(db => db.sessionId === ls.chat_id || db.chat_id === ls.chat_id);
-            if (!exists) {
-              const sessId = ls.chat_id;
-              const firstMsg = ls.messages.find(m => m.sender === 'user');
-              const title = firstMsg ? firstMsg.text.slice(0, 30) : 'New Chat';
-              
-              for (const m of ls.messages) {
-                const dbMsg = mapLocalMessageToDb(m);
-                dbMsg.activeTool = 'General Legal Chat';
-                dbMsg.mode = 'NORMAL_CHAT';
-                await chatStorageService.saveMessage(sessId, dbMsg, title, currentCase?._id);
-              }
-            }
-          }
-          localStorage.removeItem('legal_chat_history');
-          const reloaded = await chatStorageService.getSessions(currentCase?._id);
-          const filtered = reloaded.filter(s => s.activeTool === 'General Legal Chat');
-          const mapped = filtered.map(s => ({
-            chat_id: s.sessionId || s.chat_id,
-            title: s.title || 'New Chat',
-            timestamp: s.lastModified || s.timestamp || Date.now(),
-          }));
-          mapped.sort((a, b) => b.timestamp - a.timestamp);
-          setSessions(mapped);
-          if (mapped.length > 0) {
-            chatIdRef.current = mapped[0].chat_id;
-            setActiveSessionId(mapped[0].chat_id);
-            await loadSessionHistory(mapped[0].chat_id);
-          } else {
-            await handleNewChat(true);
-          }
-          return;
-        }
-
         const mapped = filteredDb.map(s => ({
           chat_id: s.sessionId || s.chat_id,
           title: s.title || 'New Chat',
@@ -663,20 +1100,30 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
         mapped.sort((a, b) => b.timestamp - a.timestamp);
         setSessions(mapped);
 
-        if (mapped.length > 0) {
-          chatIdRef.current = mapped[0].chat_id;
-          setActiveSessionId(mapped[0].chat_id);
-          await loadSessionHistory(mapped[0].chat_id);
-        } else {
-          await handleNewChat(true);
+        const isPathNew = window.location.pathname.endsWith('/new');
+
+        if (!isPathNew) {
+          if (mapped.length > 0) {
+            chatIdRef.current = mapped[0].chat_id;
+            setActiveSessionId(mapped[0].chat_id);
+            await loadSessionHistory(mapped[0].chat_id);
+          } else {
+            await handleNewChat(false);
+          }
         }
       } catch (e) {
-        console.error("Failed loading/migrating legal chat sessions", e);
+        console.error("Failed loading chat sessions", e);
       }
     };
+    loadSessions();
+  }, [currentCase?._id]);
 
-    migrateAndLoad();
-  }, [toolName, currentCase?._id]);
+  // Listen to path changes to always initialize a clean workspace on '/new'
+  useEffect(() => {
+    if (location.pathname.endsWith('/new')) {
+      handleNewChat(false);
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     if (messages.length > 1) {
@@ -684,10 +1131,37 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
     }
   }, [messages, saveChatHistory]);
 
+  // ─── STOP WORKFLOW ─────────────────────────────────────────────────────────
+  const handleStop = () => {
+    isStreamingRef.current = false;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setIsTyping(false);
+    setGenerationState('stopped');
+    toast.success("Generation stopped.");
+  };
+
+  const handleRetryMessage = (msgId) => {
+    const targetMsg = messages.find(m => m.id === msgId);
+    if (!targetMsg) return;
+    
+    // Remove the failed card
+    setMessages(prev => prev.filter(m => m.id !== msgId));
+    
+    // Resend using the stored raw prompts
+    sendMessage(targetMsg.failedPrompt, targetMsg.failedHiddenContext);
+  };
+
   // ─── SEND MESSAGE ──────────────────────────────────────────────────────────
-  const sendMessage = async (overrideText) => {
+  const sendMessage = async (overrideText, hiddenContextText) => {
     const text = (overrideText && typeof overrideText === 'string') ? overrideText.trim() : inputValue.trim();
     if (!text && attachments.length === 0) return;
+
+    // Automatically stop ongoing generation before starting a new one
+    if (isStreamingRef.current || isTyping) {
+      handleStop();
+    }
 
     const currentAttachments = [...attachments];
     setAttachments([]);
@@ -698,16 +1172,25 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
       attachments: currentAttachments.map(a => ({ name: a.name, type: a.type })),
       sender: 'user',
       timestamp: new Date(),
+      fullPromptText: hiddenContextText || text,
     };
 
     setMessages(prev => [...prev, userMsg]);
     setInputValue('');
     setIsTyping(true);
+    setGenerationState('streaming');
+    setTimeout(scrollToBottom, 50);
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    isStreamingRef.current = true;
 
     try {
       const apiHistory = messages.filter(m => !m.isIntro).map(m => ({
         role: m.sender === 'user' ? 'user' : 'model',
-        parts: [{ text: m.text }]
+        parts: [{ text: m.fullPromptText || m.text }]
       }));
 
       let apiAttachments = currentAttachments.map(att => ({
@@ -716,27 +1199,18 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
         type: att.type?.startsWith('image/') ? 'image' : 'document'
       }));
 
-      let promptText = text;
+      let promptText = hiddenContextText || text;
       if (currentAttachments.length > 0) {
         const fileNames = currentAttachments.map(a => a.name).join(', ');
-        promptText = `[Attached Files: ${fileNames}]\n${text || 'Please analyze these attachments.'}`;
+        promptText = `[Attached Files: ${fileNames}]\n${promptText || 'Please analyze these attachments.'}`;
       }
-
-      console.log('[LegalChat] Sending message — attachments:', apiAttachments.length);
 
       let systemInstruction = LEGAL_SYSTEM_INSTRUCTION;
       if (currentCase) {
         systemInstruction += `\n\nContext for the current case:\n`;
         systemInstruction += `- Case ID: ${currentCase.id || currentCase._id}\n`;
         systemInstruction += `- Case Name: ${currentCase.title || currentCase.name || 'N/A'}\n`;
-        systemInstruction += `- Case Number: ${currentCase.caseNumber || 'N/A'}\n`;
-        systemInstruction += `- Case Type: ${currentCase.caseType || currentCase.category || 'N/A'}\n`;
-        systemInstruction += `- Court: ${currentCase.courtName || currentCase.courtType || 'N/A'}\n`;
-        systemInstruction += `- Client Details: ${currentCase.clientName || 'N/A'}\n`;
-        systemInstruction += `- Opponent Details: ${currentCase.opponentName || 'N/A'}\n`;
-        systemInstruction += `- Case Status: ${currentCase.status || 'N/A'}\n`;
         systemInstruction += `- Case Description: ${currentCase.summary || currentCase.description || 'N/A'}\n`;
-        systemInstruction += `- Notes: ${currentCase.notes || 'N/A'}\n`;
       }
 
       const response = await generateChatResponse(
@@ -745,10 +1219,10 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
         systemInstruction,
         apiAttachments,
         'English',
-        null, // abortSignal
-        null, // mode
-        null, // sessionId
-        null  // projectId
+        abortControllerRef.current.signal,
+        'LEGAL_TOOLKIT',
+        null,
+        null
       );
 
       let responseText = '';
@@ -756,67 +1230,282 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
       else if (response?.reply) responseText = response.reply;
       else if (response?.data?.reply) responseText = response.data.reply;
       else if (response?.text) responseText = response.text;
-      else if (response && typeof response === 'object') responseText = JSON.stringify(response);
-      if (!responseText) responseText = 'We could not process the response. Please try again.';
+      if (!responseText) throw new Error('Empty response received from LLM.');
 
+      // Hide the loader before typewriter starts
+      setIsTyping(false);
+
+      const aiMsgId = 'ai-' + Date.now();
       const aiMsg = {
-        id: (Date.now() + 1).toString(),
-        text: responseText,
+        id: aiMsgId,
+        text: '',
         sender: 'ai',
         timestamp: new Date(),
+        isStreaming: true,
+        fullPromptText: responseText
       };
       setMessages(prev => [...prev, aiMsg]);
+
+      const words = responseText.split(' ');
+      let currentText = '';
+
+      for (let j = 0; j < words.length; j++) {
+        if (!isStreamingRef.current) {
+          break;
+        }
+        currentText += (j === 0 ? '' : ' ') + words[j];
+        
+        setMessages(prev => prev.map(m => {
+          if (m.id === aiMsgId) {
+            return { ...m, text: currentText };
+          }
+          return m;
+        }));
+
+        await new Promise(resolve => setTimeout(resolve, 30));
+      }
+
+      const wasStopped = !isStreamingRef.current;
+      setMessages(prev => prev.map(m => {
+        if (m.id === aiMsgId) {
+          return { 
+            ...m, 
+            isStreaming: false, 
+            isStopped: wasStopped,
+            text: wasStopped ? currentText : responseText
+          };
+        }
+        return m;
+      }));
+
+      setGenerationState(wasStopped ? 'stopped' : 'completed');
     } catch (error) {
       console.error('[LegalChatScreen] API Error:', error);
-      const errorMsg = {
-        id: (Date.now() + 1).toString(),
-        text: error?.message || 'Unable to connect. Please check your connection and try again.',
-        sender: 'ai',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMsg]);
-    } finally {
       setIsTyping(false);
-      console.log("AI Legal Chat Ready");
+
+      const isCancel = error.name === 'AbortError' || error.message === 'canceled' || error.message?.includes('canceled') || (typeof error === 'object' && error.constructor?.name === 'Cancel');
+      
+      if (isCancel || !isStreamingRef.current) {
+        setGenerationState('stopped');
+        const aiMsgId = 'ai-stopped-' + Date.now();
+        const stoppedMsg = {
+          id: aiMsgId,
+          text: '',
+          sender: 'ai',
+          timestamp: new Date(),
+          isStopped: true
+        };
+        setMessages(prev => [...prev, stoppedMsg]);
+      } else {
+        setGenerationState('error');
+        const aiMsgId = 'ai-failed-' + Date.now();
+        const errorMsg = {
+          id: aiMsgId,
+          text: '',
+          sender: 'ai',
+          timestamp: new Date(),
+          isFailed: true,
+          failedPrompt: promptText,
+          failedHiddenContext: hiddenContextText
+        };
+        setMessages(prev => [...prev, errorMsg]);
+      }
+    } finally {
+      isStreamingRef.current = false;
+      abortControllerRef.current = null;
     }
   };
 
-  // ─── SEND ON CASE SELECT ───────────────────────────────────────────────────
-  const handleSelectCase = (item) => {
-    setShowCasesSheet(false);
-    setExpandedCaseId(null);
-    
-    const actsStr = item.applicableActs?.map(a => `${a.name} (Enacted: ${a.enactmentYear}, Amended: ${a.lastAmendmentYear})`).join(', ') || 'N/A';
-    const sectionsStr = item.ipcBnsReferences?.length > 0
-      ? `IPC/BNS Sections: ${item.ipcBnsReferences.map(r => `${r.ipcSection} / ${r.bnsSection} (Punishment: ${r.punishment}, Applicability: ${r.applicability})`).join(', ')}`
-      : 'N/A';
-    const landmarkStr = item.landmarkJudgments?.length > 0
-      ? `Landmark Judgments: ${item.landmarkJudgments.map(j => `"${j.caseName}" (${j.citation}, ${j.court}, ${j.year}) - Principle: ${j.legalPrinciple}`).join('; ')}`
-      : 'N/A';
+  useEffect(() => {
+    window.__aisa_legal_send_message = (text) => sendMessage(text);
+    return () => {
+      delete window.__aisa_legal_send_message;
+    };
+  }, [sendMessage]);
 
-    const promptText = `Provide a comprehensive legal analysis and strategy advice for the following case type:
-- **Title**: ${item.name}
-- **Category**: ${item.category}
-- **Court / Jurisdiction**: ${item.courtType} (${item.jurisdiction})
-- **Applicable Acts**: ${actsStr}
-- **IPC/BNS Sections**: ${sectionsStr}
-- **Summary**: ${item.summary}
-- **Reference Landmark Cases**: ${landmarkStr}
-`;
+  const handleRegenerateMessage = async (msgId) => {
+    const aiMsgIdx = messages.findIndex(m => m.id === msgId);
+    if (aiMsgIdx === -1) return;
 
-    sendMessage(promptText);
+    let userMsg = null;
+    let userMsgIdx = -1;
+    for (let i = aiMsgIdx - 1; i >= 0; i--) {
+      if (messages[i].sender === 'user') {
+        userMsg = messages[i];
+        userMsgIdx = i;
+        break;
+      }
+    }
+    if (!userMsg) return;
+
+    const promptText = userMsg.fullPromptText || userMsg.text;
+    const suffixId = Date.now().toString();
+    const statusCardId = 'regen-status-' + suffixId;
+
+    const statusMsg = {
+      id: statusCardId,
+      sender: 'system_regenerating',
+      originalPrompt: promptText.length > 120 ? promptText.slice(0, 120) + '...' : promptText,
+      status: 'loading',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, statusMsg]);
+    setIsRegenerating(true);
+    setIsTyping(true);
+    setGenerationState('streaming');
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    isStreamingRef.current = true;
+
+    try {
+      const precedingHistory = messages.slice(0, userMsgIdx).filter(m => !m.isIntro).map(m => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: m.fullPromptText || m.text }]
+      }));
+
+      let systemInstruction = LEGAL_SYSTEM_INSTRUCTION;
+      if (currentCase) {
+        systemInstruction += `\n\nContext for the current case:\n`;
+        systemInstruction += `- Case ID: ${currentCase.id || currentCase._id}\n`;
+        systemInstruction += `- Case Name: ${currentCase.title || currentCase.name || 'N/A'}\n`;
+        systemInstruction += `- Case Description: ${currentCase.summary || currentCase.description || 'N/A'}\n`;
+      }
+
+      const response = await generateChatResponse(
+        precedingHistory,
+        promptText,
+        systemInstruction,
+        [],
+        'English',
+        abortControllerRef.current.signal,
+        'LEGAL_TOOLKIT',
+        null,
+        null
+      );
+
+      let responseText = '';
+      if (typeof response === 'string') responseText = response;
+      else if (response?.reply) responseText = response.reply;
+      else if (response?.data?.reply) responseText = response.data.reply;
+      else if (response?.text) responseText = response.text;
+      if (!responseText) throw new Error('Empty response received from LLM.');
+
+      setMessages(prev => prev.map(m => {
+        if (m.id === statusCardId) {
+          return { ...m, status: 'success' };
+        }
+        return m;
+      }));
+      setIsRegenerating(false);
+      setIsTyping(false);
+
+      const newAiMsgId = 'ai-regen-' + suffixId;
+      const newAiMsg = {
+        id: newAiMsgId,
+        sender: 'ai',
+        text: '',
+        timestamp: new Date(),
+        isStreaming: true,
+        fullPromptText: responseText
+      };
+      setMessages(prev => [...prev, newAiMsg]);
+
+      const words = responseText.split(' ');
+      let currentText = '';
+
+      for (let j = 0; j < words.length; j++) {
+        if (!isStreamingRef.current) {
+          break;
+        }
+        currentText += (j === 0 ? '' : ' ') + words[j];
+        
+        setMessages(prev => prev.map(m => {
+          if (m.id === newAiMsgId) {
+            return { ...m, text: currentText };
+          }
+          return m;
+        }));
+
+        await new Promise(resolve => setTimeout(resolve, 30));
+      }
+
+      const wasStopped = !isStreamingRef.current;
+      setMessages(prev => prev.map(m => {
+        if (m.id === newAiMsgId) {
+          return { 
+            ...m, 
+            isStreaming: false, 
+            isStopped: wasStopped,
+            text: wasStopped ? currentText : responseText
+          };
+        }
+        return m;
+      }));
+
+      setGenerationState(wasStopped ? 'stopped' : 'completed');
+      toast.success("Response regenerated successfully!");
+    } catch (error) {
+      console.error('[LegalChatScreen] Regeneration API Error:', error);
+      setIsRegenerating(false);
+      setIsTyping(false);
+
+      const isCancel = error.name === 'AbortError' || error.message === 'canceled' || error.message?.includes('canceled') || (typeof error === 'object' && error.constructor?.name === 'Cancel');
+      
+      setMessages(prev => {
+        const cleaned = prev.filter(m => m.id !== statusCardId);
+        if (isCancel || !isStreamingRef.current) {
+          setGenerationState('stopped');
+          const stoppedCard = {
+            id: 'regen-stopped-' + suffixId,
+            sender: 'ai',
+            text: '',
+            timestamp: new Date(),
+            isStopped: true
+          };
+          return [...cleaned, stoppedCard];
+        } else {
+          setGenerationState('error');
+          const errorCard = {
+            id: 'regen-error-' + suffixId,
+            sender: 'system_regenerating_error',
+            originalPrompt: promptText.length > 120 ? promptText.slice(0, 120) + '...' : promptText,
+            targetMsgId: msgId,
+            timestamp: new Date()
+          };
+          return [...cleaned, errorCard];
+        }
+      });
+      toast.error(error?.message || 'Failed to regenerate response.');
+    } finally {
+      isStreamingRef.current = false;
+      abortControllerRef.current = null;
+    }
   };
 
-  // ─── FILE ATTACHMENT ───────────────────────────────────────────────────────
-  const getFileIcon = (type) => {
-    if (!type) return <FileText size={14} className="text-slate-400" />;
-    if (type.includes('pdf')) return <FileText size={14} className="text-red-500" />;
-    if (type.includes('word') || type.includes('msword') || type.includes('officedocument.word')) return <FileText size={14} className="text-blue-500" />;
-    if (type.startsWith('image/')) return <ImageIcon size={14} className="text-emerald-500" />;
-    if (type.includes('excel') || type.includes('officedocument.spreadsheet') || type.includes('csv')) return <FileText size={14} className="text-green-600" />;
-    return <FileText size={14} className="text-slate-400" />;
+  // ─── USER MESSAGE ACTIONS ──────────────────────────────────────────────────
+  const handleEditUserMessage = (msg) => {
+    setInputValue(msg.text);
+    setMessages(prev => {
+      const idx = prev.findIndex(m => m.id === msg.id);
+      return idx !== -1 ? prev.slice(0, idx) : prev;
+    });
   };
 
+  const handleCopyUserMessage = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Query copied!");
+  };
+
+  const handleDeleteUserMessage = (msgId) => {
+    setMessages(prev => prev.filter(m => m.id !== msgId));
+    toast.success("Message removed");
+  };
+
+  // ─── FILE ATTACHMENTS ──────────────────────────────────────────────────────
   const handleFilesAdded = async (filesList) => {
     const supportedTypes = [
       'application/pdf', 
@@ -838,7 +1527,6 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
       }
 
       const id = Date.now().toString() + Math.random().toString(36).substring(2, 5);
-      
       const newAtt = {
         id,
         name: file.name,
@@ -862,8 +1550,6 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
           if (progressVal >= 100) {
             clearInterval(interval);
             setAttachments(prev => prev.map(a => a.id === id ? { ...a, progress: 100, isUploading: false } : a));
-            
-            // Sync to case documents
             await saveFileToCase({ name: file.name, type: file.type || `application/${ext}`, size: file.size, dataUrl });
           } else {
             setAttachments(prev => prev.map(a => a.id === id ? { ...a, progress: progressVal } : a));
@@ -875,18 +1561,14 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
   };
 
   const handleFileSelect = (e) => {
-    if (e.target.files) {
-      handleFilesAdded(e.target.files);
-    }
+    if (e.target.files) handleFilesAdded(e.target.files);
     e.target.value = '';
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFilesAdded(e.dataTransfer.files);
-    }
+    if (e.dataTransfer.files?.length > 0) handleFilesAdded(e.dataTransfer.files);
   };
 
   const removeAttachment = (id) => {
@@ -902,556 +1584,820 @@ const LegalChatScreen = ({ onBack, currentCase, onUpdateCase }) => {
         type: fileObj.type || 'file',
         size: fileObj.size,
         uploadedAt: new Date().toISOString(),
-        uri: fileObj.dataUrl // base64 URI
+        uri: fileObj.dataUrl
       };
-
-      const existingDocs = currentCase.documents || [];
-      const updatedDocs = [newDoc, ...existingDocs];
       const payload = {
         ...currentCase,
-        documents: updatedDocs
+        documents: [newDoc, ...(currentCase.documents || [])]
       };
-      
       const response = await apiService.updateProject(currentCase._id, payload);
       if (onUpdateCase) onUpdateCase(response);
     } catch (e) {
-      console.error("Failed to sync file to case documents", e);
+      console.error(e);
     }
   };
 
-  // ─── COPY ──────────────────────────────────────────────────────────────────
-  const handleCopy = async (text, id) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch { /* ignore */ }
+  const getFileIcon = (type) => {
+    if (type?.startsWith('image/')) return <ImageIcon size={14} className="text-emerald-500" />;
+    if (type?.includes('excel') || type?.includes('spreadsheet') || type?.includes('csv')) return <FileText size={14} className="text-green-600" />;
+    return <FileText size={14} className="text-slate-400" />;
   };
 
-  // ─── NEW CHAT ──────────────────────────────────────────────────────────────
   const handleNewChat = async (param) => {
     let isAutoAnalysis = false;
-    if (param === true || Array.isArray(param)) {
-      isAutoAnalysis = true;
-    } else if (param && param.preventDefault) {
-      param.preventDefault();
-      isAutoAnalysis = false;
-    }
-
+    if (param === true || Array.isArray(param)) isAutoAnalysis = true;
+    
     const newId = Date.now().toString(36) + Math.random().toString(36).substr(2);
     chatIdRef.current = newId;
     setActiveSessionId(newId);
-
     setAttachments([]);
     setInputValue('');
+    setTimeout(() => inputRef.current?.focus(), 150);
 
     if (currentCase && isAutoAnalysis) {
-      const promptText = `Provide a comprehensive legal analysis and strategy advice for the following case:
-- **Case ID**: ${currentCase.id || currentCase._id}
-- **Case Name**: ${currentCase.title || currentCase.name || 'N/A'}
-- **Case Number**: ${currentCase.caseNumber || 'N/A'}
-- **Case Type**: ${currentCase.caseType || currentCase.category || 'N/A'}
-- **Court**: ${currentCase.courtName || currentCase.courtType || 'N/A'}
-- **Client Details**: ${currentCase.clientName || 'N/A'}
-- **Opponent Details**: ${currentCase.opponentName || 'N/A'}
-- **Case Status**: ${currentCase.status || 'N/A'}
-- **Case Description**: ${currentCase.summary || currentCase.description || 'N/A'}
-- **Uploaded Documents**: ${(currentCase.documents || []).length} files
-- **Evidence**: ${(currentCase.evidence || []).length} items
-- **Notes**: ${currentCase.notes || 'N/A'}
-- **Timeline**: ${(currentCase.timeline || []).length} events
-- **Previous AI Legal conversations**: ${currentCase.savedResponses ? currentCase.savedResponses.length : 0}
-
-Please provide:
-- Case Summary
-- Legal Issues
-- Applicable Laws
-- Strengths of the Case
-- Weaknesses of the Case
-- Missing Evidence
-- Missing Documents
-- Recommended Legal Strategy
-- Possible Defences
-- Relevant Legal Precedents
-- Draft Suggestions
-- Risks
-- Next Legal Steps
-- Probability Assessment
-- Recommended Actions`;
-
-      const userMsg = {
-        id: Date.now().toString(),
-        text: promptText,
-        sender: 'user',
-        timestamp: new Date(),
-        isIntro: false,
-      };
-
+      const promptText = `Provide a comprehensive legal analysis and strategy advice for the case: ${currentCase.title || currentCase.name}`;
+      const userMsg = { id: Date.now().toString(), text: promptText, sender: 'user', timestamp: new Date(), fullPromptText: promptText };
       setMessages([userMsg]);
       setIsTyping(true);
 
-      const newSessionItem = {
-        chat_id: newId,
-        title: 'Case Analysis',
-        timestamp: Date.now(),
-      };
+      const newSessionItem = { chat_id: newId, title: 'Case Analysis', timestamp: Date.now() };
       setSessions(prev => [newSessionItem, ...prev]);
 
       const dbMsg = mapLocalMessageToDb(userMsg);
       dbMsg.activeTool = 'General Legal Chat';
       dbMsg.mode = 'NORMAL_CHAT';
-      try {
-        await chatStorageService.saveMessage(newId, dbMsg, 'Case Analysis', currentCase?._id);
-      } catch (err) {
-        console.error("Failed to save initial user message", err);
-      }
-
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 300);
+      await chatStorageService.saveMessage(newId, dbMsg, 'Case Analysis', currentCase?._id);
 
       try {
         let systemInstruction = LEGAL_SYSTEM_INSTRUCTION;
-        systemInstruction += `\n\nContext for the current case:\n`;
-        systemInstruction += `- Case ID: ${currentCase.id || currentCase._id}\n`;
-        systemInstruction += `- Case Name: ${currentCase.title || currentCase.name || 'N/A'}\n`;
-        systemInstruction += `- Case Number: ${currentCase.caseNumber || 'N/A'}\n`;
-        systemInstruction += `- Case Type: ${currentCase.caseType || currentCase.category || 'N/A'}\n`;
-        systemInstruction += `- Court: ${currentCase.courtName || currentCase.courtType || 'N/A'}\n`;
-        systemInstruction += `- Client Details: ${currentCase.clientName || 'N/A'}\n`;
-        systemInstruction += `- Opponent Details: ${currentCase.opponentName || 'N/A'}\n`;
-        systemInstruction += `- Case Status: ${currentCase.status || 'N/A'}\n`;
-        systemInstruction += `- Case Description: ${currentCase.summary || currentCase.description || 'N/A'}\n`;
-        systemInstruction += `- Notes: ${currentCase.notes || 'N/A'}\n`;
-
-        const response = await generateChatResponse(
-          [], 
-          promptText,
-          systemInstruction,
-          [],
-          'English',
-          null, null, null, null
-        );
-
-        let responseText = '';
-        if (typeof response === 'string') responseText = response;
-        else if (response?.reply) responseText = response.reply;
-        else if (response?.data?.reply) responseText = response.data.reply;
-        else if (response?.text) responseText = response.text;
-        else if (response && typeof response === 'object') responseText = JSON.stringify(response);
-        if (!responseText) responseText = 'We could not process the response. Please try again.';
-
-        const aiMsg = {
-          id: (Date.now() + 1).toString(),
-          text: responseText,
-          sender: 'ai',
-          timestamp: new Date(),
-          isIntro: false,
-        };
-
+        systemInstruction += `\n\nCase Context:\n- Title: ${currentCase.title || currentCase.name}\n- Summary: ${currentCase.summary || currentCase.description}\n`;
+        const response = await generateChatResponse([], promptText, systemInstruction, [], 'English', null, 'LEGAL_TOOLKIT', null, null);
+        
+        let responseText = typeof response === 'string' ? response : (response?.reply || response?.text || 'Analysis complete.');
+        const aiMsg = { id: (Date.now() + 1).toString(), text: responseText, sender: 'ai', timestamp: new Date() };
         setMessages(prev => {
           const updated = [...prev, aiMsg];
           saveChatHistory(updated);
           return updated;
         });
       } catch (err) {
-        console.error('[LegalChatScreen] API Error:', err);
-        const errorMsg = {
-          id: (Date.now() + 1).toString(),
-          text: err?.message || 'Unable to connect. Please check your connection and try again.',
-          sender: 'ai',
-          timestamp: new Date(),
-          isIntro: false,
-        };
-        setMessages(prev => [...prev, errorMsg]);
+        console.error(err);
       } finally {
         setIsTyping(false);
       }
-
-    } else if (currentCase && !isAutoAnalysis) {
-      const caseName = currentCase.title || currentCase.name || 'N/A';
-      const welcomeText = `**AI Legal Chat**
-
-**Current Case:**
-${caseName}
-
-How can I help you with this case today?
-
-**Examples:**
-• Analyse my evidence.
-• Draft a legal notice.
-• Build court arguments.
-• Review uploaded documents.
-• Predict the outcome.
-• Find relevant precedents.`;
-
-      const newMsgs = [{
-        id: '1',
-        text: welcomeText,
-        sender: 'ai',
-        timestamp: new Date(),
-        isIntro: true,
-      }];
-      setMessages(newMsgs);
-
-      const newSessionItem = {
-        chat_id: newId,
-        title: 'New Chat',
-        timestamp: Date.now(),
-      };
-      setSessions(prev => [newSessionItem, ...prev]);
-
-      const dbMsg = mapLocalMessageToDb(newMsgs[0]);
-      dbMsg.activeTool = 'General Legal Chat';
-      dbMsg.mode = 'NORMAL_CHAT';
-      try {
-        await chatStorageService.saveMessage(newId, dbMsg, 'New Chat', currentCase._id);
-      } catch (e) {
-        console.error("Failed to save initial message in new chat", e);
-      }
-      
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 300);
-
     } else {
       const newMsgs = [{
         id: '1',
-        text: `Hello! I am your AI ${toolName}. ${toolDesc} How can I assist you today?`,
+        text: `Hello! I am your AI ${toolName}. Ask me anything about statutes, bare acts, case research, or litigation strategy.`,
         sender: 'ai',
         timestamp: new Date(),
         isIntro: true,
       }];
       setMessages(newMsgs);
-
-      const newSessionItem = {
-        chat_id: newId,
-        title: 'New Chat',
-        timestamp: Date.now(),
-      };
+      const newSessionItem = { chat_id: newId, title: 'New Chat', timestamp: Date.now() };
       setSessions(prev => [newSessionItem, ...prev]);
-
       const dbMsg = mapLocalMessageToDb(newMsgs[0]);
       dbMsg.activeTool = 'General Legal Chat';
       dbMsg.mode = 'NORMAL_CHAT';
-      try {
-        await chatStorageService.saveMessage(newId, dbMsg, 'New Chat', currentCase?._id);
-      } catch (e) {
-        console.error("Failed to save initial message in new chat", e);
-      }
-      
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 300);
+      await chatStorageService.saveMessage(newId, dbMsg, 'New Chat', currentCase?._id);
     }
   };
 
   const switchSession = async (sessionId) => {
-    try {
-      chatIdRef.current = sessionId;
-      setActiveSessionId(sessionId);
-      await loadSessionHistory(sessionId);
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-    } catch (e) {
-      console.error("Failed to switch session", e);
-    }
+    chatIdRef.current = sessionId;
+    setActiveSessionId(sessionId);
+    await loadSessionHistory(sessionId);
+  };
+
+  const handleSelectCase = (item) => {
+    setShowCasesSheet(false);
+    const promptText = `Please analyze the case laws, applicable acts and strategy advice for: ${item.name} (${item.category})`;
+    sendMessage(promptText);
   };
 
   // ─── CASES DATABASE SEARCH & FILTER ────────────────────────────────────────
   const filterOptions = useMemo(() => getFilterOptions(), []);
-
   const searchResults = useMemo(() => {
-    return searchAndFilterCases(searchQuery, filters, currentPage, 6);
-  }, [searchQuery, filters, currentPage]);
-
+    return searchAndFilterCases(searchQuery, filters, 1, 6);
+  }, [searchQuery, filters]);
   const filteredCases = searchResults.cases;
-  const totalCases = searchResults.total;
-  const totalPages = searchResults.totalPages;
 
-  // ─── RENDER ────────────────────────────────────────────────────────────────
+  const handleQuickAction = (action) => {
+    sendMessage(action);
+  };
+
+  const suggestedQuestions = [
+    "What is IPC 420?",
+    "Explain Article 21.",
+    "How to file an FIR?",
+    "What is anticipatory bail?",
+    "Consumer complaint format.",
+    "Divorce procedure in India."
+  ];
+
+  // Helper to determine greeting message
+  const getGreeting = () => {
+    const hrs = new Date().getHours();
+    if (hrs < 12) return "Good Morning";
+    if (hrs < 17) return "Good Afternoon";
+    return "Good Evening";
+  };
+
   return (
-    <div className="legal-chat-screen">
-      {/* ── HEADER ────────────────────────────────────────────────────── */}
-      <div className="legal-chat-header">
-        <button className="legal-chat-back-btn" onClick={onBack} title="Back to Dashboard">
-          <ArrowLeft size={20} />
-        </button>
-        <div className="legal-chat-header-info">
-          <div className="legal-chat-header-icon">
-            <Scale size={16} />
-          </div>
-          <div>
-            <h1 className="legal-chat-header-title">{toolName}</h1>
-            <span className="legal-chat-header-sub">AI Engine Active</span>
+    <div className="flex flex-col h-full w-full bg-[#FAFBFD] font-sans relative overflow-hidden select-text text-slate-800">
+      
+      {/* ─── STICKY HEADER ──────────────────────────────────────────────── */}
+      <header className="h-[72px] bg-white border-b border-[#E5E7EB] px-6 flex items-center justify-between sticky top-0 z-40 shadow-sm shrink-0">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onBack} 
+            className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+            title="Back to Dashboard"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          
+          <div className="w-[1px] h-4 bg-slate-200" />
+          
+          <div className="flex items-center gap-1">
+            <img 
+              src="/logo/ai_legal_monochrome.png" 
+              className="w-[36px] h-[36px] object-contain -mr-1.5" 
+              style={{ mixBlendMode: 'multiply' }}
+              alt="AI LEGAL" 
+            />
+            <h1 className="text-sm font-black text-slate-900 uppercase tracking-wider">AI LEGAL™ Chat</h1>
           </div>
         </div>
 
-        {/* History Button */}
-        <div className="legal-history-btn-wrap">
+        <div className="flex items-center gap-3 select-none">
+          {/* Case Summary Toggle Button */}
           <button
-            className="legal-chat-action-btn legal-history-btn"
-            onClick={() => setShowHistoryPanel(v => !v)}
-            title="Chat History"
+            type="button"
+            onClick={() => setShowSummaryDrawer(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold transition-all cursor-pointer"
+            title="View Case Summary details"
           >
-            <History size={18} />
+            <SlidersHorizontal size={13} />
+            <span>Case Summary</span>
           </button>
 
-          {/* History Dropdown Panel */}
-          {showHistoryPanel && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowHistoryPanel(false)} />
-              <div className="legal-history-panel">
-                <div className="legal-history-panel-header">
-                  <History size={14} />
-                  <span>Chat History</span>
-                </div>
-                {(() => {
-                  // Only show sessions with real titles (not empty "New Chat" sessions)
-                  const realSessions = sessions.filter(s => s.title && s.title.trim() !== '' && s.title !== 'New Chat');
-                  if (realSessions.length === 0) return (
-                    <div className="legal-history-empty">
-                      <MessageSquare size={28} />
-                      <p>No previous chats</p>
-                    </div>
-                  );
-                  const pinned = realSessions.filter(s => pinnedSessions.includes(s.chat_id));
-                  const unpinned = realSessions.filter(s => !pinnedSessions.includes(s.chat_id));
-                  const renderItem = (s) => (
-                    <div key={s.chat_id} className="legal-history-item-wrap">
-                      <button
-                        className={`legal-history-item ${s.chat_id === activeSessionId ? 'active' : ''}`}
-                        onClick={() => { switchSession(s.chat_id); setShowHistoryPanel(false); }}
-                      >
-                        {pinnedSessions.includes(s.chat_id)
-                          ? <Pin size={12} style={{ color: '#f59e0b', flexShrink: 0 }} />
-                          : <MessageSquare size={13} style={{ flexShrink: 0 }} />
-                        }
-                        <span>{s.title || 'Untitled Chat'}</span>
-                      </button>
-                      <div className="legal-history-item-actions">
-                        <button
-                          className={`legal-history-action-btn ${pinnedSessions.includes(s.chat_id) ? 'pinned' : ''}`}
-                          onClick={(e) => handleTogglePin(s.chat_id, e)}
-                          title={pinnedSessions.includes(s.chat_id) ? 'Unpin' : 'Pin'}
-                        >
-                          {pinnedSessions.includes(s.chat_id) ? <PinOff size={13} /> : <Pin size={13} />}
-                        </button>
-                        <button
-                          className="legal-history-action-btn delete"
-                          onClick={(e) => handleDeleteSession(s.chat_id, e)}
-                          title="Delete"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                  return (
-                    <div className="legal-history-list">
-                      {pinned.length > 0 && (
-                        <>
-                          <div className="legal-history-section-label">📌 Pinned</div>
-                          {pinned.map(renderItem)}
-                          {unpinned.length > 0 && <div className="legal-history-divider" />}
-                        </>
-                      )}
-                      {unpinned.length > 0 && (
-                        <>
-                          {pinned.length > 0 && <div className="legal-history-section-label">Recent</div>}
-                          {unpinned.map(renderItem)}
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+          {/* Export Chat dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                exportDropdownOpen
+                  ? 'border-[#4F46E5] text-[#4F46E5] bg-[#4F46E5]/5'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Download size={13} />
+              <span>Export Chat</span>
+            </button>
 
-      {/* ── MESSAGES ──────────────────────────────────────────────────── */}
-      <div ref={scrollContainerRef} onScroll={handleScroll} className="legal-chat-messages">
-        <AnimatePresence initial={false}>
-          {messages.map((msg) => {
-            const isAi = msg.sender === 'ai';
-            return (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-                className={`legal-msg-row ${isAi ? 'legal-msg-ai' : 'legal-msg-user'}`}
-              >
-                {isAi && (
-                  <div className="legal-msg-avatar">
-                    <Scale size={14} />
-                  </div>
-                )}
-                <div className={`legal-msg-bubble ${isAi ? 'legal-bubble-ai' : 'legal-bubble-user'}`}>
-                  {msg.attachments && msg.attachments.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {msg.attachments.map((att, idx) => (
-                        <div key={idx} className="legal-msg-attachment-chip">
-                          {getFileIcon(att.type)}
-                          <span>{att.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {isAi ? (
-                    <AiResponseCard
-                      msg={msg}
-                      currentCase={currentCase}
-                      chatIdRef={chatIdRef}
-                    />
-                  ) : (
-                    <>
-                      <p className="legal-msg-user-text">{msg.text}</p>
-                      <div className="legal-msg-footer">
-                        <span className="legal-msg-time">{safeFormatTime(msg.timestamp)}</span>
-                      </div>
-                    </>
-                  )}
+            {exportDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setExportDropdownOpen(false)} />
+                <div className="absolute right-0 mt-2 z-50 w-44 rounded-2xl bg-white border border-slate-200 shadow-2xl p-1 flex flex-col gap-0.5">
+                  {[
+                    { label: 'Export as PDF', act: () => { exportToPDF({ element: document.getElementById('chat-history'), text: messages.map(m => m.text).join('\n\n'), title: 'AI LEGAL Chat Export' }); } },
+                    { label: 'Export as DOCX', act: () => { const blob = new Blob([messages.map(m => m.text).join('\n\n')], { type: 'application/msword' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Chat_Export.doc'; a.click(); } },
+                    { label: 'Export as Markdown', act: () => { const blob = new Blob([messages.map(m => m.text).join('\n\n')], { type: 'text/markdown' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Chat_Export.md'; a.click(); } },
+                    { label: 'Export as TXT', act: () => { const blob = new Blob([messages.map(m => m.text).join('\n\n')], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Chat_Export.txt'; a.click(); } },
+                    { label: 'Export as HTML', act: () => { const blob = new Blob([messages.map(m => m.text).join('\n\n')], { type: 'text/html' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'Chat_Export.html'; a.click(); } },
+                    { label: 'Print Transcript', act: () => { window.print(); } },
+                    { label: 'Send via Email', act: () => { window.open(`mailto:?subject=AI Legal Chat Export&body=${encodeURIComponent(messages.map(m => m.text).join('\n\n').slice(0, 1500))}`); } },
+                    { label: 'Share Link', act: () => { navigator.clipboard.writeText(window.location.href); toast.success('Share link copied!'); } }
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => { item.act(); setExportDropdownOpen(false); }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors border-none bg-transparent cursor-pointer"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+              </>
+            )}
+          </div>
 
-        {/* Typing indicator */}
-        {isTyping && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="legal-msg-row legal-msg-ai"
+          {/* History Toggle Drawer Button */}
+          <button 
+            type="button"
+            onClick={() => setShowHistoryPanel(!showHistoryPanel)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+              showHistoryPanel 
+                ? 'border-[#4F46E5] text-[#4F46E5] bg-[#4F46E5]/5' 
+                : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
           >
-            <div className="legal-msg-avatar">
-              <Scale size={14} />
-            </div>
-            <div className="legal-bubble-ai legal-typing-bubble">
-              <div className="legal-typing-dots">
-                <span /><span /><span />
-              </div>
-            </div>
-          </motion.div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+            <History size={13} />
+            <span>History</span>
+          </button>
 
-      {/* ── NEW CHAT BUTTON ───────────────────────────────────────────── */}
-      <div className="w-full px-4 pb-2 flex justify-start shrink-0">
-        <button
-          type="button"
-          className="legal-input-action-btn legal-input-action-btn-label"
-          onClick={handleNewChat}
-          title="Start New Chat"
-        >
-          <Plus size={15} />
-          <span>New Chat</span>
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => handleNewChat(false)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#4F46E5] text-white hover:bg-[#4338CA] rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all shrink-0 cursor-pointer"
+          >
+            <Plus size={14} />
+            <span>New Chat</span>
+          </button>
+        </div>
+      </header>
 
-      {/* ── INPUT BAR ─────────────────────────────────────────────────── */}
-      <div 
+      {/* ─── CONVERSATION AREA ────────────────────────────────────────── */}
+      <main 
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
         onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
-        className={`legal-chat-input-area flex flex-col gap-2 transition-all ${isDragging ? 'bg-indigo-50/20 dark:bg-indigo-950/20 border-indigo-500' : ''}`}
+        className="flex-1 flex flex-col overflow-y-auto px-4 py-8 custom-scrollbar shrink-0 relative"
       >
-        {attachments.length > 0 && (
-          <div className="flex flex-wrap gap-2 p-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
-            {attachments.map(att => (
-              <div key={att.id} className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-full text-xs font-semibold">
-                {getFileIcon(att.type)}
-                <span className="truncate max-w-[150px] text-slate-700 dark:text-slate-200">{att.name}</span>
-                {att.isUploading ? (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold animate-pulse">{att.progress}%</span>
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 animate-ping" />
+        <div className={`max-w-[960px] w-full mx-auto space-y-8 pb-32 ${messages.filter(m => !m.isIntro).length === 0 ? 'flex-1 flex flex-col justify-center' : ''}`}>
+          
+          {messages.filter(m => !m.isIntro).length === 0 ? (
+            /* ─── EMPTY STATE VIEW ─── */
+            <div className="space-y-8 py-6 max-w-[760px] mx-auto w-full text-left font-sans select-none">
+              
+              {/* Shortened AI greeting card */}
+              <div className="p-6 border border-[#4F46E5]/15 bg-white rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+                <div className="space-y-4 flex-1">
+                  <div>
+                    <span className="text-[9px] font-black uppercase text-[#4F46E5] tracking-widest block mb-1">AI LEGAL COPILOT READY</span>
+                    <h2 className="text-lg font-black text-slate-850 uppercase tracking-tight">
+                      {currentCase?.title || currentCase?.name || 'Rajesh Sharma vs Amit Verma'}
+                    </h2>
+                    <p className="text-[11px] text-slate-405 font-bold uppercase tracking-wider mt-1">
+                      {currentCase?.court || 'District Court Jabalpur'} • Civil Property Dispute
+                    </p>
                   </div>
-                ) : (
-                  <button onClick={() => removeAttachment(att.id)} className="text-slate-400 hover:text-red-500 transition-colors shrink-0">
-                    <X size={14} />
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
+                    {['Parties', 'Evidence', 'Timeline', 'Previous Orders', 'Applicable Laws'].map((item) => (
+                      <div key={item} className="flex items-center gap-1.5 text-[10px] text-slate-600 font-bold">
+                        <span className="text-emerald-500 font-black">✓</span>
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 shrink-0 select-none">
+                  <button
+                    type="button"
+                    onClick={() => setShowSummaryDrawer(true)}
+                    className="px-4 py-2 border border-[#4F46E5]/20 hover:border-[#4F46E5] text-[#4F46E5] text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-xs bg-transparent cursor-pointer"
+                  >
+                    View Case Summary
                   </button>
-                )}
+                </div>
               </div>
-            ))}
-          </div>
-        )}
-        <div className="legal-chat-input-row">
-          <div className="legal-chat-input-buttons">
+
+              {/* suggested prompts & recent activity */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                <div className="space-y-3.5">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block pl-1">Suggested Prompts</span>
+                  <div className="space-y-2">
+                    {[
+                      "Draft a Legal Notice",
+                      "Summarize entire case",
+                      "Generate strongest arguments"
+                    ].map((promptText, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleQuickAction(promptText)}
+                        className="w-full text-left p-3.5 bg-white hover:bg-indigo-50/[0.03] border border-slate-200 hover:border-[#4F46E5] rounded-2xl flex items-center justify-between shadow-xs transition-all group cursor-pointer"
+                      >
+                        <span className="text-xs font-bold text-slate-700 group-hover:text-[#4F46E5] transition-colors">{promptText}</span>
+                        <ChevronRight size={14} className="text-slate-300 group-hover:text-[#4F46E5] group-hover:translate-x-0.5 transition-all shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3.5">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block pl-1">Recent Activity</span>
+                  <div className="space-y-2">
+                    {[
+                      { action: 'Evidence Analysis Complete', date: 'Just now', type: 'System' },
+                      { action: 'Legal Notice Draft saved', date: '10 mins ago', type: 'Notice' },
+                      { action: 'Workspace memory loaded', date: '1 hour ago', type: 'Loader' }
+                    ].map((item, idx) => (
+                      <div key={idx} className="p-3 bg-white border border-slate-100 rounded-xl flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 font-bold text-slate-750">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          <span>{item.action}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-semibold">{item.date}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          ) : (
+            /* ─── MESSAGES CONTAINER ─── */
+            messages.filter(m => !m.isIntro).map((msg, i) => {
+              if (msg.sender === 'system_regenerating') {
+                return (
+                  <div key={msg.id || i} className="flex justify-start max-w-[480px] mr-auto w-full my-4 pl-1 text-slate-800">
+                    <div className="bg-[#FAFBFD] border border-slate-200 rounded-[18px] p-5 shadow-[0_4px_18px_rgba(15,23,42,.03)] w-full space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-black text-[#4F46E5] uppercase tracking-wider">
+                        <RotateCcw size={13} className={`w-3.5 h-3.5 ${msg.status === 'loading' ? 'animate-spin' : ''}`} />
+                        <span>Regenerating previous response...</span>
+                      </div>
+                      <div className="text-xs bg-white border border-slate-100 rounded-xl p-3 space-y-1">
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Original Request</span>
+                        <p className="text-slate-700 font-medium italic">"{msg.originalPrompt}"</p>
+                      </div>
+                      {msg.status === 'loading' && (
+                        <div className="space-y-1.5 pl-1">
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#4F46E5] animate-ping shrink-0" />
+                            <span>Reviewing previous context...</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                            <span>Searching legal precedents...</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-[#4F46E5]/60 animate-pulse">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#4F46E5]/40 shrink-0" />
+                            <span>Improving response...</span>
+                          </div>
+                        </div>
+                      )}
+                      {msg.status === 'success' && (
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 pl-1">
+                          <Check size={12} />
+                          <span>Successfully regenerated improved answer</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
+              if (msg.sender === 'system_regenerating_error') {
+                return (
+                  <div key={msg.id || i} className="flex justify-start max-w-[480px] mr-auto w-full my-4 pl-1 text-slate-800">
+                    <div className="bg-red-50/50 border border-red-200 rounded-[18px] p-5 shadow-[0_4px_18px_rgba(15,23,42,.03)] w-full space-y-4">
+                      <div className="flex items-center gap-2 text-xs font-black text-red-600 uppercase tracking-wider">
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        <span>Unable to regenerate response</span>
+                      </div>
+                      <div className="text-xs bg-white border border-red-100 rounded-xl p-3 space-y-1">
+                        <span className="text-[10px] font-black uppercase text-red-400 tracking-wider block">Failed Prompt</span>
+                        <p className="text-slate-700 font-medium italic">"{msg.originalPrompt}"</p>
+                      </div>
+                      <p className="text-xs font-semibold text-slate-500">The regeneration process encountered an error. Would you like to try again?</p>
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          onClick={() => {
+                            setMessages(prev => prev.filter(m => m.id !== msg.id));
+                            handleRegenerateMessage(msg.targetMsgId);
+                          }}
+                          className="px-3.5 py-1.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-lg text-xs font-bold shadow-sm transition-all"
+                        >
+                          Retry
+                        </button>
+                        <button
+                          onClick={() => {
+                            setMessages(prev => prev.filter(m => m.id !== msg.id && m.id !== 'regen-status-' + msg.id.split('-').pop()));
+                          }}
+                          className="px-3.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold shadow-sm transition-all"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              const isAi = msg.sender === 'ai';
+              return (
+                <div key={msg.id || i} className="space-y-3">
+                  
+                  {isAi ? (
+                    /* AI message document card layout */
+                    <div className="space-y-2 pr-8">
+                      <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-[#4F46E5] pl-1">
+                        <img 
+                          src="/logo/ai_legal_monochrome.png" 
+                          className="w-[24px] h-[24px] object-contain" 
+                          style={{ mixBlendMode: 'multiply' }}
+                          alt="AI LEGAL" 
+                        />
+                        <span>AI LEGAL™ Copilot</span>
+                      </div>
+
+                      <div className="bg-white border border-[#E7EAF3] rounded-[18px] p-6 sm:p-8 shadow-[0_4px_18px_rgba(15,23,42,.05)] leading-relaxed select-text hover:shadow-md transition-shadow">
+                        <AiResponseCard
+                          msg={msg}
+                          currentCase={currentCase}
+                          chatIdRef={chatIdRef}
+                          handleRegenerateMessage={handleRegenerateMessage}
+                          getPrecedingUserMessage={getPrecedingUserMessage}
+                        />
+
+                        {msg.isStopped && (
+                          <div className="mt-6 pt-4 border-t border-slate-100 space-y-4 select-none">
+                            <div className="space-y-1">
+                              <div className="text-[10px] text-slate-400 font-black uppercase tracking-wider flex items-center gap-1.5 pl-1">
+                                <Square size={8} className="fill-slate-400 stroke-none" />
+                                <span>Generation stopped.</span>
+                              </div>
+                              <p className="text-xs text-slate-500 font-semibold leading-relaxed pl-1">The response was interrupted before completion.</p>
+                            </div>
+                            <button
+                              onClick={() => handleRegenerateMessage(msg.id)}
+                              className="px-3.5 py-1.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-lg text-xs font-bold shadow-sm hover:shadow transition-all inline-flex items-center gap-1.5 ml-1"
+                            >
+                              <RotateCcw size={12} />
+                              <span>Regenerate Response</span>
+                            </button>
+                          </div>
+                        )}
+
+                        {msg.isFailed && (
+                          <div className="mt-6 pt-4 border-t border-slate-100 space-y-4 select-none">
+                            <div className="space-y-1">
+                              <div className="text-[10px] text-red-500 font-black uppercase tracking-wider flex items-center gap-1.5 pl-1">
+                                <ShieldAlert size={10} className="text-red-500" />
+                                <span>Generation interrupted.</span>
+                              </div>
+                              <p className="text-xs text-slate-500 font-semibold leading-relaxed pl-1">The connection was lost during generation.</p>
+                            </div>
+                            <button
+                              onClick={() => handleRetryMessage(msg.id)}
+                              className="px-3.5 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-lg text-xs font-bold shadow-sm transition-all inline-flex items-center gap-1.5 ml-1"
+                            >
+                              <RotateCcw size={12} />
+                              <span>Retry Generation</span>
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Redesigned Pill-style Suggestions Panel */}
+                        {i === messages.filter(m => !m.isIntro).length - 1 && !msg.isStreaming && !msg.isStopped && !msg.isFailed && (
+                          <div className="mt-6 pt-5 border-t border-slate-100 space-y-3">
+                            <div className="flex items-center gap-1.5 pl-1">
+                              <span className="text-[10px] font-black uppercase tracking-wider text-[#4F46E5]">✨ Suggested follow-ups</span>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-2">
+                              {getSuggestionsForResponse(msg.text).map((card, cardIdx) => {
+                                const cleanTitle = card.title.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "").trim();
+                                return (
+                                  <button
+                                    key={cardIdx}
+                                    onClick={() => {
+                                      const hiddenContext = buildHiddenContext(card, msg.text);
+                                      sendMessage(cleanTitle, hiddenContext);
+                                    }}
+                                    className="h-[34px] px-3.5 bg-white border border-[#4F46E5]/15 hover:border-[#4F46E5] hover:bg-[#4F46E5]/5 rounded-full transition-all flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#4F46E5] shadow-xs select-none shrink-0"
+                                  >
+                                    <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0">{card.icon}</span>
+                                    <span>{cleanTitle}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* User prompt card bubble layout */
+                    <div className="flex justify-end pl-16">
+                      <div className="flex flex-col items-end gap-1.5 max-w-full">
+                        <div className="bg-white border border-slate-200 text-slate-800 p-4 rounded-2xl rounded-tr-none text-xs leading-relaxed font-semibold shadow-sm max-w-full">
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mb-2 shrink-0">
+                              {msg.attachments.map((att, idx) => (
+                                <div key={idx} className="flex items-center gap-1 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-full text-[10px] font-bold">
+                                  {getFileIcon(att.type)}
+                                  <span>{att.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <p className="whitespace-pre-wrap">{msg.text}</p>
+                        </div>
+                        
+                        {/* User Card bottom action items */}
+                        <div className="flex items-center gap-3 text-[9px] text-slate-400 font-bold uppercase tracking-wider px-1">
+                          <span>{safeFormatTime(msg.timestamp)}</span>
+                          <span>•</span>
+                          {!isTyping && !isStreamingRef.current && (
+                            <>
+                              <button 
+                                onClick={() => handleEditUserMessage(msg)}
+                                className="hover:text-[#4F46E5] flex items-center gap-0.5"
+                              >
+                                <span>Edit</span>
+                              </button>
+                              <span>•</span>
+                            </>
+                          )}
+                          <button 
+                            onClick={() => handleCopyUserMessage(msg.text)}
+                            className="hover:text-[#4F46E5] flex items-center gap-0.5"
+                          >
+                            <span>Copy</span>
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteUserMessage(msg.id)}
+                            className="hover:text-red-500 flex items-center gap-0.5"
+                          >
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              );
+            })
+          )}
+
+          {/* Legal Loader Indicator with rotating phrases or regeneration status */}
+          {isTyping && (
+            <div className="space-y-2 pr-8 animate-pulse">
+              <div className="flex items-center gap-2 text-[9px] text-[#4F46E5] font-black uppercase tracking-widest pl-1">
+                <img 
+                  src="/logo/ai_legal_monochrome.png" 
+                  className="w-[24px] h-[24px] object-contain" 
+                  style={{ mixBlendMode: 'multiply' }}
+                  alt="AI LEGAL" 
+                />
+                <span>AI LEGAL™ Copilot</span>
+              </div>
+              
+              {isRegenerating ? (
+                <div className="bg-white border border-[#E7EAF3] rounded-[18px] p-5 shadow-[0_4px_18px_rgba(15,23,42,.05)] max-w-[320px] space-y-3.5 text-slate-800">
+                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <RotateCcw size={12} className="animate-spin text-[#4F46E5]" />
+                    <span>Regenerating response...</span>
+                  </div>
+                  <div className="space-y-2 text-[10px] font-bold text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#4F46E5] animate-ping shrink-0" />
+                      <span className="text-slate-600">Reviewing previous context...</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                      <span>Loading legal references...</span>
+                    </div>
+                    <div className="flex items-center gap-2 opacity-50">
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                      <span>Generating improved answer...</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 justify-center pt-2 border-t border-slate-100">
+                    <div className="w-1.5 h-1.5 bg-[#4F46E5] rounded-full animate-bounce" />
+                    <div className="w-1.5 h-1.5 bg-[#4F46E5] rounded-full animate-bounce delay-100" />
+                    <div className="w-1.5 h-1.5 bg-[#4F46E5] rounded-full animate-bounce delay-200" />
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white border border-[#ECEEF5] rounded-[18px] px-5 py-4 shadow-[0_2px_8px_rgba(15,23,42,0.04)] w-[200px] h-[80px] flex flex-col justify-between select-none">
+                  <style dangerouslySetInnerHTML={{__html: `
+                    @keyframes legalDotThinking {
+                      0%, 100% {
+                        transform: scale(0.85);
+                        opacity: 0.35;
+                      }
+                      50% {
+                        transform: scale(1.15);
+                        opacity: 1;
+                      }
+                    }
+                    .legal-thinking-dot {
+                      animation: legalDotThinking 1s infinite ease-in-out;
+                    }
+                    .legal-thinking-dot-1 {
+                      animation-delay: 0s;
+                    }
+                    .legal-thinking-dot-2 {
+                      animation-delay: 0.3s;
+                    }
+                    .legal-thinking-dot-3 {
+                      animation-delay: 0.6s;
+                    }
+                  `}} />
+                  <div className="text-[11px] font-bold text-slate-500 tracking-wider">
+                    Thinking...
+                  </div>
+                  <div className="flex items-center gap-2 justify-start pl-0.5 pb-0.5">
+                    <div className="w-2 h-2 bg-[#4F46E5] rounded-full legal-thinking-dot legal-thinking-dot-1" />
+                    <div className="w-2 h-2 bg-[#4F46E5] rounded-full legal-thinking-dot legal-thinking-dot-2" />
+                    <div className="w-2 h-2 bg-[#4F46E5] rounded-full legal-thinking-dot legal-thinking-dot-3" />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {showScrollBottomBtn && (
             <button
               type="button"
-              className={`legal-input-action-btn ${attachments.length > 0 ? 'active' : ''}`}
+              onClick={scrollToBottom}
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-4 py-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-full shadow-xl text-[11px] font-bold text-[#4F46E5] dark:text-indigo-400 hover:bg-slate-50 dark:hover:bg-zinc-750 transition-all select-none cursor-pointer scale-95 hover:scale-100"
+            >
+              <ChevronDown size={14} className="animate-bounce text-[#4F46E5] dark:text-indigo-400" />
+              <span>New response below</span>
+            </button>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </main>
+
+      {/* ─── STICKY BOTTOM INPUT FLOATING CONTAINER ──────────────────── */}
+      <footer className="shrink-0 bg-gradient-to-t from-[#FAFBFD] via-[#FAFBFD]/95 to-transparent pt-4 pb-6 px-4 border-t border-slate-200/60 sticky bottom-0 z-30">
+        <div className="max-w-[960px] mx-auto space-y-3">
+          
+
+
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 p-2 bg-white border border-slate-200 rounded-2xl max-h-[100px] overflow-y-auto shrink-0 shadow-sm">
+              {attachments.map(att => (
+                <div key={att.id} className="flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-200 rounded-full text-[10px] font-bold">
+                  {getFileIcon(att.type)}
+                  <span className="truncate max-w-[130px] text-slate-700">{att.name}</span>
+                  {att.isUploading ? (
+                    <span className="text-[8px] text-[#4F46E5] animate-pulse">{att.progress}%</span>
+                  ) : (
+                    <button type="button" onClick={() => removeAttachment(att.id)} className="text-slate-400 hover:text-red-500 transition-colors border-none bg-transparent cursor-pointer">
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ChatGPT-style Round Input Bar */}
+          <div className="bg-white border border-[#E5E7EB] rounded-full p-2 flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow relative">
+            
+            {/* Plus button popup Actions Grid */}
+            {showPlusMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowPlusMenu(false)} />
+                <div className="absolute bottom-full mb-3 left-4 right-4 md:left-0 md:right-auto z-50 w-[calc(100vw-2rem)] md:w-[480px] bg-white border border-slate-200 rounded-3xl shadow-2xl p-4 space-y-3 font-sans select-none animate-fadeIn text-left">
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Quick AI Actions</span>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPlusMenu(false)}
+                      className="text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar p-0.5">
+                    {QUICK_AI_ACTIONS.map((action) => (
+                      <button
+                        key={action.name}
+                        type="button"
+                        onClick={() => {
+                          sendMessage(action.prompt);
+                          setShowPlusMenu(false);
+                        }}
+                        className="flex items-center gap-2.5 p-2 bg-slate-50 hover:bg-indigo-50/30 border border-slate-100 hover:border-[#4F46E5] rounded-xl text-[11px] font-bold text-slate-750 text-left transition-all cursor-pointer border-none"
+                      >
+                        <span className="p-1.5 bg-white rounded-lg shadow-sm">{getActionIcon(action.icon)}</span>
+                        <span>{action.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Plus menu toggle button */}
+            <button 
+              type="button" 
+              onClick={() => setShowPlusMenu(prev => !prev)}
+              className={`p-2.5 rounded-full transition-colors border-none bg-transparent cursor-pointer ${showPlusMenu ? 'text-[#4F46E5] bg-[#4F46E5]/10' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+              title="Quick AI Actions"
+            >
+              <Plus size={16} />
+            </button>
+
+            {/* Attachments button */}
+            <button 
+              type="button" 
               onClick={() => fileInputRef.current?.click()}
-              title="Attach file"
+              className={`p-2.5 rounded-full transition-colors border-none bg-transparent cursor-pointer ${attachments.length > 0 ? 'text-[#4F46E5] bg-[#4F46E5]/5' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+              title="Attach document/image"
             >
-              <Paperclip size={18} style={{ color: attachments.length > 0 ? toolColor : undefined }} />
+              <Paperclip size={16} />
             </button>
-          </div>
 
-          <input
-            type="file"
-            ref={fileInputRef}
-            multiple
-            onChange={handleFileSelect}
-            accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xls,.xlsx"
-            style={{ display: 'none' }}
-          />
+            <input
+              type="file"
+              ref={fileInputRef}
+              multiple
+              onChange={handleFileSelect}
+              accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xls,.xlsx"
+              style={{ display: 'none' }}
+            />
 
-          <form className="legal-chat-input-form" onSubmit={(e) => { e.preventDefault(); sendMessage(); }}>
-            <button
-              type="button"
-              className="legal-input-icon-btn legal-input-action-btn-cases legal-input-action-btn-label"
-              onClick={() => setShowCasesSheet(true)}
-              title="Browse Cases"
-            >
-              <Scale size={14} />
-              <span>Cases</span>
-            </button>
-            <textarea
-              ref={inputRef}
-              className="legal-chat-input"
-              value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                e.target.style.height = 'auto';
-                e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
+            <form 
+              onSubmit={(e) => { 
+                e.preventDefault(); 
+                if (isTyping || generationState === 'streaming') {
+                  handleStop();
+                } else {
+                  sendMessage(); 
                 }
               }}
-              placeholder={`Ask ${toolName}...`}
-              rows={1}
-            />
-            <button
-              type="submit"
-              className="legal-send-btn"
-              disabled={!inputValue.trim() && attachments.length === 0}
-              style={{ backgroundColor: (!inputValue.trim() && attachments.length === 0) ? '#94a3b8' : toolColor }}
+              className="flex-1 flex items-center gap-2"
             >
-              <Send size={16} />
-            </button>
-          </form>
-        </div>
-      </div>
+              <input 
+                ref={inputRef}
+                type="text" 
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Ask AI to draft, analyze or strategize..."
+                className="flex-1 bg-transparent border-none text-xs font-semibold focus:ring-0 p-0 text-slate-700 placeholder-slate-400 outline-none"
+              />
 
-      {/* ── CASES BOTTOM SHEET ────────────────────────────────────────── */}
+              <button 
+                type="button" 
+                onClick={handleVoiceInput}
+                className={`p-2.5 rounded-full transition-colors shrink-0 border-none bg-transparent cursor-pointer ${
+                  isListening ? 'text-red-500 animate-pulse bg-red-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                }`}
+                title="Voice input"
+              >
+                <Mic size={16} />
+              </button>
+
+              {(isTyping || generationState === 'streaming') ? (
+                <button 
+                  type="button" 
+                  onClick={handleStop}
+                  className="p-2.5 rounded-full transition-all shrink-0 bg-red-500 hover:bg-red-600 text-white shadow-sm flex items-center justify-center animate-pulse border-none cursor-pointer"
+                  title="Stop generating"
+                >
+                  <Square size={10} className="fill-white stroke-none" />
+                </button>
+              ) : (
+                <button 
+                  type="submit" 
+                  disabled={!inputValue.trim() && attachments.length === 0}
+                  className={`p-2.5 rounded-full transition-all shrink-0 border-none cursor-pointer ${
+                    (inputValue.trim() || attachments.length > 0)
+                      ? 'bg-[#4F46E5] text-white hover:bg-[#4338CA]'
+                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  }`}
+                  title="Send query"
+                >
+                  <Send size={14} />
+                </button>
+              )}
+            </form>
+          </div>
+
+        </div>
+      </footer>
+
+      {/* Redesigned Floating Scroll Bottom Indicator (Solid White Background Overlay) */}
+      <AnimatePresence>
+        {(!isEndVisible && messages.filter(m => !m.isIntro).length > 0) && (
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.18 }}
+            className="absolute bottom-[96px] left-1/2 -translate-x-1/2 z-40 pointer-events-none"
+          >
+            <button
+              onClick={scrollToBottom}
+              className="pointer-events-auto px-4 py-2 border border-[#4F46E5]/15 hover:border-[#4F46E5]/40 text-[#4F46E5] text-xs font-bold rounded-full shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer hover:-translate-y-0.5 active:bg-[#4F46E5]/5 active:border-[#4F46E5]"
+              style={{ backgroundColor: '#ffffff', opacity: 1 }}
+              title="Jump to Latest"
+            >
+              <ChevronDown size={14} className="animate-bounce" />
+              <span>Jump to Latest</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── CASES BOTTOM SHEET ────────────────────────────────────────── */}
       <AnimatePresence>
         {showCasesSheet && (
           <>
@@ -1459,1464 +2405,372 @@ How can I help you with this case today?
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="legal-cases-overlay"
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs"
               onClick={() => setShowCasesSheet(false)}
             />
             <motion.div
-              className="legal-cases-container"
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 1 }}
+              className="fixed inset-x-0 bottom-0 z-50 bg-white border-t border-slate-200 rounded-t-[24px] max-h-[85vh] flex flex-col shadow-2xl"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             >
-              <motion.div
-                initial={{ y: '100vh' }}
-                animate={{ y: 0 }}
-                exit={{ y: '100vh' }}
-                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="legal-cases-sheet"
-              >
-                <div className="legal-cases-sheet-drag">
-                  <div className="legal-cases-drag-bar" />
+              <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto my-3 shrink-0" />
+              
+              <div className="px-6 pb-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <Scale size={18} className="text-[#4F46E5]" />
+                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Browse template cases</h3>
                 </div>
-              <div className="legal-cases-sheet-header">
-                <Scale size={20} style={{ color: toolColor }} />
-                <h3>Browse Cases</h3>
-                <button onClick={() => setShowCasesSheet(false)} className="legal-cases-close">
-                  <X size={18} />
+                <button onClick={() => setShowCasesSheet(false)} className="p-1 rounded-lg hover:bg-slate-50 transition-colors">
+                  <X size={18} className="text-slate-400" />
                 </button>
               </div>
                 
-                {/* Search Bar + Collapsible Filters Toggle */}
-                <div className="legal-cases-search-container">
-                  <div className="legal-cases-search-wrap">
-                    <Search size={16} />
-                    <input
-                      type="text"
-                      className="legal-cases-search"
-                      placeholder="Search cases, laws, acts, IPC/BNS, keywords..."
-                      value={searchQuery}
-                      onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                    />
-                  </div>
-                  <button 
-                    type="button" 
-                    className={`legal-filter-toggle-btn ${showFilters ? 'active' : ''}`}
-                    onClick={() => setShowFilters(!showFilters)}
-                    title="Toggle Advanced Filters"
-                  >
-                    <SlidersHorizontal size={16} />
-                    <span>Filters</span>
-                  </button>
+              {/* Search Bar + Filters */}
+              <div className="p-4 bg-slate-50 border-b border-slate-100 shrink-0">
+                <div className="bg-white border border-slate-200 rounded-full px-4 py-2 flex items-center gap-2 shadow-sm">
+                  <Search size={15} className="text-slate-400" />
+                  <input
+                    type="text"
+                    className="flex-1 bg-transparent border-none text-xs font-semibold focus:ring-0 p-0 text-slate-700 placeholder-slate-400 outline-none"
+                    placeholder="Search template cases, laws, acts, IPC/BNS, keywords..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
+              </div>
 
-                {/* Collapsible Filters Panel */}
-                {showFilters && (
-                  <div className="legal-cases-filters-grid">
-                    <div className="legal-filter-group">
-                      <label>Category</label>
-                      <select
-                        value={filters.category}
-                        onChange={(e) => { setFilters(prev => ({ ...prev, category: e.target.value })); setCurrentPage(1); }}
-                      >
-                        <option value="">All Categories</option>
-                        {filterOptions.categories.map((c, idx) => (
-                          <option key={idx} value={c}>{c}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="legal-filter-group">
-                      <label>Court</label>
-                      <select
-                        value={filters.court}
-                        onChange={(e) => { setFilters(prev => ({ ...prev, court: e.target.value })); setCurrentPage(1); }}
-                      >
-                        <option value="">All Courts</option>
-                        {filterOptions.courts.map((ct, idx) => (
-                          <option key={idx} value={ct}>{ct}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="legal-filter-group">
-                      <label>Act</label>
-                      <select
-                        value={filters.act}
-                        onChange={(e) => { setFilters(prev => ({ ...prev, act: e.target.value })); setCurrentPage(1); }}
-                      >
-                        <option value="">All Acts</option>
-                        {filterOptions.acts.map((act, idx) => (
-                          <option key={idx} value={act}>{act}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="legal-filter-group">
-                      <label>IPC/BNS Section</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. 302"
-                        value={filters.ipcBns}
-                        onChange={(e) => { setFilters(prev => ({ ...prev, ipcBns: e.target.value })); setCurrentPage(1); }}
-                      />
-                    </div>
-                    <div className="legal-filter-group">
-                      <label>Jurisdiction</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. State"
-                        value={filters.jurisdiction}
-                        onChange={(e) => { setFilters(prev => ({ ...prev, jurisdiction: e.target.value })); setCurrentPage(1); }}
-                      />
-                    </div>
-                    <div className="legal-filter-group">
-                      <label>Year</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. 2017"
-                        value={filters.year}
-                        onChange={(e) => { setFilters(prev => ({ ...prev, year: e.target.value })); setCurrentPage(1); }}
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      className="legal-clear-filters-btn"
-                      onClick={() => {
-                        setFilters({ category: '', court: '', act: '', ipcBns: '', year: '', jurisdiction: '', state: '' });
-                        setCurrentPage(1);
-                      }}
-                    >
-                      Reset Filters
-                    </button>
+              {/* Cases List */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                {filteredCases.length === 0 ? (
+                  <div className="p-12 text-center text-slate-400">
+                    <Briefcase className="mx-auto mb-2 opacity-35" size={24} />
+                    <span>No cases match search query</span>
                   </div>
-                )}
-
-                {/* Cases List */}
-                <div className="legal-cases-list">
-                  {filteredCases.map((c, i) => {
-                    const isExpanded = expandedCaseId === c.id;
-                    return (
-                      <div key={c.id} className={`legal-case-card ${isExpanded ? 'expanded' : ''}`}>
-                        <div className="legal-case-card-header">
-                          <div className="legal-case-card-title-row">
-                            <span className="legal-case-card-name">{c.name}</span>
-                            <div className="legal-case-card-badges">
-                              {c.landmarkJudgments?.length > 0 && (
-                                <span className="legal-landmark-badge" title="Landmark Judgment Case">
-                                  <Landmark size={10} />
-                                  <span>Landmark</span>
-                                </span>
-                              )}
-                              <span className="legal-category-badge">{c.category}</span>
-                            </div>
-                          </div>
+                ) : (
+                  filteredCases.map(c => (
+                    <div 
+                      key={c.id} 
+                      className="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-[#4F46E5] hover:shadow transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <span className="text-xs font-black text-slate-900 block">{c.name}</span>
+                          <span className="text-[10px] text-slate-400 mt-1 block font-bold uppercase tracking-wider">{c.category} • {c.courtType}</span>
+                          <p className="text-xs text-slate-500 mt-2 font-medium line-clamp-2 leading-relaxed">{c.landmarkJudgments?.[0]?.legalPrinciple || 'Standard legal disputable matter guidance template.'}</p>
                         </div>
-
-                        <div className="legal-case-card-body">
-                          <p className="legal-case-summary-short">{c.summary}</p>
-                          
-                          <div className="legal-case-meta-tags">
-                            <span className="legal-case-meta-tag">
-                              <Scale size={11} />
-                              <span>{c.courtType}</span>
-                            </span>
-                            <span className="legal-case-meta-tag">
-                              <Calendar size={11} />
-                              <span>{c.jurisdiction}</span>
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Collapsible Detail Panel */}
-                        {isExpanded && (
-                          <div className="legal-case-details-expanded">
-                            {/* Summary */}
-                            <div className="legal-expanded-section">
-                              <h4>Full Legal Reference Summary</h4>
-                              <p>{c.summary}</p>
-                            </div>
-
-                            {/* Applicable Acts Table */}
-                            {c.applicableActs?.length > 0 && (
-                              <div className="legal-expanded-section">
-                                <h4>Statutory Acts Coverage</h4>
-                                <div className="legal-table-wrapper">
-                                  <table className="legal-table">
-                                    <thead>
-                                      <tr>
-                                        <th>Act Title</th>
-                                        <th>Enacted</th>
-                                        <th>Last Amended</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {c.applicableActs.map((act, aIdx) => (
-                                        <tr key={aIdx}>
-                                          <td className="font-semibold">{act.name}</td>
-                                          <td>{act.enactmentYear}</td>
-                                          <td>{act.lastAmendmentYear || 'N/A'}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* IPC / BNS Comparisons Table */}
-                            {c.ipcBnsReferences?.length > 0 && (
-                              <div className="legal-expanded-section">
-                                <h4>IPC vs. BNS Penal Cross-Reference</h4>
-                                <div className="legal-table-wrapper">
-                                  <table className="legal-table">
-                                    <thead>
-                                      <tr>
-                                        <th>IPC Section</th>
-                                        <th>BNS Section</th>
-                                        <th>Statutory Punishment</th>
-                                        <th>Applicability</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {c.ipcBnsReferences.map((ref, rIdx) => (
-                                        <tr key={rIdx}>
-                                          <td className="text-red-650 dark:text-red-400 font-bold">{ref.ipcSection}</td>
-                                          <td className="text-indigo-605 dark:text-indigo-400 font-bold">{ref.bnsSection}</td>
-                                          <td className="text-xs">{ref.punishment}</td>
-                                          <td className="text-xs">{ref.applicability}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Landmark Judgments */}
-                            {c.landmarkJudgments?.length > 0 && (
-                              <div className="legal-expanded-section">
-                                <h4>Landmark Precedents & Citations</h4>
-                                <div className="legal-landmark-list">
-                                  {c.landmarkJudgments.map((j, jIdx) => (
-                                    <div key={jIdx} className="legal-landmark-item">
-                                      <div className="legal-landmark-item-header">
-                                        <Landmark size={12} style={{ marginRight: '6px', color: '#b45309' }} />
-                                        <h5>{j.caseName}</h5>
-                                      </div>
-                                      <div className="legal-landmark-item-meta">
-                                        <span>{j.citation}</span> • <span>{j.court} ({j.year})</span>
-                                      </div>
-                                      <p className="legal-landmark-item-principle">
-                                        <strong>Legal Principle:</strong> {j.legalPrinciple}
-                                      </p>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="legal-case-actions">
-                          <button
-                            type="button"
-                            className="legal-case-details-toggle"
-                            onClick={() => setExpandedCaseId(isExpanded ? null : c.id)}
-                          >
-                            <span>{isExpanded ? 'Hide Details' : 'View Details'}</span>
-                            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                          </button>
-                          
-                          <button
-                            type="button"
-                            className="legal-case-select-btn"
-                            onClick={() => handleSelectCase(c)}
-                            style={{ backgroundColor: toolColor }}
-                          >
-                            <span>Use in Chat</span>
-                            <ChevronRight size={14} />
-                          </button>
-                        </div>
+                        
+                        <button
+                          onClick={() => handleSelectCase(c)}
+                          className="px-3 py-1.5 bg-[#4F46E5] text-white hover:bg-[#4338CA] rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm transition-colors shrink-0"
+                        >
+                          Select Case
+                        </button>
                       </div>
-                    );
-                  })}
-                  
-                  {filteredCases.length === 0 && (
-                    <div className="legal-cases-empty-state">
-                      <ShieldAlert size={36} />
-                      <p>No cases found matching the search criteria.</p>
                     </div>
-                  )}
-                </div>
-
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="legal-pagination">
-                    <button
-                      type="button"
-                      className="legal-pagination-btn"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    >
-                      <ChevronLeft size={16} />
-                      <span>Prev</span>
-                    </button>
-                    
-                    <span className="legal-pagination-info">
-                      Page {currentPage} of {totalPages}
-                    </span>
-
-                    <button
-                      type="button"
-                      className="legal-pagination-btn"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    >
-                      <span>Next</span>
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
+                  ))
                 )}
-              </motion.div>
+              </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      {/* Citation Modal */}
-      {activeCitationData && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setActiveCitationData(null)}>
-          <div className="bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-white/5">
-              <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">Legal Citations Generator</h3>
-              <button onClick={() => setActiveCitationData(null)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <X size={18} />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              {/* Bluebook Citation */}
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Bluebook Citation</span>
-                <div className="flex gap-2">
-                  <div className="flex-1 p-3 bg-slate-50 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 rounded-xl text-xs font-mono select-all text-slate-800 dark:text-slate-200 break-all leading-relaxed">
-                    {activeCitationData.bluebook}
-                  </div>
-                  <button onClick={() => { navigator.clipboard.writeText(activeCitationData.bluebook); toast.success("Bluebook citation copied"); }} className="p-3 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 rounded-xl flex items-center justify-center shrink-0">
-                    <Copy size={16} />
-                  </button>
+      {/* ─── HISTORY DRAWER ──────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showHistoryPanel && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowHistoryPanel(false)}
+              className="fixed inset-0 bg-black z-[100000]"
+            />
+            {/* Sliding Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'tween', duration: 0.25 }}
+              className="fixed right-0 top-0 bottom-0 w-80 bg-white border-l border-slate-200 z-[100001] shadow-2xl flex flex-col font-sans select-none"
+            >
+              <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <History size={16} className="text-[#4F46E5]" />
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">Chat History</h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowHistoryPanel(false)}
+                  className="p-1 hover:bg-slate-200 rounded-full border-none bg-transparent cursor-pointer text-slate-400"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Search within history */}
+              <div className="p-3 border-b border-slate-100 bg-white">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 flex items-center gap-2">
+                  <Search size={13} className="text-slate-400" />
+                  <input
+                    type="text"
+                    value={chatSearchQuery}
+                    onChange={(e) => setChatSearchQuery(e.target.value)}
+                    placeholder="Search conversations..."
+                    className="flex-1 bg-transparent border-none text-xs focus:ring-0 p-0 text-slate-700 outline-none"
+                  />
                 </div>
               </div>
 
-              {/* Indian Legal Citation */}
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-black uppercase tracking-wider text-violet-600 dark:text-violet-400">Indian Legal Citation</span>
-                <div className="flex gap-2">
-                  <div className="flex-1 p-3 bg-slate-50 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 rounded-xl text-xs font-mono select-all text-slate-800 dark:text-slate-200 break-all leading-relaxed">
-                    {activeCitationData.indian}
+              <div className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar text-xs">
+                {/* Pinned & Chats Groups */}
+                {['Pinned Chats', "Today's Chats", 'Yesterday', 'Older Chats'].map((groupName) => {
+                  let filtered = sessions;
+                  if (chatSearchQuery) {
+                    filtered = sessions.filter(s => s.title?.toLowerCase().includes(chatSearchQuery.toLowerCase()));
+                  }
+
+                  const nowTime = Date.now();
+                  const oneDay = 24 * 60 * 60 * 1000;
+                  
+                  let groupSessions = [];
+                  if (groupName === 'Pinned Chats') {
+                    groupSessions = filtered.filter(s => pinnedSessions.includes(s.chat_id));
+                  } else if (groupName === "Today's Chats") {
+                    groupSessions = filtered.filter(s => !pinnedSessions.includes(s.chat_id) && (nowTime - s.timestamp < oneDay));
+                  } else if (groupName === 'Yesterday') {
+                    groupSessions = filtered.filter(s => !pinnedSessions.includes(s.chat_id) && (nowTime - s.timestamp >= oneDay && nowTime - s.timestamp < 2 * oneDay));
+                  } else {
+                    groupSessions = filtered.filter(s => !pinnedSessions.includes(s.chat_id) && (nowTime - s.timestamp >= 2 * oneDay));
+                  }
+
+                  if (groupSessions.length === 0) return null;
+
+                  return (
+                    <div key={groupName} className="space-y-1.5">
+                      <div className="text-[9px] font-black uppercase text-slate-400 tracking-wider pl-1 mb-1">{groupName}</div>
+                      <div className="space-y-1">
+                        {groupSessions.map(s => {
+                          const isPinned = pinnedSessions.includes(s.chat_id);
+                          return (
+                            <div 
+                              key={s.chat_id}
+                              className={`group flex items-center justify-between p-2 rounded-xl transition-all ${
+                                s.chat_id === activeSessionId 
+                                  ? 'bg-[#4F46E5]/5 text-[#4F46E5] border border-indigo-100/50' 
+                                  : 'hover:bg-slate-50 text-slate-700'
+                              }`}
+                            >
+                              <button
+                                onClick={() => { switchSession(s.chat_id); setShowHistoryPanel(false); }}
+                                className="flex-1 text-left font-bold truncate flex flex-col gap-0.5 pl-1 border-none bg-transparent cursor-pointer"
+                              >
+                                <span className="truncate">{s.title || 'New Chat'}</span>
+                                <span className="text-[9px] text-slate-400 font-medium font-mono">
+                                  {new Date(s.timestamp).toLocaleDateString()} • Template: Copilot
+                                </span>
+                              </button>
+
+                              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={(e) => handleTogglePin(s.chat_id, e)}
+                                  className={`p-1 rounded hover:bg-slate-200 transition-colors ${isPinned ? 'text-amber-500' : 'text-slate-400'} border-none bg-transparent cursor-pointer`}
+                                  title={isPinned ? "Unpin" : "Pin"}
+                                >
+                                  {isPinned ? <PinOff size={11} /> : <Pin size={11} />}
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newName = prompt("Rename this chat:", s.title || "New Chat");
+                                    if (newName) {
+                                      chatStorageService.saveMessage(s.chat_id, {}, newName, currentCase?._id);
+                                      setSessions(prev => prev.map(p => p.chat_id === s.chat_id ? { ...p, title: newName } : p));
+                                    }
+                                  }}
+                                  className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-750 border-none bg-transparent cursor-pointer"
+                                  title="Rename"
+                                >
+                                  <SlidersHorizontal size={11} />
+                                </button>
+                                <button
+                                  onClick={(e) => handleDeleteSession(s.chat_id, e)}
+                                  className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors border-none bg-transparent cursor-pointer"
+                                  title="Delete"
+                                >
+                                  <Trash2 size={11} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {sessions.length === 0 && (
+                  <div className="p-8 text-center text-slate-400">
+                    <MessageSquare size={20} className="mx-auto mb-2 opacity-50" />
+                    <span>No previous chats found</span>
                   </div>
-                  <button onClick={() => { navigator.clipboard.writeText(activeCitationData.indian); toast.success("Indian citation copied"); }} className="p-3 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 rounded-xl flex items-center justify-center shrink-0">
-                    <Copy size={16} />
-                  </button>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ─── CASE SUMMARY DRAWER ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showSummaryDrawer && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSummaryDrawer(false)}
+              className="fixed inset-0 bg-black z-[100000]"
+            />
+            {/* Sliding Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'tween', duration: 0.25 }}
+              className="fixed right-0 top-0 bottom-0 w-96 bg-white border-l border-slate-200 z-[100001] shadow-2xl flex flex-col font-sans select-none text-left"
+            >
+              <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Scale size={16} className="text-[#4F46E5]" />
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-800">Case Summary Profile</h4>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSummaryDrawer(false)}
+                  className="p-1 hover:bg-slate-200 rounded-full border-none bg-transparent cursor-pointer text-slate-400"
+                >
+                  <X size={16} />
+                </button>
               </div>
 
-              {/* Court Reference Format */}
-              <div className="space-y-1.5">
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Court Reference Format</span>
-                <div className="flex gap-2">
-                  <div className="flex-1 p-3 bg-slate-50 dark:bg-black/20 border border-slate-200/50 dark:border-white/5 rounded-xl text-xs font-mono select-all text-slate-800 dark:text-slate-200 break-all leading-relaxed">
-                    {activeCitationData.courtRef}
+              <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar text-xs">
+                {/* Meta details */}
+                <div className="space-y-4">
+                  <div className="p-4 border border-slate-100 bg-slate-50/50 rounded-2xl space-y-3">
+                    <span className="text-[10px] font-black uppercase text-[#4F46E5] tracking-widest block">Active Workspace</span>
+                    <h5 className="text-sm font-black text-slate-800 uppercase tracking-tight leading-none">{currentCase?.title || currentCase?.name || 'Rajesh Sharma vs Amit Verma'}</h5>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Status: Memory Active</p>
                   </div>
-                  <button onClick={() => { navigator.clipboard.writeText(activeCitationData.courtRef); toast.success("Court reference copied"); }} className="p-3 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 rounded-xl flex items-center justify-center shrink-0">
-                    <Copy size={16} />
-                  </button>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 border border-slate-100 bg-white rounded-xl">
+                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Client</span>
+                      <span className="text-xs font-bold text-slate-700 block mt-1">{currentCase?.clientName || 'Rajesh Sharma'}</span>
+                    </div>
+                    <div className="p-3 border border-slate-100 bg-white rounded-xl">
+                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Opponent</span>
+                      <span className="text-xs font-bold text-slate-700 block mt-1">{currentCase?.opponentName || 'Amit Verma'}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 border border-slate-100 bg-white rounded-xl space-y-2">
+                    <div>
+                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Court Jurisdiction</span>
+                      <span className="text-xs font-bold text-slate-700 block mt-0.5">{currentCase?.court || 'District Court Jabalpur'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Stage & Judge</span>
+                      <span className="text-xs font-bold text-slate-700 block mt-0.5">{currentCase?.stage || 'Evidence Stage'} • Hon'ble Mr. Justice Rawat</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border border-[#4F46E5]/10 bg-indigo-50/30 rounded-2xl space-y-2">
+                    <div className="flex justify-between items-center text-[10px] font-black uppercase text-[#4F46E5]">
+                      <span>AI Win Probability</span>
+                      <span>60%</span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-[#4F46E5] h-full rounded-full" style={{ width: '60%' }} />
+                    </div>
+                  </div>
+
+                  {/* Highlights checklist */}
+                  <div className="space-y-2 pt-2">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest block pl-1">Indexed Components</span>
+                    <div className="grid grid-cols-1 gap-2">
+                      {[
+                        { title: 'Parties profiles mapped', desc: '✓ Client & opponent details fully parsed.' },
+                        { title: 'Evidence index sheet', desc: '✓ 4 documents uploaded and analyzed.' },
+                        { title: 'Litigation timeline', desc: '✓ Sequential timeline occurrences structured.' },
+                        { title: 'Statutes database', desc: '✓ Connected laws & BNS codes index complete.' }
+                      ].map((item, idx) => (
+                        <div key={idx} className="p-3 border border-slate-100 rounded-xl bg-slate-50/20 flex gap-2.5 items-start">
+                          <span className="text-emerald-500 font-extrabold mt-0.5">✓</span>
+                          <div>
+                            <span className="font-bold text-slate-750 block">{item.title}</span>
+                            <span className="text-[10px] text-slate-400 font-medium block mt-0.5">{item.desc}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* AI Recommendations */}
+                  <div className="p-4 bg-emerald-50/30 border border-emerald-500/10 rounded-2xl space-y-2.5">
+                    <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest block">AI Pleading Strategy</span>
+                    <p className="text-slate-600 font-semibold leading-relaxed">
+                      Verify witness statements against timelines to highlight early trial delay defenses. Prepare anticipatory bail if counter complaints arise.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Smart Context Tooltip */}
+      {selectedTextMenu && (
+        <div 
+          className="fixed z-[200000] bg-slate-900 text-white rounded-xl shadow-2xl p-1 flex items-center gap-0.5 smart-context-tooltip text-[10px] font-bold select-none"
+          style={{ 
+            left: `${selectedTextMenu.x}px`, 
+            top: `${selectedTextMenu.y}px`, 
+            transform: 'translateX(-50%)' 
+          }}
+        >
+          {[
+            { label: 'Explain', prefix: 'Explain this legal reference' },
+            { label: 'Rewrite', prefix: 'Rewrite this section' },
+            { label: 'More Formal', prefix: 'Rewrite in a formal advocate voice' },
+            { label: 'Judge Friendly', prefix: 'Rewrite in a judge friendly structure' },
+            { label: 'Translate', prefix: 'Translate this section to Hindi' },
+            { label: 'Shorten', prefix: 'Summarize and shorten' },
+            { label: 'Expand', prefix: 'Provide more explanation and grounds' },
+            { label: 'Create Draft', prefix: 'Draft a legal document outline matching' }
+          ].map((opt) => (
+            <button
+              key={opt.label}
+              type="button"
+              onClick={() => {
+                const text = selectedTextMenu.text;
+                sendMessage(`${opt.prefix}:\n"${text}"`);
+                setSelectedTextMenu(null);
+                window.getSelection()?.removeAllRanges();
+              }}
+              className="px-2.5 py-1 bg-transparent hover:bg-white/10 text-white rounded-lg transition-colors border-none cursor-pointer font-bold whitespace-nowrap"
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       )}
 
-      <style>{`
-        .legal-chat-screen {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          width: 100%;
-          background: #f8fafc;
-          position: relative;
-          overflow: hidden;
-          min-height: 0;
-        }
-        .dark .legal-chat-screen { background: #0f172a; }
-
-        /* ── HEADER ─────────────────────────────────────── */
-        .legal-chat-header {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px;
-          background: #ffffff;
-          border-bottom: 1px solid rgba(0,0,0,0.06);
-          flex-shrink: 0;
-          z-index: 10;
-        }
-        .dark .legal-chat-header {
-          background: #1e293b;
-          border-bottom-color: rgba(255,255,255,0.06);
-        }
-        .legal-chat-back-btn {
-          width: 36px; height: 36px;
-          border-radius: 10px;
-          display: flex; align-items: center; justify-content: center;
-          background: rgba(0,0,0,0.04);
-          border: none; cursor: pointer;
-          color: #334155;
-          transition: all 0.2s;
-        }
-        .dark .legal-chat-back-btn { background: rgba(255,255,255,0.05); color: #e2e8f0; }
-        .legal-chat-back-btn:hover { background: rgba(0,0,0,0.08); }
-        .dark .legal-chat-back-btn:hover { background: rgba(255,255,255,0.1); }
-        .legal-chat-header-info { display: flex; align-items: center; gap: 10px; flex: 1; }
-        .legal-chat-header-icon {
-          width: 34px; height: 34px; border-radius: 10px;
-          background: linear-gradient(135deg, #4f46e5, #7c3aed);
-          display: flex; align-items: center; justify-content: center;
-          color: white; flex-shrink: 0;
-        }
-        .legal-chat-header-title {
-          font-size: 15px; font-weight: 800; margin: 0;
-          color: #0f172a;
-          letter-spacing: -0.3px;
-        }
-        .dark .legal-chat-header-title { color: #f1f5f9; }
-        .legal-chat-header-sub {
-          font-size: 10px; font-weight: 700;
-          text-transform: uppercase; letter-spacing: 1px;
-          color: #4f46e5; opacity: 0.8;
-        }
-        .legal-chat-header-actions { display: flex; gap: 6px; }
-        .legal-chat-action-btn {
-          width: 32px; height: 32px; border-radius: 8px;
-          display: flex; align-items: center; justify-content: center;
-          background: rgba(0,0,0,0.04);
-          border: none; cursor: pointer;
-          color: #64748b;
-          transition: all 0.2s;
-        }
-        .dark .legal-chat-action-btn { background: rgba(255,255,255,0.05); color: #94a3b8; }
-        .legal-chat-action-btn:hover { color: #4f46e5; background: rgba(79,70,229,0.1); }
-
-        /* ── HISTORY BUTTON & PANEL ──────────────────────── */
-        .legal-history-btn-wrap {
-          position: relative;
-          margin-left: auto;
-          flex-shrink: 0;
-        }
-        .legal-history-btn {
-          background: rgba(0,0,0,0.04) !important;
-          border: 1px solid rgba(0,0,0,0.06) !important;
-        }
-        .dark .legal-history-btn {
-          background: rgba(255,255,255,0.06) !important;
-          border-color: rgba(255,255,255,0.08) !important;
-        }
-        .legal-history-panel {
-          position: absolute;
-          top: calc(100% + 10px);
-          right: 0;
-          width: 260px;
-          max-height: 360px;
-          background: #ffffff;
-          border: 1px solid rgba(0,0,0,0.08);
-          border-radius: 16px;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-          z-index: 50;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
-        .dark .legal-history-panel {
-          background: #1e293b;
-          border-color: rgba(255,255,255,0.08);
-          box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-        }
-        .legal-history-panel-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 12px 16px;
-          font-size: 12px;
-          font-weight: 800;
-          color: #1e293b;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          border-bottom: 1px solid rgba(0,0,0,0.06);
-          flex-shrink: 0;
-        }
-        .dark .legal-history-panel-header {
-          color: #f1f5f9;
-          border-color: rgba(255,255,255,0.06);
-        }
-        .legal-history-list {
-          overflow-y: auto;
-          padding: 6px;
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-        .legal-history-list::-webkit-scrollbar { width: 4px; }
-        .legal-history-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
-        .dark .legal-history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
-        .legal-history-item {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-          padding: 9px 12px;
-          border-radius: 10px;
-          border: none;
-          background: none;
-          cursor: pointer;
-          text-align: left;
-          color: #475569;
-          font-size: 13px;
-          font-weight: 600;
-          transition: all 0.15s;
-          width: 100%;
-        }
-        .legal-history-item span {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          flex: 1;
-        }
-        .legal-history-item:hover {
-          background: rgba(79,70,229,0.06);
-          color: #4f46e5;
-        }
-        .dark .legal-history-item { color: #94a3b8; }
-        .dark .legal-history-item:hover {
-          background: rgba(129,140,248,0.1);
-          color: #818cf8;
-        }
-        .legal-history-item.active {
-          background: rgba(79,70,229,0.1);
-          color: #4f46e5;
-          font-weight: 800;
-        }
-        .dark .legal-history-item.active {
-          background: rgba(129,140,248,0.15);
-          color: #818cf8;
-        }
-        .legal-history-empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 32px 16px;
-          color: #94a3b8;
-          gap: 10px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-        .legal-history-empty p { margin: 0; }
-        .legal-history-item-wrap {
-          position: relative;
-          display: flex;
-          align-items: center;
-          border-radius: 10px;
-          overflow: hidden;
-        }
-        .legal-history-item-wrap .legal-history-item {
-          flex: 1;
-          min-width: 0;
-          border-radius: 10px 0 0 10px;
-        }
-        .legal-history-item-actions {
-          display: none;
-          align-items: center;
-          gap: 2px;
-          padding: 0 6px;
-          flex-shrink: 0;
-          background: rgba(241,245,249,0.9);
-          height: 100%;
-          min-height: 36px;
-        }
-        .dark .legal-history-item-actions {
-          background: rgba(30,41,59,0.9);
-        }
-        .legal-history-item-wrap:hover .legal-history-item-actions {
-          display: flex;
-        }
-        .legal-history-action-btn {
-          width: 26px;
-          height: 26px;
-          border-radius: 6px;
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          background: none;
-          color: #94a3b8;
-          transition: all 0.15s;
-          flex-shrink: 0;
-        }
-        .legal-history-action-btn:hover {
-          background: rgba(79,70,229,0.1);
-          color: #4f46e5;
-        }
-        .legal-history-action-btn.pinned {
-          color: #f59e0b;
-        }
-        .legal-history-action-btn.pinned:hover {
-          background: rgba(245,158,11,0.1);
-          color: #d97706;
-        }
-        .legal-history-action-btn.delete:hover {
-          background: rgba(239,68,68,0.1);
-          color: #ef4444;
-        }
-        .dark .legal-history-action-btn { color: #475569; }
-        .dark .legal-history-action-btn:hover { background: rgba(129,140,248,0.1); color: #818cf8; }
-        .legal-history-section-label {
-          font-size: 10px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: #94a3b8;
-          padding: 6px 12px 4px;
-        }
-        .dark .legal-history-section-label { color: #475569; }
-        .legal-history-divider {
-          height: 1px;
-          background: rgba(0,0,0,0.06);
-          margin: 4px 8px;
-        }
-        .dark .legal-history-divider { background: rgba(255,255,255,0.06); }
-
-        /* ── MESSAGES ───────────────────────────────────── */
-        .legal-chat-messages {
-          flex: 1; overflow-y: auto; padding: 14px 16px 12px;
-          display: flex; flex-direction: column; gap: 16px;
-          scroll-behavior: smooth;
-          min-height: 0;
-          height: 0;
-        }
-        .legal-chat-messages::-webkit-scrollbar {
-          width: 6px;
-        }
-        .legal-chat-messages::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .legal-chat-messages::-webkit-scrollbar-thumb {
-          background: rgba(0, 0, 0, 0.12);
-          border-radius: 10px;
-        }
-        .dark .legal-chat-messages::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.15);
-        }
-        .legal-msg-row { display: flex; gap: 10px; max-width: 85%; }
-        .legal-msg-ai { align-self: flex-start; }
-        .legal-msg-user { align-self: flex-end; flex-direction: row-reverse; }
-        .legal-msg-avatar {
-          width: 30px; height: 30px; border-radius: 10px; flex-shrink: 0;
-          background: linear-gradient(135deg, #4f46e5, #7c3aed);
-          display: flex; align-items: center; justify-content: center;
-          color: white; margin-top: 2px;
-        }
-        .legal-msg-bubble { border-radius: 18px; padding: 12px 16px; max-width: 100%; }
-        .legal-bubble-ai {
-          background: #ffffff;
-          border: 1px solid rgba(0,0,0,0.06);
-          border-bottom-left-radius: 6px;
-        }
-        .dark .legal-bubble-ai {
-          background: #1e293b;
-          border-color: rgba(255,255,255,0.06);
-        }
-        .legal-bubble-user {
-          background: #f1f5f9;
-          color: #0f172a;
-          border-bottom-right-radius: 6px;
-        }
-        .dark .legal-bubble-user {
-          background: #1e293b;
-          color: #f1f5f9;
-        }
-        .legal-msg-ai-text {
-          font-size: 14px; line-height: 1.65;
-          color: #1e293b;
-        }
-        .dark .legal-msg-ai-text { color: #e2e8f0; }
-        .legal-msg-ai-text p { margin: 0 0 8px; }
-        .legal-msg-ai-text p:last-child { margin-bottom: 0; }
-        .legal-msg-ai-text strong { font-weight: 700; color: #0f172a; }
-        .dark .legal-msg-ai-text strong { color: #f1f5f9; }
-        .legal-msg-ai-text ul, .legal-msg-ai-text ol { margin: 4px 0; padding-left: 20px; }
-        .legal-msg-ai-text li { margin-bottom: 4px; }
-        .legal-msg-ai-text code {
-          background: rgba(0,0,0,0.06);
-          padding: 2px 6px; border-radius: 4px; font-size: 13px;
-        }
-        .dark .legal-msg-ai-text code { background: rgba(255,255,255,0.08); }
-        .legal-msg-ai-text pre {
-          background: #f1f5f9;
-          padding: 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0;
-        }
-        .dark .legal-msg-ai-text pre { background: #0f172a; }
-        .legal-msg-ai-text pre code { background: none; padding: 0; }
-        .legal-msg-ai-text table {
-          width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px;
-        }
-        .legal-msg-ai-text th, .legal-msg-ai-text td {
-          border: 1px solid rgba(0,0,0,0.1);
-          padding: 6px 10px; text-align: left;
-        }
-        .dark .legal-msg-ai-text th, .dark .legal-msg-ai-text td {
-          border-color: rgba(255,255,255,0.1);
-        }
-        .legal-msg-ai-text th {
-          background: rgba(79,70,229,0.08);
-          font-weight: 700;
-        }
-        .dark .legal-msg-ai-text th { background: rgba(79,70,229,0.15); }
-        .legal-msg-user-text { margin: 0; font-size: 14px; line-height: 1.6; color: #0f172a; }
-        .dark .legal-msg-user-text { color: #f1f5f9; }
-        .legal-msg-attachment-chip {
-          display: flex; align-items: center; gap: 6px;
-          padding: 4px 10px; border-radius: 8px; margin-bottom: 6px;
-          background: rgba(79,70,229,0.12); font-size: 12px; font-weight: 600;
-          color: #4338ca;
-        }
-        .dark .legal-msg-attachment-chip { color: #c7d2fe; }
-        .legal-msg-footer {
-          display: flex; align-items: center; gap: 8px; margin-top: 6px;
-        }
-        .legal-msg-time {
-          font-size: 10px; font-weight: 600; opacity: 0.5;
-          color: inherit;
-        }
-        .legal-msg-copy-btn {
-          background: none; border: none; cursor: pointer; padding: 2px;
-          color: #94a3b8; display: flex; align-items: center;
-          transition: color 0.2s;
-        }
-        .dark .legal-msg-copy-btn { color: #64748b; }
-        .legal-msg-copy-btn:hover { color: #4f46e5; }
-
-        .legal-research-action-bar {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          color: #64748b;
-          border-top: 1px solid rgba(0,0,0,0.06);
-          margin-top: 12px;
-          padding-top: 12px;
-          flex-wrap: wrap;
-        }
-        .dark .legal-research-action-bar {
-          border-top-color: rgba(255,255,255,0.08);
-          color: #94a3b8;
-        }
-        .legal-research-action-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: none;
-          border: none;
-          padding: 4px 8px;
-          font-size: 11px;
-          font-weight: 700;
-          color: inherit;
-          cursor: pointer;
-          border-radius: 6px;
-          transition: all 0.2s;
-        }
-        .legal-research-action-btn:hover {
-          color: #4f46e5;
-          background: rgba(79,70,229,0.06);
-        }
-        .dark .legal-research-action-btn:hover {
-          color: #818cf8;
-          background: rgba(129,140,248,0.1);
-        }
-
-        /* ── TYPING ─────────────────────────────────────── */
-        .legal-typing-bubble { padding: 14px 20px !important; }
-        .legal-typing-dots { display: flex; gap: 5px; align-items: center; }
-        .legal-typing-dots span {
-          width: 7px; height: 7px; border-radius: 50%; background: #4f46e5;
-          animation: legalBounce 1.4s infinite ease-in-out both;
-        }
-        .legal-typing-dots span:nth-child(1) { animation-delay: 0s; }
-        .legal-typing-dots span:nth-child(2) { animation-delay: 0.16s; }
-        .legal-typing-dots span:nth-child(3) { animation-delay: 0.32s; }
-        @keyframes legalBounce {
-          0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-          40% { transform: scale(1); opacity: 1; }
-        }
-
-        /* ── INPUT AREA ─────────────────────────────────── */
-        .legal-chat-input-area {
-          flex-shrink: 0;
-          padding: 8px 12px 0px 12px;
-          background: #ffffff;
-          border-top: 1px solid rgba(0,0,0,0.06);
-        }
-        .dark .legal-chat-input-area {
-          background: #1e293b;
-          border-top-color: rgba(255,255,255,0.06);
-        }
-        .legal-attachment-preview {
-          display: flex; align-items: center; gap: 8px;
-          padding: 6px 12px; margin-bottom: 8px;
-          background: rgba(79,70,229,0.08);
-          border-radius: 10px; font-size: 12px; font-weight: 600;
-          color: #4338ca;
-        }
-        .dark .legal-attachment-preview { background: rgba(79,70,229,0.12); color: #c7d2fe; }
-        .legal-attachment-name {
-          flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-        }
-        .legal-attachment-remove {
-          background: none; border: none; cursor: pointer; padding: 2px;
-          color: #64748b; display: flex;
-        }
-        .dark .legal-attachment-remove { color: #94a3b8; }
-        .legal-chat-input-row {
-          display: flex;
-          align-items: flex-end;
-          gap: 10px;
-          width: 100%;
-        }
-        .legal-chat-input-buttons {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-shrink: 0;
-          margin-bottom: 4px;
-        }
-        .legal-input-action-btn {
-          width: 38px;
-          height: 38px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #f1f5f9;
-          border: 1px solid rgba(0,0,0,0.06);
-          color: #64748b;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          flex-shrink: 0;
-        }
-        .dark .legal-input-action-btn {
-          background: #1e293b;
-          border-color: rgba(255,255,255,0.06);
-          color: #94a3b8;
-        }
-        .legal-input-action-btn:hover {
-          color: #4f46e5;
-          background: #e2e8f0;
-          transform: scale(1.05);
-        }
-        .dark .legal-input-action-btn:hover {
-          color: #818cf8;
-          background: #334155;
-        }
-        .legal-input-action-btn.active {
-          color: #4f46e5;
-          background: rgba(79,70,229,0.1);
-          border-color: rgba(79,70,229,0.2);
-        }
-        .dark .legal-input-action-btn.active {
-          color: #818cf8;
-          background: rgba(129,140,248,0.15);
-          border-color: rgba(129,140,248,0.25);
-        }
-        /* Pill variant with icon + label text */
-        .legal-input-action-btn-label {
-          width: auto !important;
-          border-radius: 20px !important;
-          padding: 0 12px !important;
-          gap: 5px;
-          font-size: 11px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.4px;
-          white-space: nowrap;
-        }
-        .legal-input-action-btn-label:hover {
-          transform: none !important;
-        }
-        .legal-input-action-btn-cases {
-          background: rgba(79,70,229,0.08);
-          border-color: rgba(79,70,229,0.15);
-          color: #4f46e5;
-        }
-        .dark .legal-input-action-btn-cases {
-          background: rgba(129,140,248,0.1);
-          border-color: rgba(129,140,248,0.15);
-          color: #818cf8;
-        }
-        .legal-input-action-btn-cases:hover {
-          background: rgba(79,70,229,0.15);
-          border-color: rgba(79,70,229,0.3);
-          color: #4f46e5;
-        }
-        .dark .legal-input-action-btn-cases:hover {
-          background: rgba(129,140,248,0.2);
-          border-color: rgba(129,140,248,0.3);
-          color: #818cf8;
-        }
-        .legal-chat-input-form {
-          flex: 1; min-width: 0;
-          display: flex; align-items: flex-end; gap: 6px;
-          background: #f1f5f9;
-          border-radius: 24px; padding: 6px 8px;
-          border: 1px solid rgba(0,0,0,0.06);
-          transition: border-color 0.2s;
-        }
-        .dark .legal-chat-input-form {
-          background: #0f172a;
-          border-color: rgba(255,255,255,0.06);
-        }
-        .legal-chat-input-form:focus-within {
-          border-color: rgba(79,70,229,0.4);
-        }
-        .legal-input-icon-btn {
-          width: 34px; height: 34px; border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          background: none; border: none; cursor: pointer;
-          color: #94a3b8; flex-shrink: 0;
-          transition: color 0.2s;
-        }
-        .dark .legal-input-icon-btn { color: #64748b; }
-        .legal-input-icon-btn:hover { color: #4f46e5; }
-        .legal-cases-btn {
-          display: flex; align-items: center; gap: 4px;
-          padding: 5px 10px; border-radius: 20px;
-          background: rgba(79,70,229,0.1); border: 1px solid rgba(79,70,229,0.2);
-          color: #4f46e5; font-size: 11px; font-weight: 800;
-          cursor: pointer; white-space: nowrap; flex-shrink: 0;
-          text-transform: uppercase; letter-spacing: 0.5px;
-          transition: all 0.2s;
-        }
-        .legal-cases-btn:hover { background: rgba(79,70,229,0.18); }
-        .legal-chat-input {
-          flex: 1; border: none; outline: none; background: transparent;
-          font-size: 14px; line-height: 1.5; resize: none;
-          color: #1e293b;
-          min-height: 34px; max-height: 120px; padding: 6px 4px;
-          font-family: inherit;
-        }
-        .dark .legal-chat-input { color: #e2e8f0; }
-        .legal-chat-input::placeholder { color: #94a3b8; }
-        .dark .legal-chat-input::placeholder { color: #475569; }
-        .legal-send-btn {
-          width: 34px; height: 34px; border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          border: none; cursor: pointer; color: white; flex-shrink: 0;
-          transition: all 0.2s;
-        }
-        .legal-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .legal-send-btn:not(:disabled):hover { transform: scale(1.05); }
-
-        /* ── NEW CHAT BUTTON ────────────────────────────── */
-        .legal-new-chat-btn {
-          display: flex; align-items: center; gap: 5px;
-          padding: 5px 12px; border-radius: 20px; flex-shrink: 0;
-          background: #f1f5f9; border: 1px solid rgba(0,0,0,0.08);
-          color: #64748b; font-size: 11px; font-weight: 800;
-          cursor: pointer; white-space: nowrap;
-          text-transform: uppercase; letter-spacing: 0.5px;
-          transition: all 0.2s; min-height: 34px;
-        }
-        .dark .legal-new-chat-btn {
-          background: rgba(255,255,255,0.05);
-          border-color: rgba(255,255,255,0.08);
-          color: #94a3b8;
-        }
-        .legal-new-chat-btn:hover {
-          background: rgba(79,70,229,0.1);
-          border-color: rgba(79,70,229,0.3);
-          color: #4f46e5;
-        }
-        .legal-new-chat-btn:active { transform: scale(0.96); }
-
-        /* ── HISTORY SESSION DROPDOWN ───────────────────── */
-        .legal-chat-history-select {
-          background: #f1f5f9;
-          border: 1px solid rgba(0,0,0,0.08);
-          border-radius: 14px;
-          color: #334155;
-          font-size: 11px; font-weight: 700;
-          padding: 5px 10px;
-          outline: none; cursor: pointer;
-          max-width: 180px;
-          text-overflow: ellipsis;
-          transition: border-color 0.2s;
-        }
-        .dark .legal-chat-history-select {
-          background: rgba(255,255,255,0.06);
-          border-color: rgba(255,255,255,0.1);
-          color: #e2e8f0;
-        }
-        .legal-chat-history-select:focus {
-          border-color: rgba(79,70,229,0.5);
-        }
-
-        /* ── CASES SHEET ────────────────────────────────── */
-        .legal-cases-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-          z-index: 1000; backdrop-filter: blur(4px);
-        }
-        .legal-cases-container {
-          position: fixed; inset: 0;
-          display: flex; align-items: flex-end; justify-content: center;
-          z-index: 1001; pointer-events: none;
-        }
-        .legal-cases-sheet {
-          position: relative; width: 100%;
-          max-height: 70vh;
-          background: #ffffff;
-          border-top-left-radius: 24px; border-top-right-radius: 24px;
-          display: flex; flex-direction: column;
-          box-shadow: 0 -4px 30px rgba(0,0,0,0.15);
-          pointer-events: auto;
-        }
-        .dark .legal-cases-sheet { background: #1e293b; }
-        .legal-cases-sheet-drag {
-          display: flex; justify-content: center; padding: 10px 0 6px;
-        }
-        .legal-cases-drag-bar {
-          width: 40px; height: 4px; border-radius: 2px;
-          background: rgba(0,0,0,0.12);
-        }
-        .dark .legal-cases-drag-bar { background: rgba(255,255,255,0.15); }
-        .legal-cases-sheet-header {
-          display: flex; align-items: center; gap: 10px;
-          padding: 8px 20px 12px; font-weight: 800;
-        }
-        .legal-cases-sheet-header h3 {
-          flex: 1; margin: 0; font-size: 16px;
-          color: #0f172a;
-        }
-        .dark .legal-cases-sheet-header h3 { color: #f1f5f9; }
-        .legal-cases-close {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          background: none;
-          border: none;
-          cursor: pointer;
-          padding: 4px;
-          color: #94a3b8;
-        }
-        .dark .legal-cases-close { color: #64748b; }
-        .legal-cases-search-container {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin: 0 16px 12px;
-        }
-        .legal-cases-search-wrap {
-          display: flex; align-items: center; gap: 8px;
-          flex: 1; padding: 8px 14px;
-          background: rgba(0,0,0,0.04);
-          border-radius: 12px;
-          color: #94a3b8;
-        }
-        .dark .legal-cases-search-wrap { background: rgba(255,255,255,0.05); color: #64748b; }
-        .legal-cases-search {
-          flex: 1; border: none; outline: none; background: transparent;
-          font-size: 13px; color: #1e293b;
-        }
-        .dark .legal-cases-search { color: #e2e8f0; }
-        .legal-cases-search::placeholder { color: #94a3b8; }
-        .dark .legal-cases-search::placeholder { color: #475569; }
-
-        .legal-filter-toggle-btn {
-          display: flex; align-items: center; gap: 6px;
-          padding: 8px 14px; border-radius: 12px;
-          border: 1px solid rgba(0,0,0,0.08);
-          background: #ffffff; color: #475569;
-          font-size: 12px; font-weight: 700;
-          cursor: pointer; transition: all 0.2s;
-        }
-        .dark .legal-filter-toggle-btn {
-          border-color: rgba(255,255,255,0.08);
-          background: #1e293b; color: #94a3b8;
-        }
-        .legal-filter-toggle-btn:hover, .legal-filter-toggle-btn.active {
-          color: #4f46e5; border-color: rgba(79,70,229,0.3);
-          background: rgba(79,70,229,0.05);
-        }
-
-        /* Filters Grid */
-        .legal-cases-filters-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 10px;
-          margin: 0 16px 12px;
-          padding: 12px;
-          background: rgba(0,0,0,0.02);
-          border-radius: 14px;
-          border: 1px solid rgba(0,0,0,0.04);
-          box-sizing: border-box;
-        }
-        .dark .legal-cases-filters-grid {
-          background: rgba(255,255,255,0.02);
-          border-color: rgba(255,255,255,0.04);
-        }
-        @media (max-width: 600px) {
-          .legal-cases-filters-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-        .legal-filter-group {
-          display: flex; flex-direction: column; gap: 4px;
-          min-width: 0;
-        }
-        .legal-filter-group label {
-          font-size: 10px; font-weight: 800; color: #64748b;
-          text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .dark .legal-filter-group label { color: #475569; }
-        .legal-filter-group input, .legal-filter-group select {
-          width: 100%;
-          max-width: 100%;
-          box-sizing: border-box;
-          padding: 6px 10px; border-radius: 8px;
-          border: 1px solid rgba(0,0,0,0.1);
-          background: #ffffff; color: #1e293b;
-          font-size: 12px; outline: none;
-        }
-        .dark .legal-filter-group input, .dark .legal-filter-group select {
-          border-color: rgba(255,255,255,0.1);
-          background: #0f172a; color: #e2e8f0;
-        }
-        .legal-clear-filters-btn {
-          grid-column: 1 / -1;
-          padding: 8px; border-radius: 8px;
-          background: rgba(239, 68, 68, 0.08);
-          border: 1px dashed rgba(239, 68, 68, 0.2);
-          color: #ef4444; font-size: 11px; font-weight: 700;
-          cursor: pointer; text-transform: uppercase;
-          letter-spacing: 0.5px; transition: all 0.2s;
-        }
-        .legal-clear-filters-btn:hover {
-          background: rgba(239, 68, 68, 0.15);
-        }
-
-        /* Cases list */
-        .legal-cases-list {
-          flex: 1; overflow-y: auto; padding: 0 16px 20px;
-          display: flex; flex-direction: column; gap: 10px;
-        }
-
-        /* Case Card */
-        .legal-case-card {
-          background: #ffffff;
-          border: 1px solid rgba(0,0,0,0.06);
-          border-radius: 16px; padding: 16px;
-          display: flex; flex-direction: column; gap: 10px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-          transition: all 0.2s;
-        }
-        .dark .legal-case-card {
-          background: #1e293b; border-color: rgba(255,255,255,0.06);
-        }
-        .legal-case-card:hover {
-          border-color: rgba(79,70,229,0.2);
-          box-shadow: 0 4px 12px rgba(79,70,229,0.05);
-        }
-        .legal-case-card-header {
-          display: flex; flex-direction: column; gap: 4px;
-        }
-        .legal-case-card-title-row {
-          display: flex; justify-content: space-between;
-          align-items: flex-start; gap: 12px;
-        }
-        @media (max-width: 480px) {
-          .legal-case-card-title-row {
-            flex-direction: column; align-items: flex-start; gap: 6px;
-          }
-        }
-        .legal-case-card-name {
-          font-size: 14px; font-weight: 800; color: #0f172a;
-          line-height: 1.4;
-        }
-        .dark .legal-case-card-name { color: #f1f5f9; }
-        
-        .legal-case-card-badges {
-          display: flex; gap: 6px; flex-shrink: 0; align-items: center;
-        }
-        .legal-landmark-badge {
-          display: inline-flex; align-items: center; gap: 4px;
-          padding: 3px 8px; border-radius: 6px;
-          background: rgba(245, 158, 11, 0.1);
-          color: #d97706; font-size: 9px; font-weight: 800;
-          text-transform: uppercase; letter-spacing: 0.5px;
-          border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-        .legal-category-badge {
-          display: inline-flex; align-items: center;
-          padding: 3px 8px; border-radius: 6px;
-          background: rgba(79,70,229,0.08);
-          color: #4f46e5; font-size: 9px; font-weight: 800;
-          text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .dark .legal-category-badge {
-          background: rgba(99, 102, 241, 0.15); color: #818cf8;
-        }
-
-        .legal-case-card-body {
-          display: flex; flex-direction: column; gap: 8px;
-        }
-        .legal-case-summary-short {
-          margin: 0; font-size: 12px; line-height: 1.5; color: #475569;
-        }
-        .dark .legal-case-summary-short { color: #94a3b8; }
-        
-        .legal-case-meta-tags {
-          display: flex; flex-wrap: wrap; gap: 8px;
-        }
-        .legal-case-meta-tag {
-          display: flex; align-items: center; gap: 4px;
-          font-size: 10px; font-weight: 700; color: #64748b;
-          background: rgba(0,0,0,0.03); padding: 4px 8px; border-radius: 6px;
-        }
-        .dark .legal-case-meta-tag {
-          color: #94a3b8; background: rgba(255,255,255,0.03);
-        }
-
-        /* Actions row */
-        .legal-case-actions {
-          display: flex; justify-content: space-between; align-items: center;
-          margin-top: 8px; padding-top: 12px;
-          border-top: 1px solid rgba(0,0,0,0.04);
-        }
-        .dark .legal-case-actions {
-          border-top-color: rgba(255,255,255,0.04);
-        }
-        .legal-case-details-toggle {
-          background: none; border: none; cursor: pointer;
-          display: flex; align-items: center; gap: 4px;
-          color: #4f46e5; font-size: 12px; font-weight: 750;
-        }
-        .legal-case-select-btn {
-          display: flex; align-items: center; gap: 6px;
-          padding: 6px 12px; border: none; border-radius: 8px;
-          color: #ffffff; font-size: 11px; font-weight: 800;
-          text-transform: uppercase; cursor: pointer; transition: all 0.2s;
-        }
-        .legal-case-select-btn:hover {
-          transform: translateY(-1px); filter: brightness(1.1);
-        }
-
-        /* Expanded Panel Styling */
-        .legal-case-details-expanded {
-          display: flex; flex-direction: column; gap: 14px;
-          background: rgba(0,0,0,0.015); border-radius: 12px;
-          padding: 14px; border: 1px solid rgba(0,0,0,0.03);
-          margin-top: 6px;
-        }
-        .dark .legal-case-details-expanded {
-          background: rgba(255,255,255,0.01); border-color: rgba(255,255,255,0.03);
-        }
-        .legal-expanded-section {
-          display: flex; flex-direction: column; gap: 6px;
-        }
-        .legal-expanded-section h4 {
-          margin: 0; font-size: 11px; font-weight: 800; color: #1e293b;
-          text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .dark .legal-expanded-section h4 { color: #f1f5f9; }
-        .legal-expanded-section p {
-          margin: 0; font-size: 12px; line-height: 1.5; color: #475569;
-        }
-        .dark .legal-expanded-section p { color: #94a3b8; }
-
-        /* Tables */
-        .legal-table-wrapper {
-          overflow-x: auto; border-radius: 8px;
-          border: 1px solid rgba(0,0,0,0.06);
-          background: #ffffff;
-        }
-        .dark .legal-table-wrapper {
-          border-color: rgba(255,255,255,0.06); background: #0f172a;
-        }
-        .legal-table {
-          width: 100%; border-collapse: collapse; text-align: left;
-          font-size: 11px;
-        }
-        .legal-table th, .legal-table td {
-          padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.06);
-        }
-        .dark .legal-table th, .dark .legal-table td {
-          border-color: rgba(255,255,255,0.06);
-        }
-        .legal-table th {
-          background: rgba(0,0,0,0.02); font-weight: 800; color: #475569;
-        }
-        .dark .legal-table th {
-          background: rgba(255,255,255,0.02); color: #94a3b8;
-        }
-        .legal-table tr:last-child td {
-          border-bottom: none;
-        }
-
-        .text-red-655 { color: #dc2626; }
-        .dark .text-red-655 { color: #f87171; }
-        .text-indigo-605 { color: #4f46e5; }
-        .dark .text-indigo-605 { color: #818cf8; }
-
-        /* Landmark list */
-        .legal-landmark-list {
-          display: flex; flex-direction: column; gap: 8px;
-        }
-        .legal-landmark-item {
-          background: #ffffff; border-radius: 8px; padding: 10px;
-          border-left: 3px solid #f59e0b; border: 1px solid rgba(0,0,0,0.05);
-          box-shadow: 0 1px 2px rgba(0,0,0,0.01);
-        }
-        .dark .legal-landmark-item {
-          background: #0f172a; border-color: rgba(255,255,255,0.05);
-        }
-        .legal-landmark-item-header {
-          display: flex; align-items: center; gap: 4px;
-        }
-        .legal-landmark-item-header h5 {
-          margin: 0; font-size: 11px; font-weight: 800; color: #1e293b;
-        }
-        .dark .legal-landmark-item-header h5 { color: #e2e8f0; }
-        .legal-landmark-item-meta {
-          font-size: 9px; font-weight: 700; color: #94a3b8; margin-top: 2px;
-        }
-        .legal-landmark-item-principle {
-          margin: 4px 0 0; font-size: 11px; line-height: 1.4; color: #475569;
-        }
-        .dark .legal-landmark-item-principle { color: #94a3b8; }
-
-        .legal-cases-empty-state {
-          display: flex; flex-direction: column; align-items: center; justify-content: center;
-          padding: 40px 20px; color: #94a3b8; text-align: center; gap: 10px;
-        }
-        .legal-cases-empty-state p { margin: 0; font-size: 12px; font-weight: 600; }
-
-        /* Pagination */
-        .legal-pagination {
-          display: flex; justify-content: space-between; align-items: center;
-          padding: 10px 16px 16px; border-top: 1px solid rgba(0,0,0,0.06);
-          background: #ffffff;
-        }
-        .dark .legal-pagination {
-          background: #1e293b; border-top-color: rgba(255,255,255,0.06);
-        }
-        .legal-pagination-btn {
-          display: flex; align-items: center; gap: 4px;
-          padding: 6px 12px; border-radius: 8px;
-          border: 1px solid rgba(0,0,0,0.08); background: #ffffff;
-          color: #475569; font-size: 11px; font-weight: 700;
-          cursor: pointer; transition: all 0.2s;
-        }
-        .dark .legal-pagination-btn {
-          border-color: rgba(255,255,255,0.08); background: #0f172a;
-          color: #94a3b8;
-        }
-        .legal-pagination-btn:hover:not(:disabled) {
-          border-color: rgba(79,70,229,0.3); color: #4f46e5;
-          background: rgba(79,70,229,0.05);
-        }
-        .legal-pagination-btn:disabled {
-          opacity: 0.4; cursor: not-allowed;
-        }
-        .legal-pagination-info {
-          font-size: 11px; font-weight: 750; color: #64748b;
-        }
-
-        /* ── RESPONSIVE ─────────────────────────────────── */
-        /* Tiny phones (iPhone SE, Galaxy S8 — 320px-374px) */
-        @media (max-width: 374px) {
-          .legal-msg-row { max-width: 95%; }
-          .legal-chat-messages { padding: 12px 8px 6px; gap: 10px; }
-          .legal-chat-header { padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 8px; gap: 8px; }
-          .legal-chat-header-icon { width: 28px; height: 28px; border-radius: 8px; }
-          .legal-chat-header-title { font-size: 13px; }
-          .legal-chat-input-area { padding: 5px 6px 0px; }
-          .legal-chat-input-form { padding: 4px 6px; border-radius: 20px; }
-          .legal-chat-input { font-size: 13px; min-height: 30px; }
-          .legal-input-icon-btn { width: 30px; height: 30px; }
-          .legal-send-btn { width: 30px; height: 30px; }
-          .legal-input-action-btn { width: 32px; height: 32px; }
-          .legal-chat-input-buttons { gap: 4px; margin-bottom: 2px; }
-          .legal-msg-bubble { padding: 10px 12px; border-radius: 14px; }
-          .legal-msg-ai-text { font-size: 13px; line-height: 1.55; }
-          .legal-msg-user-text { font-size: 13px; }
-          .legal-msg-avatar { width: 26px; height: 26px; border-radius: 8px; }
-          .legal-cases-btn span { display: none; }
-          .legal-cases-btn { padding: 5px 6px; }
-          .legal-chat-action-btn { width: 28px; height: 28px; }
-          .legal-chat-back-btn { width: 32px; height: 32px; }
-        }
-        /* Small phones (375px-639px) */
-        @media (min-width: 375px) and (max-width: 639px) {
-          .legal-msg-row { max-width: 92%; }
-          .legal-chat-messages { padding: 14px 10px 8px; gap: 12px; }
-          .legal-chat-header { padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px; }
-          .legal-chat-input-area { padding: 6px 8px 0px; }
-          .legal-input-action-btn { width: 34px; height: 34px; }
-          .legal-chat-input-buttons { gap: 6px; margin-bottom: 3px; }
-          .legal-cases-btn span { display: none; }
-          .legal-cases-btn { padding: 6px 8px; }
-        }
-        /* Foldables & small tablets (600px-767px) */
-        @media (min-width: 600px) and (max-width: 767px) {
-          .legal-msg-row { max-width: 85%; }
-          .legal-chat-messages { padding: 14px 16px 12px; gap: 14px; }
-          .legal-chat-header { padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 12px; }
-          .legal-chat-input-area { padding: 8px 14px 0px; }
-          .legal-cases-container { align-items: center; padding: 20px; }
-          .legal-cases-sheet { max-width: 400px; border-radius: 24px; max-height: 80vh; }
-        }
-        /* Tablets portrait (768px-1023px) */
-        @media (min-width: 768px) and (max-width: 1023px) {
-          .legal-msg-row { max-width: 80%; }
-          .legal-chat-messages { padding: 16px 5% 14px; gap: 16px; }
-          .legal-chat-header { padding: calc(14px + env(safe-area-inset-top, 0px)) 24px 14px; }
-          .legal-chat-input-area { padding: 10px 20px 0px; }
-          .legal-cases-container { align-items: center; padding: 24px; }
-          .legal-cases-sheet { max-width: 420px; border-radius: 24px; max-height: 80vh; }
-        }
-        /* Desktop (1024px-1279px) */
-        @media (min-width: 1024px) {
-          .legal-chat-messages { padding: 16px 8%; }
-          .legal-msg-row { max-width: 72%; }
-          .legal-cases-container { align-items: center; padding: 24px; }
-          .legal-cases-sheet { max-width: 480px; border-radius: 24px; max-height: 80vh; }
-        }
-        /* Large desktop (1280px-1919px) */
-        @media (min-width: 1280px) {
-          .legal-chat-messages { padding: 16px 12%; }
-          .legal-msg-row { max-width: 65%; }
-        }
-        /* Ultra-wide / 4K (1920px+) */
-        @media (min-width: 1920px) {
-          .legal-chat-messages { padding: 16px 18%; }
-          .legal-msg-row { max-width: 55%; }
-          .legal-msg-ai-text { font-size: 15px; }
-          .legal-msg-user-text { font-size: 15px; }
-        }
-        /* Landscape phones — reduce vertical space */
-        @media (max-height: 500px) and (orientation: landscape) {
-          .legal-chat-header { padding: 6px 12px; }
-          .legal-chat-header-icon { width: 28px; height: 28px; }
-          .legal-chat-input-area { padding: 4px 10px 0px; }
-          .legal-chat-input-form { padding: 4px 6px; }
-          .legal-chat-input { min-height: 28px; max-height: 80px; }
-          .legal-msg-row { max-width: 75%; }
-          .legal-chat-messages { padding: 10px 8px 6px; gap: 8px; }
-        }
-      `}</style>
     </div>
   );
 };

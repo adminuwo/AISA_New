@@ -25,13 +25,12 @@ export const ActiveCaseProvider = ({ children, currentCase, activeModuleId }) =>
         return () => clearTimeout(timer);
       }
     }
-  }, [activeModuleId, currentCase]);
+  }, [activeModuleId]);
 
-  const value = {
-    currentCase,
+  const value = React.useMemo(() => ({
     triggerAutoRun,
     setTriggerAutoRun
-  };
+  }), [triggerAutoRun]);
 
   return (
     <ActiveCaseContext.Provider value={value}>

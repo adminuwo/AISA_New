@@ -536,7 +536,7 @@ const LegalResearch = ({ currentCase, onBack, theme, allProjects = [], onUpdateC
         <div className="max-w-5xl mx-auto space-y-6">
 
           {/* Stats Header */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-3xl p-5 shadow-sm flex flex-col items-center justify-center text-center">
               <Landmark className="text-indigo-500" size={20} />
               <span className="text-lg font-black text-indigo-500 mt-2">{stats.precedentsCount}</span>

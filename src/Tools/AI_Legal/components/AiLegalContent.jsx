@@ -465,9 +465,13 @@ const AiLegalContent = ({
   };
 
   const launchModule = async (tool) => {
-    await legalService.addActivity(tool.title, 'tool');
-    const updated = await legalService.getRecentActivity();
-    setRecentActivity(updated || []);
+    try {
+      await legalService.addActivity(tool.title, 'tool');
+      const updated = await legalService.getRecentActivity();
+      setRecentActivity(updated || []);
+    } catch (e) {
+      console.warn('[AiLegalContent] Failed to add activity log:', e);
+    }
 
     if (tool.id === 'legal_my_case') {
       console.log("Loading AISA-Mobile Active Cases Module");
@@ -770,26 +774,34 @@ const AiLegalContent = ({
                 sampleOutput: 'According to Section 420 of IPC, the punishment for cheating is...'
               });
             }}
-            className="w-full relative rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 overflow-hidden text-left bg-gradient-to-br from-indigo-600 via-[#5f5ce6] to-[#7c3aed] text-white shadow-2xl shadow-indigo-500/35 hover:scale-[1.005] transition-all group active:scale-[0.99]"
+            className="w-full relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 overflow-hidden text-left bg-gradient-to-br from-indigo-600 via-[#5f5ce6] to-[#7c3aed] text-white shadow-2xl shadow-indigo-500/35 hover:scale-[1.005] transition-all group active:scale-[0.99]"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-[2.5s] ease-in-out" />
-            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4 w-full sm:w-auto">
-                <div className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center shrink-0 transition-all duration-250 ease-out group-hover:-translate-y-1 group-hover:brightness-105 overflow-hidden">
-                  <img src={heroGeneralChat3d} alt="General Legal Chat" className="w-full h-full object-cover rounded-[14px]" />
+            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
+              <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 w-full sm:w-auto">
+                <div className="w-11 h-11 sm:w-[52px] sm:h-[52px] rounded-xl sm:rounded-[14px] flex items-center justify-center shrink-0 transition-all duration-250 ease-out group-hover:-translate-y-1 group-hover:brightness-105 overflow-hidden mt-0.5 sm:mt-0">
+                  <img src={heroGeneralChat3d} alt="General Legal Chat" className="w-full h-full object-cover rounded-xl sm:rounded-[14px]" />
                 </div>
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
+                <div className="space-y-1 flex-1 min-w-0">
+                  <div className="hidden sm:flex flex-wrap items-center gap-2">
                     <span className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-md text-[10px] font-semibold uppercase tracking-widest shrink-0">Enterprise Elite</span>
                     <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400 shrink-0"><CheckCircle size={10} className="fill-current text-white" /> SECURE</span>
                   </div>
-                  <h3 className="text-[22px] sm:text-[24px] font-bold tracking-tight leading-tight">General Legal Chat</h3>
-                  <p className="text-[13px] text-indigo-100 font-medium leading-relaxed max-w-md">
+                  <div className="flex items-center justify-between gap-2 sm:block">
+                    <h3 className="text-lg sm:text-[24px] font-bold tracking-tight leading-tight truncate sm:whitespace-normal">General Legal Chat</h3>
+                    <div className="sm:hidden shrink-0">
+                      <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-white text-indigo-700 font-semibold text-[11px] uppercase tracking-widest rounded-lg shadow-md shrink-0">
+                        START
+                        <ChevronRight size={13} />
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs sm:text-[13px] text-indigo-100 font-medium leading-normal sm:leading-relaxed max-w-md">
                     Professional legal discourse, situational guidance, and citation Q&A.
                   </p>
                 </div>
               </div>
-              <div className="w-full sm:w-auto shrink-0 flex justify-end">
+              <div className="hidden sm:flex w-full sm:w-auto shrink-0 justify-end">
                 <span className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 bg-white text-indigo-700 font-semibold text-[13px] uppercase tracking-widest rounded-xl sm:rounded-2xl shadow-lg shadow-black/10 shrink-0 group-hover:shadow-xl group-hover:scale-105 transition-all duration-300">
                   START
                   <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
@@ -813,7 +825,7 @@ const AiLegalContent = ({
                 return (
                   <div 
                     key={tool.id}
-                    className="group relative bg-white dark:bg-zinc-900 border border-[#ECECEC] dark:border-zinc-850 rounded-[18px] p-6 flex flex-col justify-between h-[230px] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:-translate-y-1 hover:border-violet-500 dark:hover:border-violet-500 hover:shadow-[0_8px_24px_rgba(124,58,237,0.08)] transition-all duration-300 ease-out select-none"
+                    className="group relative bg-white dark:bg-zinc-900 border border-[#ECECEC] dark:border-zinc-850 rounded-[18px] p-4 sm:p-5 flex flex-col justify-between h-auto sm:h-[208px] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:-translate-y-1 hover:border-violet-500 dark:hover:border-violet-500 hover:shadow-[0_8px_24px_rgba(124,58,237,0.08)] transition-all duration-300 ease-out select-none"
                     onClick={() => handleToolPress(tool)}
                   >
                     {/* Bookmark on Hover */}
@@ -823,7 +835,7 @@ const AiLegalContent = ({
                         e.stopPropagation();
                         toggleSavedTool(tool);
                       }}
-                      className={`absolute top-4 right-4 p-2 rounded-lg text-slate-350 hover:text-violet-650 hover:bg-slate-50 dark:hover:bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
+                      className={`absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-2 rounded-lg text-slate-350 hover:text-violet-650 hover:bg-slate-50 dark:hover:bg-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
                         isSaved ? 'text-violet-650 dark:text-violet-400 opacity-100' : ''
                       }`}
                       title="Bookmark Tool"
@@ -831,7 +843,8 @@ const AiLegalContent = ({
                       <Bookmark size={15} className={isSaved ? 'fill-current' : ''} />
                     </button>
 
-                    <div>
+                    {/* Desktop Layout Wrapper */}
+                    <div className="hidden sm:block">
                       {/* Icon */}
                       <div 
                         className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-4 transition-all duration-250 ease-out group-hover:-translate-y-1 group-hover:brightness-105 shrink-0 overflow-hidden"
@@ -859,10 +872,44 @@ const AiLegalContent = ({
                       </div>
                     </div>
 
-                    {/* Action: Open → */}
-                    <div className="flex items-center gap-1.5 text-[13px] font-semibold text-violet-600 dark:text-violet-400 mt-2">
+                    {/* Desktop Action: Open → */}
+                    <div className="hidden sm:flex items-center gap-1.5 text-[13px] font-semibold text-violet-600 dark:text-violet-400 mt-2">
                       <span>Open</span>
                       <span className="transform group-hover:translate-x-1 transition-transform duration-300">→</span>
+                    </div>
+
+                    {/* Mobile Compact Layout Wrapper (< sm) */}
+                    <div className="block sm:hidden flex items-start justify-between gap-3 w-full pr-4">
+                      {/* Left Column */}
+                      <div className="flex-1 min-w-0 flex items-start gap-3">
+                        <div 
+                          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
+                          style={{
+                            backgroundColor: tool.iconBg || '#EEF2FF',
+                            color: tool.iconColor || '#5B5FEF',
+                          }}
+                        >
+                          {tool.iconImg ? (
+                            <img src={tool.iconImg} alt={tool.title} className="w-full h-full object-cover rounded-xl" />
+                          ) : (
+                            tool.icon
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <h4 className="font-bold text-base text-slate-900 dark:text-white leading-tight truncate">
+                            {tool.title}
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-normal leading-normal line-clamp-2">
+                            {tool.desc}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Right Column */}
+                      <div className="flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400 shrink-0 pt-1 self-start">
+                        <span>Open</span>
+                        <span>→</span>
+                      </div>
                     </div>
                   </div>
                 );

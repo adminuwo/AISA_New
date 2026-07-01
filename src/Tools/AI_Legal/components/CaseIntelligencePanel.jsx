@@ -7,6 +7,8 @@ import {
   ShieldCheck, AlertTriangle, Info, Download, Upload, Search,
   ClipboardList, BookOpen, UserMinus, UserPlus, ListTodo, History,
   LayoutDashboard, FileDigit, Target, Flame, Lightbulb, Check,
+  Phone, Mail, Send, Paperclip, Mic, ChevronRight, ChevronLeft, Sparkles, EyeOff,
+  Share2, ScrollText, Copy, RefreshCw, FileDown, Sliders, Pin,
   Clock, MapPin, Bookmark, ExternalLink, Maximize2, Minimize2
 } from 'lucide-react';
 import { 

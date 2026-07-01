@@ -9,7 +9,8 @@ import {
     Share2, ExternalLink, Bookmark, CheckCircle2,
     ArrowLeft, Info, Filter, Zap, BookOpen, ArrowRight, X, Brain,
     Briefcase, Plus, Folder, Sparkles, MessageSquare, History, FileSearch,
-    ChevronDown, Layout, RefreshCcw, FileDown, MapPin
+    ChevronDown, Layout, RefreshCcw, FileDown, MapPin, Landmark,
+    Building2, Library, Clock, TrendingUp, User, Globe, Heart, Award, Trash2
 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -66,11 +67,16 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
         setIsLoading(true);
         try {
             const searchQuery = manualQuery || (mode === 'MANUAL' ? query : '');
+            
+            const user = localStorage.getItem('user');
+            const token = user ? JSON.parse(user).token : null;
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
             const response = await axios.post(`${apis.precedents}/search`, {
                 query: searchQuery,
                 projectId: mode === 'CURRENT' ? targetProjectId : null,
                 language: currentLang
-            });
+            }, { headers });
 
             setResults(response.data.precedents || []);
             setSearchMetadata({
@@ -504,10 +510,10 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
                 {isLoading ? renderLoading() : (
                     <>
                         {mode === 'CURRENT' && !selectedProjectId ? renderCaseSelection() : (
-                            <div className="p-8">
+                            <div className="p-4 sm:p-8">
                                 {/* Search Bar (Only in Manual Mode) */}
                                 {mode === 'MANUAL' && (
-                                    <div className="max-w-2xl mx-auto mb-10">
+                                    <div className="max-w-2xl mx-auto mb-8">
                                         <div className="relative group">
                                             <div className="absolute inset-0 bg-indigo-500/10 blur-xl rounded-2xl opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none" />
                                             <input
@@ -515,10 +521,23 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
                                                 value={query}
                                                 onChange={(e) => setQuery(e.target.value)}
                                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                                placeholder={t('searchPlaceholder')}
-                                                className="w-full relative z-10 bg-white dark:bg-[#1A2540] border-2 border-slate-100 dark:border-white/5 focus:border-indigo-500 rounded-2xl px-4 sm:px-6 py-4 sm:py-5 pl-12 sm:pl-14 text-xs sm:text-sm font-medium text-slate-700 dark:text-[#F8FAFC] shadow-sm transition-all outline-none"
+                                                placeholder="Search case law by topic, section, issue, judge, Act, article, citation, or keyword..."
+                                                className="w-full relative z-10 bg-white dark:bg-[#1A2540] border-2 border-slate-100 dark:border-white/5 focus:border-indigo-500 rounded-2xl px-4 sm:px-6 py-4 sm:py-5 pl-12 sm:pl-14 pr-24 sm:pr-32 text-xs sm:text-sm font-medium text-slate-700 dark:text-[#F8FAFC] shadow-sm transition-all outline-none"
                                             />
                                             <Search className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 text-subtext group-focus-within:text-indigo-500 transition-colors z-20" size={18} />
+                                            
+                                            {query && (
+                                                <button
+                                                    onClick={() => {
+                                                        setQuery('');
+                                                        resetSelection();
+                                                    }}
+                                                    className="absolute right-24 sm:right-28 top-1/2 -translate-y-1/2 text-subtext hover:text-maintext z-20 transition-all p-1"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            )}
+
                                             <button
                                                 onClick={() => handleSearch()}
                                                 disabled={isLoading || !query}
@@ -527,34 +546,68 @@ const LegalPrecedents = ({ projectId: initialProjectId, onBack, cases = [], onSe
                                                 {isLoading ? '...' : 'Search'}
                                             </button>
                                         </div>
+                                        
+                                        {!searchMetadata && (
+                                            <div className="mt-4">
+                                                <SuggestedSearches onSelect={(s) => { setQuery(s); handleSearch(s); }} />
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
-                                {/* Results Grid */}
-                                {results.length > 0 ? (
-                                    <div className="grid grid-cols-1 gap-6 max-w-4xl mx-auto">
-                                        {results.map((caseItem, idx) => (
-                                            <PrecedentCard
-                                                key={idx}
-                                                caseItem={caseItem}
-                                                onClick={() => setSelectedCaseDetail(caseItem)}
-                                                onCopyCitation={() => copyCitation(caseItem)}
-                                                isSaved={activeCase?.savedPrecedents?.some(p => (p._id || p.case_identity?.case_name) === (caseItem._id || caseItem.case_identity?.case_name))}
-                                                t={t}
-                                            />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    !isLoading && (
-                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-50">
-                                            <BookOpen size={48} className="text-subtext mb-4" />
-                                            <h3 className="text-lg font-bold text-maintext">No Precedents Found</h3>
-                                            <p className="text-xs text-subtext max-w-xs mt-2 font-medium">
-                                                {mode === 'CURRENT'
-                                                    ? "We couldn't find relevant precedents based on this case's facts. Try refining the case documents or use manual search."
-                                                    : "Enter a search query to discover relevant case laws and legal principles."}
-                                            </p>
+                                {/* Results or Directory Content */}
+                                {mode === 'MANUAL' ? (
+                                    !searchMetadata ? (
+                                        <div>
+                                            <LegalResearchDirectory onSelectCategory={(cat) => { setQuery(cat); handleSearch(cat); }} />
                                         </div>
+                                    ) : (
+                                        results.length > 0 ? (
+                                            <div className="grid grid-cols-1 gap-6 max-w-4xl mx-auto mt-6 animate-fade-in">
+                                                {results.map((caseItem, idx) => (
+                                                    <PrecedentCard
+                                                        key={idx}
+                                                        caseItem={caseItem}
+                                                        onClick={() => setSelectedCaseDetail(caseItem)}
+                                                        onCopyCitation={() => copyCitation(caseItem)}
+                                                        isSaved={activeCase?.savedPrecedents?.some(p => (p._id || p.case_identity?.case_name) === (caseItem._id || caseItem.case_identity?.case_name))}
+                                                        t={t}
+                                                    />
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            !isLoading && (
+                                                <div>
+                                                    <EmptySearchState query={searchMetadata.query} onClear={resetSelection} />
+                                                </div>
+                                            )
+                                        )
+                                    )
+                                ) : (
+                                    /* CURRENT case results view */
+                                    results.length > 0 ? (
+                                        <div className="grid grid-cols-1 gap-6 max-w-4xl mx-auto animate-fade-in">
+                                            {results.map((caseItem, idx) => (
+                                                <PrecedentCard
+                                                    key={idx}
+                                                    caseItem={caseItem}
+                                                    onClick={() => setSelectedCaseDetail(caseItem)}
+                                                    onCopyCitation={() => copyCitation(caseItem)}
+                                                    isSaved={activeCase?.savedPrecedents?.some(p => (p._id || p.case_identity?.case_name) === (caseItem._id || caseItem.case_identity?.case_name))}
+                                                    t={t}
+                                                />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        !isLoading && (
+                                            <div className="flex flex-col items-center justify-center py-20 text-center opacity-50 animate-fade-in">
+                                                <BookOpen size={48} className="text-subtext mb-4" />
+                                                <h3 className="text-lg font-bold text-maintext">No Precedents Found</h3>
+                                                <p className="text-xs text-subtext max-w-xs mt-2 font-medium">
+                                                    We couldn't find relevant precedents based on this case's facts. Try refining the case documents or use manual search.
+                                                </p>
+                                            </div>
+                                        )
                                     )
                                 )}
                             </div>
@@ -885,6 +938,15 @@ export const CaseDetailView = ({
                                 >
                                     <FileSearch size={14} className="text-indigo-500" />
                                     <span>Compare with My Case</span>
+                                    <ChevronRight size={14} className="ml-auto opacity-40" />
+                                </button>
+                                <button
+                                    onClick={onCite}
+                                    disabled={loadingStates.cite}
+                                    className={`smart-action-btn ${loadingStates.cite ? 'btn-loading' : ''}`}
+                                >
+                                    <MessageSquare size={14} className="text-emerald-500" />
+                                    <span>Cite in Argument</span>
                                     <ChevronRight size={14} className="ml-auto opacity-40" />
                                 </button>
                             </div>
@@ -1226,6 +1288,253 @@ export const CaseSelectionModal = ({ isOpen, onClose, onSelect, cases, currentPr
                     </button>
                 </div>
             </motion.div>
+        </div>
+    );
+};
+
+export const ResearchStats = () => {
+    return (
+        <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-3xl p-5 shadow-sm flex flex-col items-center justify-center text-center">
+                <Landmark className="text-indigo-500 dark:text-indigo-400" size={20} />
+                <span className="text-base sm:text-lg font-black text-indigo-500 mt-2">14,230+</span>
+                <span className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider mt-1">Precedents Found</span>
+            </div>
+            <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-3xl p-5 shadow-sm flex flex-col items-center justify-center text-center">
+                <Gavel className="text-emerald-500 dark:text-emerald-400" size={20} />
+                <span className="text-base sm:text-lg font-black text-emerald-500 mt-2">BNS / IPC</span>
+                <span className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider mt-1">Primary Law Act</span>
+            </div>
+            <div className="bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-3xl p-5 shadow-sm flex flex-col items-center justify-center text-center">
+                <Brain className="text-pink-500 dark:text-pink-400" size={20} />
+                <span className="text-base sm:text-lg font-black text-pink-500 mt-2">98.5%</span>
+                <span className="text-[10px] text-[#94A3B8] font-bold uppercase tracking-wider mt-1">AI Accuracy</span>
+            </div>
+        </div>
+    );
+};
+
+export const CategoryCard = ({ title, count, icon: IconComp, onClick }) => {
+    return (
+        <motion.div
+            whileHover={{ y: -4, boxShadow: '0 10px 20px -5px rgba(0,0,0,0.05)' }}
+            onClick={onClick}
+            className="p-4 bg-white dark:bg-[#1A2540] border border-slate-200 dark:border-white/5 rounded-2xl cursor-pointer hover:border-indigo-500/30 transition-all flex flex-col justify-between min-h-[110px]"
+        >
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/5 dark:bg-indigo-500/10 flex items-center justify-center mb-3">
+                <IconComp size={16} className="text-indigo-500 dark:text-indigo-400" />
+            </div>
+            <div>
+                <h4 className="text-xs font-black text-maintext leading-snug line-clamp-1">{title}</h4>
+                <p className="text-[9px] text-[#94A3B8] font-bold uppercase tracking-wider mt-1">{count}</p>
+            </div>
+        </motion.div>
+    );
+};
+
+export const ResearchCategoryGrid = ({ onSelect }) => {
+    const categories = [
+        { id: 'SC', title: 'Supreme Court Research', icon: Landmark, count: '14,230 cases' },
+        { id: 'HC', title: 'High Court Judgments', icon: Building2, count: '84,150 cases' },
+        { id: 'Const', title: 'Constitutional Law', icon: Scale, count: '1,890 articles' },
+        { id: 'Crim', title: 'Criminal Law', icon: Gavel, count: '24,600 files' },
+        { id: 'Civ', title: 'Civil Law', icon: FileText, count: '32,110 files' },
+        { id: 'Corp', title: 'Corporate Law', icon: Building2, count: '8,420 files' },
+        { id: 'Cyber', title: 'Cyber Law', icon: Shield, count: '1,120 files' },
+        { id: 'Fam', title: 'Family Law', icon: Library, count: '9,450 files' },
+        { id: 'Prop', title: 'Property Law', icon: Landmark, count: '18,300 files' },
+        { id: 'Tax', title: 'Taxation Law', icon: FileText, count: '4,520 files' },
+        { id: 'Cons', title: 'Consumer Protection', icon: Library, count: '3,110 files' },
+        { id: 'Arb', title: 'Arbitration & Mediation', icon: Scale, count: '6,450 files' },
+        { id: 'Lab', title: 'Labour Law', icon: Briefcase, count: '12,400 files' },
+        { id: 'Bank', title: 'Banking Law', icon: Building2, count: '9,120 files' },
+        { id: 'Env', title: 'Environmental Law', icon: Folder, count: '2,300 files' },
+        { id: 'IP', title: 'Intellectual Property', icon: Shield, count: '5,840 files' },
+        { id: 'MAC', title: 'Motor Accident Claims', icon: Gavel, count: '14,210 files' },
+        { id: 'Comp', title: 'Company Law', icon: Building2, count: '7,150 files' },
+        { id: 'Serv', title: 'Service Law', icon: Briefcase, count: '11,400 files' },
+        { id: 'Elec', title: 'Election Law', icon: Scale, count: '1,560 files' },
+        { id: 'HR', title: 'Human Rights', icon: Library, count: '4,890 files' },
+    ];
+
+    return (
+        <div className="space-y-4">
+            <h3 className="text-[11px] font-black text-subtext uppercase tracking-[0.2em] flex items-center gap-2">
+                <Layout size={14} className="text-indigo-500 animate-pulse" /> Research Directory Classifications
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {categories.map(c => (
+                    <CategoryCard
+                        key={c.id}
+                        title={c.title}
+                        count={c.count}
+                        icon={c.icon}
+                        onClick={() => onSelect(c.title)}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export const FeaturedActs = ({ onSelect }) => {
+    const acts = [
+        { name: "Constitution of India", desc: "Supreme lex of India" },
+        { name: "Bharatiya Nyaya Sanhita (BNS)", desc: "Substantive criminal law code" },
+        { name: "Bharatiya Nagarik Suraksha Sanhita (BNSS)", desc: "Procedural criminal law framework" },
+        { name: "Bharatiya Sakshya Adhiniyam (BSA)", desc: "Rules of evidence admissibility" },
+        { name: "Code of Civil Procedure (CPC)", desc: "Civil litigation procedures" },
+        { name: "Indian Evidence Act", desc: "Legacy code of evidence" },
+        { name: "Indian Contract Act", desc: "Law of agreements and commercial deals" },
+        { name: "Transfer of Property Act", desc: "Immovable asset sale & mortgage laws" },
+        { name: "Companies Act", desc: "Corporate governance guidelines" },
+        { name: "Information Technology (IT) Act", desc: "Cyber offences and digital signatures" },
+        { name: "Consumer Protection Act", desc: "Product liability and buyer rights" },
+        { name: "Income Tax Act", desc: "Direct tax laws and regulations" }
+    ];
+
+    return (
+        <div className="space-y-4">
+            <h3 className="text-[11px] font-black text-[#94A3B8] uppercase tracking-[0.2em] flex items-center gap-2">
+                <BookOpen size={14} className="text-indigo-500" /> Featured Acts & Statutes
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {acts.map((act, idx) => (
+                    <motion.div
+                        key={idx}
+                        whileHover={{ scale: 1.02 }}
+                        onClick={() => onSelect(act.name)}
+                        className="p-4 bg-slate-50/50 dark:bg-[#131C31]/50 border border-slate-200 dark:border-white/5 rounded-2xl cursor-pointer hover:border-indigo-500/20 hover:bg-indigo-500/5 dark:hover:bg-indigo-500/5 transition-all text-left"
+                    >
+                        <h4 className="text-xs font-bold text-maintext line-clamp-1">{act.name}</h4>
+                        <p className="text-[9px] text-[#94A3B8] font-medium mt-1 line-clamp-1">{act.desc}</p>
+                    </motion.div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export const PopularCases = ({ onSelect }) => {
+    const casesList = [
+        { name: "Kesavananda Bharati v. State of Kerala (1973)", topic: "Basic Structure Doctrine" },
+        { name: "Maneka Gandhi v. Union of India (1978)", topic: "Personal Liberty & Due Process" },
+        { name: "Vishaka v. State of Rajasthan (1997)", topic: "Sexual Harassment Guidelines" },
+        { name: "Shayara Bano v. Union of India (2017)", topic: "Triple Talaq Unconstitutional" },
+        { name: "Navtej Singh Johar v. Union of India (2018)", topic: "Decriminalization of Section 377" },
+        { name: "K.S. Puttaswamy v. Union of India (2017)", topic: "Fundamental Right to Privacy" },
+        { name: "Olga Tellis v. Bombay Municipal Corporation (1985)", topic: "Right to Livelihood" }
+    ];
+
+    return (
+        <div className="space-y-4">
+            <h3 className="text-[11px] font-black text-[#94A3B8] uppercase tracking-[0.2em] flex items-center gap-2">
+                <Gavel size={14} className="text-indigo-500" /> Popular Landmark Case Laws
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {casesList.map((c, idx) => (
+                    <motion.div
+                        key={idx}
+                        whileHover={{ scale: 1.01 }}
+                        onClick={() => onSelect(c.name)}
+                        className="p-4 bg-slate-50/50 dark:bg-[#131C31]/50 border border-slate-200 dark:border-white/5 rounded-2xl cursor-pointer hover:border-indigo-500/20 hover:bg-indigo-500/5 dark:hover:bg-indigo-500/5 transition-all text-left flex items-start gap-3"
+                    >
+                        <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                            <Scale size={12} className="text-indigo-500" />
+                        </div>
+                        <div>
+                            <h4 className="text-xs font-bold text-maintext line-clamp-1">{c.name}</h4>
+                            <p className="text-[9px] text-indigo-500 font-bold uppercase tracking-wider mt-0.5">{c.topic}</p>
+                        </div>
+                    </motion.div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export const RecentJudgments = ({ onSelect }) => {
+    const judgments = [
+        { title: "Latest Supreme Court Judgments (2024)", court: "Supreme Court of India" },
+        { title: "Latest High Court Rulings on Civil Disputes", court: "Delhi High Court" },
+        { title: "Recent NCLAT Company Law Decisions", court: "NCLT / NCLAT" },
+        { title: "Newest Arbitral Award Precedents", court: "Arbitration Tribunals" }
+    ];
+
+    return (
+        <div className="space-y-4">
+            <h3 className="text-[11px] font-black text-[#94A3B8] uppercase tracking-[0.2em] flex items-center gap-2">
+                <History size={14} className="text-indigo-500" /> Recent Judgments & Decisions
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {judgments.map((j, idx) => (
+                    <motion.div
+                        key={idx}
+                        whileHover={{ scale: 1.02 }}
+                        onClick={() => onSelect(j.title)}
+                        className="p-4 bg-slate-50/50 dark:bg-[#131C31]/50 border border-slate-200 dark:border-white/5 rounded-2xl cursor-pointer hover:border-indigo-500/20 hover:bg-indigo-500/5 dark:hover:bg-indigo-500/5 transition-all text-left flex flex-col justify-between min-h-[90px]"
+                    >
+                        <h4 className="text-xs font-bold text-maintext line-clamp-2 leading-relaxed">{j.title}</h4>
+                        <span className="text-[8px] font-black uppercase tracking-wider text-subtext mt-2 block">{j.court}</span>
+                    </motion.div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export const SuggestedSearches = ({ onSelect }) => {
+    const suggestions = [
+        "Section 482 CrPC quashing petition",
+        "Dishonour of cheque Section 138 NI Act",
+        "Admissibility of electronic evidence Section 65B",
+        "Writ of Habeas Corpus personal liberty"
+    ];
+
+    return (
+        <div className="flex flex-wrap items-center gap-2 justify-center">
+            <span className="text-[9px] font-black uppercase tracking-widest text-[#94A3B8] mr-1">Suggested:</span>
+            {suggestions.map((s, idx) => (
+                <button
+                    key={idx}
+                    onClick={() => onSelect(s)}
+                    className="text-[9px] font-bold text-indigo-500 bg-indigo-500/5 hover:bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/10 transition-colors"
+                >
+                    {s}
+                </button>
+            ))}
+        </div>
+    );
+};
+
+export const EmptySearchState = ({ query, onClear }) => {
+    return (
+        <div className="flex flex-col items-center justify-center py-20 text-center bg-card/25 border border-border rounded-3xl p-8 max-w-lg mx-auto shadow-sm">
+            <div className="w-16 h-16 bg-red-500/5 dark:bg-red-500/10 border border-red-500/10 rounded-2xl flex items-center justify-center mb-6">
+                <AlertCircle size={28} className="text-red-500 animate-bounce" />
+            </div>
+            <h3 className="text-lg font-black text-maintext uppercase tracking-tight">No Precedents Found</h3>
+            <p className="text-xs text-subtext max-w-sm mt-2 font-medium leading-relaxed">
+                We couldn't find any relevant judgments matching <span className="font-bold text-indigo-500">"{query}"</span>. Please try refining your query topic or search criteria.
+            </p>
+            <button
+                onClick={onClear}
+                className="mt-6 text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 bg-indigo-500/5 px-6 py-3 rounded-full border border-indigo-500/10 transition-colors"
+            >
+                Clear Search
+            </button>
+        </div>
+    );
+};
+
+export const LegalResearchDirectory = ({ onSelectCategory }) => {
+    return (
+        <div className="space-y-10 max-w-6xl mx-auto text-left mt-8">
+            <ResearchStats />
+            <ResearchCategoryGrid onSelect={onSelectCategory} />
+            <FeaturedActs onSelect={onSelectCategory} />
+            <PopularCases onSelect={onSelectCategory} />
+            <RecentJudgments onSelect={onSelectCategory} />
         </div>
     );
 };

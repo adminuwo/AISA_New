@@ -1268,7 +1268,20 @@ const Chat = () => {
               case 'legal_strategy_engine':
                 return <StrategyEngine {...props} />;
               case 'legal_research_assistant':
-                return <LegalResearch {...props} />;
+                return (
+                  <LegalPrecedents
+                    projectId={currentCase?._id}
+                    onBack={props.onBack}
+                    cases={legalCases}
+                    onSelectCase={(c) => {
+                      setCurrentProjectId(c._id);
+                      setCurrentCase(c);
+                    }}
+                    onUpdateCase={props.onUpdateCase}
+                    onCreateCase={() => setIsNewCaseModalOpen(true)}
+                    onUseInArgument={handleUseInArgument}
+                  />
+                );
               case 'legal_compliance_checker':
                 return <ComplianceCenter {...props} />;
               case 'legal_hearings':
@@ -3955,7 +3968,7 @@ const Chat = () => {
     setActiveTool(finalToolName);
 
     // 3. UI View Logic (Switch to specific panels if needed)
-    if (toolKey === 'legal_precedents' || toolKey === 'legal_case_law_research') {
+    if (toolKey === 'legal_precedents' || toolKey === 'legal_case_law_research' || toolKey === 'legal_research_assistant') {
       setLegalView('PRECEDENTS');
       fetchLegalCases();
     } else if (toolKey === 'legal_my_case') {
