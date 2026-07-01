@@ -150,7 +150,7 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
   };
 
   // Check if current user is admin
-  const token = getUserData()?.token;
+  const token = getUserData()?.token || localStorage.getItem('token') || localStorage.getItem('auth_token');
   const userEmail = user?.email || getUserData()?.email;
   const isAdmin = token && userEmail === 'admin@uwo24.com';
 
@@ -961,123 +961,68 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
 
                       if (filteredSessions.length === 0) return null;
 
-                      const groupedSessions = filteredSessions.reduce((acc, session) => {
-                        const date = new Date(session.lastModified || session.updatedAt || session.createdAt || new Date());
-                        date.setHours(0, 0, 0, 0);
-
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-
-                        const yesterday = new Date(today);
-                        yesterday.setDate(yesterday.getDate() - 1);
-
-                        let groupKey = '';
-                        if (date.getTime() === today.getTime()) {
-                          groupKey = 'Today';
-                        } else if (date.getTime() === yesterday.getTime()) {
-                          groupKey = 'Yesterday';
-                        } else {
-                          groupKey = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-                        }
-
-                        if (!acc[groupKey]) acc[groupKey] = [];
-                        acc[groupKey].push(session);
-                        return acc;
-                      }, {});
-
-                      const sortedGroupKeys = Object.keys(groupedSessions).sort((a, b) => {
-                        if (a === 'Today') return -1;
-                        if (b === 'Today') return 1;
-                        if (a === 'Yesterday') return -1;
-                        if (b === 'Yesterday') return 1;
-                        return new Date(b) - new Date(a);
-                      });
-
-                      return sortedGroupKeys.map(groupKey => (
-                        <div key={groupKey} className="mb-3">
-                          {groupKey !== 'Today' && (
-                            <button
-                              onClick={() => toggleHistoryGroup(groupKey)}
-                              className={`w-full flex items-center justify-between px-3 py-1.5 mb-1 group transition-colors rounded-lg ${isDark ? 'text-subtext/60 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:text-slate-900 hover:bg-black/5'}`}
+                      // Flat list — no date grouping, all sessions visible directly
+                      return filteredSessions.map((session, idx) => (
+                        <motion.div
+                          key={session.sessionId}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.015, duration: 0.25 }}
+                          className="group relative"
+                        >
+                          {editingSessionId === session.sessionId ? (
+                            <div
+                              className="flex items-center gap-3 px-4 py-4 bg-white/5 rounded-2xl border border-primary/40 shadow-2xl mx-2"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <span className="text-[12px] font-black uppercase tracking-widest">{groupKey}</span>
-                              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${expandedHistoryGroups[groupKey] ? 'rotate-180' : ''}`} />
-                            </button>
-                          )}
-
-                          <AnimatePresence initial={false}>
-                            {(groupKey === 'Today' || expandedHistoryGroups[groupKey]) && (
-                              <motion.div
-                                initial={groupKey === 'Today' ? false : { height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.3, ease: "easeInOut" }}
-                                className="overflow-hidden flex flex-col"
+                              <input
+                                autoFocus
+                                type="text"
+                                value={newTitle}
+                                onChange={(e) => setNewTitle(e.target.value)}
+                                onBlur={(e) => handleRename(e, session.sessionId)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleRename(e, session.sessionId);
+                                  if (e.key === 'Escape') setEditingSessionId(null);
+                                }}
+                                className="bg-transparent text-[14px] font-bold text-maintext w-full outline-none"
+                              />
+                              <button
+                                onMouseDown={(e) => { e.preventDefault(); }}
+                                onClick={(e) => handleRename(e, session.sessionId)}
+                                className="text-primary hover:scale-125 transition-transform shrink-0"
                               >
-                                {groupedSessions[groupKey].map((session, idx) => (
-                                  <motion.div
-                                    key={session.sessionId}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: idx * 0.02, duration: 0.3 }}
-                                    className="group relative"
-                                  >
-                                    {editingSessionId === session.sessionId ? (
-                                      <div 
-                                        className="flex items-center gap-3 px-4 py-4 bg-white/5 rounded-2xl border border-primary/40 shadow-2xl mx-2"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <input
-                                          autoFocus
-                                          type="text"
-                                          value={newTitle}
-                                          onChange={(e) => setNewTitle(e.target.value)}
-                                          onBlur={(e) => handleRename(e, session.sessionId)}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter') handleRename(e, session.sessionId);
-                                            if (e.key === 'Escape') setEditingSessionId(null);
-                                          }}
-                                          className="bg-transparent text-[14px] font-bold text-maintext w-full outline-none"
-                                        />
-                                        <button
-                                          onMouseDown={(e) => {
-                                            // Prevent onBlur from running before onClick on this button
-                                            e.preventDefault();
-                                          }}
-                                          onClick={(e) => handleRename(e, session.sessionId)}
-                                          className="text-primary hover:scale-125 transition-transform shrink-0"
-                                        >
-                                          <Check className="w-5 h-5" strokeWidth={3} />
-                                        </button>
-                                      </div>
+                                <Check className="w-5 h-5" strokeWidth={3} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="sidebar-chat-container relative">
+                              <NavLink
+                                to={`/dashboard/chat/${session.sessionId}`}
+                                onClick={onClose}
+                              >
+                                {({ isActive }) => (
+                                  <div className={`sidebar-chat-item group/item transition-all duration-500 mx-2 cursor-pointer
+                                  ${isActive
+                                      ? (isDark ? 'bg-white/[0.08] text-white border border-white/10 shadow-2xl backdrop-blur-3xl' : 'bg-white text-primary border border-primary/20 shadow-lg shadow-primary/10 backdrop-blur-3xl ring-4 ring-primary/5')
+                                      : (isDark ? 'text-subtext/60 hover:bg-white/[0.04] hover:text-white border border-transparent' : 'text-slate-700 hover:bg-white hover:text-slate-900 border border-transparent hover:shadow-md hover:scale-[1.01]')
+                                    }
+                                  `}>
+                                    {/* ── Left Indicator Pill ── */}
+                                    {isActive ? (
+                                      <motion.div
+                                        layoutId="activeIndicator"
+                                        className="absolute left-1 top-3 bottom-3 w-[3px] bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.6)]"
+                                      />
                                     ) : (
-                                      <div className="sidebar-chat-container relative">
-                                        <NavLink
-                                          to={`/dashboard/chat/${session.sessionId}`}
-                                          onClick={onClose}
-                                        >
-                                          {({ isActive }) => (
-                                            <div className={`sidebar-chat-item group/item transition-all duration-500 mx-2 cursor-pointer
-                                          ${isActive
-                                                ? (isDark ? 'bg-white/[0.08] text-white border border-white/10 shadow-2xl backdrop-blur-3xl' : 'bg-white text-primary border border-primary/20 shadow-lg shadow-primary/10 backdrop-blur-3xl ring-4 ring-primary/5')
-                                                : (isDark ? 'text-subtext/60 hover:bg-white/[0.04] hover:text-white border border-transparent' : 'text-slate-700 hover:bg-white hover:text-slate-900 border border-transparent hover:shadow-md hover:scale-[1.01]')
-                                              }
-                                        `}>
-                                            {/* ── Left Indicator Pill (always visible) ── */}
-                                            {isActive ? (
-                                              <motion.div
-                                                layoutId="activeIndicator"
-                                                className="absolute left-1 top-3 bottom-3 w-[3px] bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.6)]"
-                                              />
-                                            ) : (
-                                              <div
-                                                className={`absolute left-1 top-3 bottom-3 w-[3px] rounded-full transition-all duration-300 group-hover/item:opacity-60 ${isDark ? 'bg-white/10 opacity-20' : 'bg-slate-300/80 opacity-30'}`}
-                                              />
-                                            )}
-                                          <div className="sidebar-chat-title-group text-left flex-1 min-w-0">
-                                            <div className="sidebar-chat-title flex items-center gap-1.5">
-                                              {/* ── Icon Selection ── */}
-                                              {session.activeTool?.startsWith('legal_') ? (() => {
+                                      <div
+                                        className={`absolute left-1 top-3 bottom-3 w-[3px] rounded-full transition-all duration-300 group-hover/item:opacity-60 ${isDark ? 'bg-white/10 opacity-20' : 'bg-slate-300/80 opacity-30'}`}
+                                      />
+                                    )}
+                                  <div className="sidebar-chat-title-group text-left flex-1 min-w-0">
+                                    <div className="sidebar-chat-title flex items-center gap-1.5">
+                                      {/* ── Icon Selection ── */}
+                                      {session.activeTool?.startsWith('legal_') ? (() => {
                                                 const tool = session.activeTool.toLowerCase();
                                                 if (tool.includes('precedent') || tool.includes('gavel')) return <Gavel className="w-3.5 h-3.5 text-purple-500 shrink-0" strokeWidth={2.5} />;
                                                 if (tool.includes('draft') || tool.includes('agreement')) return <FileText className="w-3.5 h-3.5 text-purple-500 shrink-0" strokeWidth={2.5} />;
@@ -1169,14 +1114,9 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
                                           </div>
                                           )}
                                         </NavLink>
-                                      </div>
-                                    )}
-                                  </motion.div>
-                                ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
+                            </div>
+                          )}
+                        </motion.div>
                       ));
                     })()
                   )}

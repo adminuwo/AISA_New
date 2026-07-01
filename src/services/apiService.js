@@ -14,12 +14,21 @@ const apiClient = axios.create({
 // Request interceptor for adding auth token
 apiClient.interceptors.request.use(
   (config) => {
+    let token = null;
     const user = localStorage.getItem('user');
-    if (user) {
-      const userData = JSON.parse(user);
-      if (userData.token) {
-        config.headers.Authorization = `Bearer ${userData.token}`;
+    if (user && user !== "undefined" && user !== "null") {
+      try {
+        const userData = JSON.parse(user);
+        token = userData?.token;
+      } catch (e) {
+        console.error('[apiService] Request interceptor user parse error:', e);
       }
+    }
+    if (!token || token === "undefined" || token === "null") {
+      token = localStorage.getItem("auth_token") || localStorage.getItem("token");
+    }
+    if (token && token !== "undefined" && token !== "null") {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -696,6 +705,26 @@ export const apiService = {
     }
   },
 
+  async getAdminAnalytics(range = '7d') {
+    try {
+      const response = await apiClient.get('/admin/analytics', { params: { range } });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch admin analytics:', error.message);
+      throw error;
+    }
+  },
+
+  async getAdminErrorDrillDown(mode, range = '7d') {
+    try {
+      const response = await apiClient.get(`/admin/analytics/errors/${encodeURIComponent(mode)}`, { params: { range } });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch error drill-down:', error.message);
+      throw error;
+    }
+  },
+
   // --- Agents ---
   async getCreatedAgents() {
     try {
@@ -976,6 +1005,17 @@ export const apiService = {
       throw error;
     }
   },
+
+  async sendEmailToUser(payload) {
+    try {
+      const response = await apiClient.post('/admin/send-email', payload);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to send email to user:", error);
+      throw error;
+    }
+  },
+
 
   async getAllUsers() {
     try {

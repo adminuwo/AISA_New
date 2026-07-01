@@ -849,8 +849,6 @@ const Chat = () => {
   const [isLimitReached, setIsLimitReached] = useState(false);
   const [filePreviews, setFilePreviews] = useState([]);
   const [activeAgent, setActiveAgent] = useState({ agentName: 'AI Ads', category: 'General' });
-  const [userAgents, setUserAgents] = useState([]);
-  const hasLoadedAgentsRef = useRef(false);
   const [toolModels, setToolModels] = useState({
     chat: 'gemini-2.5-flash',
     image: 'gemini-2.5-flash',
@@ -3574,28 +3572,6 @@ const Chat = () => {
     const loadSessions = async () => {
       const data = await chatStorageService.getSessions(currentProjectId);
       setSessions(data);
-
-      try {
-        const user = JSON.parse(localStorage.getItem('user'));
-        const userId = user?.id || user?._id;
-        if (userId) {
-          if (hasLoadedAgentsRef.current) {
-            return;
-          }
-          const token = getUserData()?.token || localStorage.getItem("token");
-          const res = await axios.post(apis.getUserAgents, { userId }, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          const agents = res.data?.agents || [];
-          const processedAgents = [{ agentName: 'AI Ads', category: 'General', avatar: '/AGENTS_IMG/AI Ads_BRAIN_LOGO.png' }, ...agents];
-          setUserAgents(processedAgents);
-          hasLoadedAgentsRef.current = true;
-        } else {
-          setUserAgents([{ agentName: 'AI Ads', category: 'General', avatar: '/AGENTS_IMG/AI Ads_BRAIN_LOGO.png' }]);
-        }
-      } catch (err) {
-        setUserAgents([{ agentName: 'AI Ads', category: 'General', avatar: '/AGENTS_IMG/AI Ads_BRAIN_LOGO.png' }]);
-      }
     };
     loadSessions();
   }, [setSessions, currentProjectId]);

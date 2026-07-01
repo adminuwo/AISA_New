@@ -225,7 +225,7 @@ const Hero = () => {
       onMouseMove={handleMouseMove}
       style={{
         position: 'relative',
-        minHeight: '90vh',
+        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -300,108 +300,114 @@ const Hero = () => {
         }}
       />
 
+      {/* ── Integrated Nav Area ── */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: '1400px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: window.innerWidth < 640 ? '15px 1.25rem 0' : '20px 1.5rem 0',
+          zIndex: 20,
+        }}
+      >
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+          onClick={() => navigate('/')}
+          className="group"
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-150 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <img src={logo} alt="AISA™"
+              style={{
+                height: window.innerWidth < 640 ? '32px' : '50px',
+                width: 'auto',
+                objectFit: 'cover',
+                objectPosition: 'top'
+              }}
+              className="drop-shadow-[0_0_40px_rgba(99,102,241,0.6)] relative transition-all duration-500"
+            />
+          </div>
+          <span aria-label="AISA™" style={{
+            fontSize: window.innerWidth < 640 ? '0.6rem' : '0.75rem',
+            fontWeight: 900,
+            letterSpacing: '0.25em',
+            background: 'linear-gradient(135deg, #9333ea 0%, #3b82f6 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontFamily: '"Times New Roman", Times, serif',
+            marginTop: window.innerWidth < 640 ? '2px' : '4px',
+            transition: 'all 0.3s',
+            display: 'inline-block'
+          }}>
+            AISA<span aria-hidden="true" style={{ fontSize: '0.55em', verticalAlign: 'super', marginLeft: '1px' }}>™</span>
+          </span>
+        </motion.div>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: window.innerWidth < 640 ? '0.8rem' : '1.5rem'
+        }}>
+          <ThemeToggle />
+          {user ? (
+            <div style={{ position: 'relative' }}>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                style={{ background: 'none', border: 'none', color: isDarkMode ? '#fff' : '#0F172A', cursor: 'pointer' }}
+              >
+                <CircleUser size={30} color={isDarkMode ? "#a78bfa" : "#6366f1"} />
+              </motion.button>
+              <AnimatePresence>
+                {isProfileOpen && (
+                  <ProfileSettingsDropdown
+                    onClose={() => setIsProfileOpen(false)}
+                    onLogout={async () => {
+                      if (window.resetSocialOnboarding) {
+                        window.resetSocialOnboarding();
+                      }
+                      localStorage.clear();
+                      window.location.reload();
+                    }}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.05, background: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(99, 102, 241, 0.1)' }}
+              onClick={() => navigate('/login')}
+              style={{
+                background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(99, 102, 241, 0.05)',
+                border: isDarkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(99, 102, 241, 0.2)',
+                color: isDarkMode ? '#fff' : '#0F172A', padding: '10px 24px',
+                borderRadius: '12px', cursor: 'pointer', fontWeight: 600,
+                transition: '0.3s'
+              }}
+            >
+              {t('getStarted')}
+            </motion.button>
+          )}
+        </div>
+      </div>
+
       {/* ── Foreground Content ── */}
       <div style={{
         position: 'relative', zIndex: 10,
         textAlign: 'center', maxWidth: '1400px',
         width: '100%',
-        padding: window.innerWidth < 640 ? '5px 1.25rem 60px' : '10px 1.5rem 60px',
+        padding: window.innerWidth < 640 ? '80px 1.25rem 20px' : '100px 1.5rem 20px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center'
       }}>
-        {/* ── Integrated Nav Area ── */}
-        <div
-          style={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: window.innerWidth < 640 ? '30px' : '40px',
-            padding: window.innerWidth < 640 ? '5px 0' : '10px 0',
-          }}
-        >
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-            onClick={() => navigate('/')}
-            className="group"
-          >
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-150 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <img src={logo} alt="AISA™"
-                style={{
-                  height: window.innerWidth < 640 ? '32px' : '50px',
-                  width: 'auto',
-                  objectFit: 'cover',
-                  objectPosition: 'top'
-                }}
-                className="drop-shadow-[0_0_40px_rgba(99,102,241,0.6)] relative transition-all duration-500"
-              />
-            </div>
-            <span aria-label="AISA™" style={{
-              fontSize: window.innerWidth < 640 ? '0.6rem' : '0.75rem',
-              fontWeight: 900,
-              letterSpacing: '0.25em',
-              background: 'linear-gradient(135deg, #9333ea 0%, #3b82f6 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              fontFamily: '"Times New Roman", Times, serif',
-              marginTop: window.innerWidth < 640 ? '2px' : '4px',
-              transition: 'all 0.3s',
-              display: 'inline-block'
-            }}>
-              AISA<span aria-hidden="true" style={{ fontSize: '0.55em', verticalAlign: 'super', marginLeft: '1px' }}>™</span>
-            </span>
-          </motion.div>
-
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: window.innerWidth < 640 ? '0.8rem' : '1.5rem'
-          }}>
-            <ThemeToggle />
-            {user ? (
-              <div style={{ position: 'relative' }}>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  style={{ background: 'none', border: 'none', color: isDarkMode ? '#fff' : '#0F172A', cursor: 'pointer' }}
-                >
-                  <CircleUser size={30} color={isDarkMode ? "#a78bfa" : "#6366f1"} />
-                </motion.button>
-                <AnimatePresence>
-                  {isProfileOpen && (
-                    <ProfileSettingsDropdown
-                      onClose={() => setIsProfileOpen(false)}
-                      onLogout={async () => {
-                        if (window.resetSocialOnboarding) {
-                          window.resetSocialOnboarding();
-                        }
-                        localStorage.clear();
-                        window.location.reload();
-                      }}
-                    />
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <motion.button
-                whileHover={{ scale: 1.05, background: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(99, 102, 241, 0.1)' }}
-                onClick={() => navigate('/login')}
-                style={{
-                  background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(99, 102, 241, 0.05)',
-                  border: isDarkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(99, 102, 241, 0.2)',
-                  color: isDarkMode ? '#fff' : '#0F172A', padding: '10px 24px',
-                  borderRadius: '12px', cursor: 'pointer', fontWeight: 600,
-                  transition: '0.3s'
-                }}
-              >
-                {t('getStarted')}
-              </motion.button>
-            )}
-          </div>
-        </div>
         {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -414,7 +420,7 @@ const Hero = () => {
             background: isDarkMode ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.08)',
             border: isDarkMode ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid rgba(99, 102, 241, 0.3)',
             color: isDarkMode ? '#a5b4fc' : '#4f46e5', fontSize: '0.85rem', fontWeight: 700,
-            marginBottom: '2.5rem', letterSpacing: '0.1em'
+            marginBottom: '1rem', letterSpacing: '0.1em'
           }}>
             Powered by UWO™
           </div>
@@ -433,7 +439,7 @@ const Hero = () => {
               color: isDarkMode ? '#fff' : '#0F172A',
               lineHeight: 1.1,
               letterSpacing: '-0.05em',
-              marginBottom: '2rem',
+              marginBottom: '1rem',
               textAlign: 'center',
               display: 'flex',
               flexDirection: 'column',
@@ -499,7 +505,7 @@ const Hero = () => {
             fontSize: 'clamp(1.05rem, 2.2vw, 1.3rem)',
             color: isDarkMode ? 'rgba(255, 255, 255, 0.92)' : '#1e1b4b',
             maxWidth: '860px',
-            margin: '0 auto 1.25rem',
+            margin: '0 auto 1rem',
             lineHeight: 1.7,
             fontWeight: 600,
             letterSpacing: '0.01em',
@@ -509,24 +515,7 @@ const Hero = () => {
           AISA™ is an advanced AI platform designed to empower users with intelligent tools for comprehensive research, creative content generation, and insightful data analysis. We use Google Sign-In to securely authenticate users, personalize their workspaces, and synchronize their tasks across devices.
         </motion.p>
 
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={introStage === 'finished' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 1, delay: 0.1 }}
-          style={{
-            fontSize: 'clamp(1rem, 2vw, 1.25rem)',
-            color: isDarkMode ? 'rgba(255, 255, 255, 0.75)' : '#000000',
-            maxWidth: '800px',
-            margin: '0 auto 2.5rem',
-            lineHeight: 1.8,
-            fontWeight: 400,
-            letterSpacing: '0.01em',
-            textAlign: 'center'
-          }}
-        >
-          <span dangerouslySetInnerHTML={{ __html: t('heroSubtitle') }} />
-        </motion.p>
+        {/* Subtitle removed to avoid scrolling and fit buttons on screen */}
 
         {/* Buttons */}
         <motion.div

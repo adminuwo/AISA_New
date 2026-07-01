@@ -7,7 +7,6 @@ import toast from 'react-hot-toast';
 import { useRecoilState } from 'recoil';
 import { userData, updateUser, getUserData } from '../userStore/userData';
 import { useLanguage } from '../context/LanguageContext';
-import GooglePayButton from '../Components/GooglePayButton';
 import ApplePayButton from '../Components/ApplePayButton';
 import useCreditStore from '../userStore/useCreditStore';
 
@@ -637,68 +636,39 @@ const Pricing = () => {
                     const isIOSDevice = /iPhone|iPad|iPod/.test(navigator.userAgent);
                     return (
                       <>
-                        <div className="payment-divider">
-                          <span>or pay with</span>
-                        </div>
-
-                        {/* Google Pay — shown on Android & Desktop (not iOS) */}
-                        {!isIOSDevice && (
-                          <GooglePayButton
-                            planId={plan._id}
-                            billingCycle={billingCycle}
-                            amount={billingCycle === 'yearly' ? totalYearlyAmount : displayPrice}
-                            currency="INR"
-                            onSuccess={(data) => {
-                              if (data.isTest) {
-                                toast.success(data.message || "Test Payment Successful – No credits or subscription have been applied because the system is running in test mode.");
-                                return;
-                              }
-                              toast.success(`✅ Google Pay successful! ${getDisplayPlanName(plan.planName)} activated.`);
-                              if (data.credits !== undefined) {
-                                const updatedUser = updateUser({
-                                  credits: data.credits,
-                                  founderStatus: isStartupProPlan(plan) ? true : userState.user?.founderStatus
-                                });
-                                setUserState({ user: updatedUser });
-                              }
-                              useCreditStore.getState().syncCredits();
-                            }}
-                            onError={(err) => {
-                              toast.error(err.message || 'Google Pay failed. Please try Razorpay.');
-                            }}
-                            onProcessing={(val) => setProcessing(val)}
-                            disabled={processing}
-                          />
-                        )}
-
                         {/* Apple Pay — shown on iOS/macOS devices */}
                         {isIOSDevice && (
-                          <ApplePayButton
-                            planId={plan._id}
-                            billingCycle={billingCycle}
-                            amount={billingCycle === 'yearly' ? totalYearlyAmount : displayPrice}
-                            currency="INR"
-                            onSuccess={(data) => {
-                              if (data.isTest) {
-                                toast.success(data.message || "Test Payment Successful – No credits or subscription have been applied because the system is running in test mode.");
-                                return;
-                              }
-                              toast.success(`✅ Apple Pay successful! ${getDisplayPlanName(plan.planName)} activated.`);
-                              if (data.credits !== undefined) {
-                                const updatedUser = updateUser({
-                                  credits: data.credits,
-                                  founderStatus: isStartupProPlan(plan) ? true : userState.user?.founderStatus
-                                });
-                                setUserState({ user: updatedUser });
-                              }
-                              useCreditStore.getState().syncCredits();
-                            }}
-                            onError={(err) => {
-                              toast.error(err.message || 'Apple Pay failed.');
-                            }}
-                            onProcessing={(val) => setProcessing(val)}
-                            disabled={processing}
-                          />
+                          <>
+                            <div className="payment-divider">
+                              <span>or pay with</span>
+                            </div>
+                            <ApplePayButton
+                              planId={plan._id}
+                              billingCycle={billingCycle}
+                              amount={billingCycle === 'yearly' ? totalYearlyAmount : displayPrice}
+                              currency="INR"
+                              onSuccess={(data) => {
+                                if (data.isTest) {
+                                  toast.success(data.message || "Test Payment Successful – No credits or subscription have been applied because the system is running in test mode.");
+                                  return;
+                                }
+                                toast.success(`✅ Apple Pay successful! ${getDisplayPlanName(plan.planName)} activated.`);
+                                if (data.credits !== undefined) {
+                                  const updatedUser = updateUser({
+                                    credits: data.credits,
+                                    founderStatus: isStartupProPlan(plan) ? true : userState.user?.founderStatus
+                                  });
+                                  setUserState({ user: updatedUser });
+                                }
+                                useCreditStore.getState().syncCredits();
+                              }}
+                              onError={(err) => {
+                                toast.error(err.message || 'Apple Pay failed.');
+                              }}
+                              onProcessing={(val) => setProcessing(val)}
+                              disabled={processing}
+                            />
+                          </>
                         )}
                       </>
                     );

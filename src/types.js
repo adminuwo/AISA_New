@@ -60,6 +60,8 @@ export const AppRoute = {
 // API Base URL - reads from VITE_AISA_BACKEND_API env variable (set in .env), falls back to production
 const API = window._env_?.VITE_AISA_BACKEND_API || import.meta.env.VITE_AISA_BACKEND_API || "http://localhost:8080/api";
 
+console.log("API", API);
+
 const apis = {
   resetPassword: `${API}/auth/reset-password-otp`,
   user: `${API}/user`,
@@ -68,8 +70,6 @@ const apis = {
   notifications: `${API}/notifications`,
   agents: `${API}/agents`,
   buyAgent: `${API}/agents/buy`,
-  getUserAgents: `${API}/agents/get_my_agents`,
-  getMyAgents: `${API}/agents/me`,
   chatAgent: `${API}/chat`,
   shareEmail: (sessionId) => `${API}/chat/${sessionId}/share/email`,
   support: `${API}/support`,
