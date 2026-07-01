@@ -417,22 +417,31 @@ const AiResponseCard = ({ msg, currentCase, chatIdRef, handleRegenerateMessage, 
 };
 
 const QUICK_AI_ACTIONS = [
-  { name: 'Draft Legal Notice', icon: 'FileText', prompt: 'Draft a formal legal notice based on this case facts and provisions.' },
-  { name: 'Generate Arguments', icon: 'Scale', prompt: 'Generate the strongest legal arguments for our client in this dispute.' },
-  { name: 'Evidence Analysis', icon: 'ShieldAlert', prompt: 'Analyze all case evidence and find any potential weak points or gaps.' },
-  { name: 'Cross Examination', icon: 'Landmark', prompt: 'Prepare witness cross-examination questionnaire matching this dispute.' },
-  { name: 'Timeline', icon: 'Clock', prompt: 'Construct a chronological timeline of key events and occurrences.' },
-  { name: 'Legal Research', icon: 'Search', prompt: 'Research applicable acts, sections, and bare acts guidelines.' },
-  { name: 'Case Summary', icon: 'FileText', prompt: 'Provide a detailed case summary including client details and opponent claims.' },
-  { name: 'Strategy Engine', icon: 'Sparkles', prompt: 'Synthesize the best strategy and win probability booster recommendations.' },
-  { name: 'Witness Questions', icon: 'HelpCircle', prompt: 'Generate a targeted checklist of questions for our key witnesses.' },
-  { name: 'Contract Review', icon: 'Briefcase', prompt: 'Perform contract review to identify liabilities and risks.' },
-  { name: 'Settlement Planner', icon: 'Scale', prompt: 'Suggest optimal settlement grounds and terms.' },
-  { name: 'Risk Assessment', icon: 'ShieldAlert', prompt: 'Assess potential litigation risks, costs, and timeline delay exposures.' },
-  { name: 'Document Comparison', icon: 'FileText', prompt: 'Highlight discrepancies between current evidence and pleadings.' },
-  { name: 'Draft Reply', icon: 'Plus', prompt: 'Draft a formal reply statement responding to the opponent\'s allegations.' },
-  { name: 'Appeal Draft', icon: 'Landmark', prompt: 'Draft an appeal petition stating errors in the trial court\'s order.' },
-  { name: 'Review Petition', icon: 'Scale', prompt: 'Draft a review petition highlighting errors apparent on the face of the record.' }
+  { name: 'Explain Law', icon: 'Scale', prompt: 'Explain the following law, its purpose, target area, and legal jurisdiction: ' },
+  { name: 'Explain IPC / BNS Sections', icon: 'Landmark', prompt: 'Explain Section 420 IPC (or the corresponding BNS section) with ingredients, punishment, landmark judgments and practical examples.' },
+  { name: 'Explain Constitution Articles', icon: 'Landmark', prompt: 'Explain Article 21 of the Indian Constitution, its scope, landmark Supreme Court rulings, and implications.' },
+  { name: 'Search Legal Precedents', icon: 'Search', prompt: 'Find landmark legal precedents and case laws regarding: ' },
+  { name: 'Search Supreme Court Judgments', icon: 'Search', prompt: 'Search and cite landmark Supreme Court of India judgments for: ' },
+  { name: 'Search High Court Judgments', icon: 'Search', prompt: 'Search and cite relevant High Court judgments regarding: ' },
+  { name: 'Draft Legal Notice', icon: 'FileText', prompt: 'Draft a formal, court-ready legal notice for: ' },
+  { name: 'Draft Affidavit', icon: 'FileText', prompt: 'Draft a general court affidavit format for: ' },
+  { name: 'Draft Agreement', icon: 'Briefcase', prompt: 'Draft a standard legal agreement/contract for: ' },
+  { name: 'Draft RTI Application', icon: 'Plus', prompt: 'Draft a formal Right to Information (RTI) application addressed to: ' },
+  { name: 'Draft Consumer Complaint', icon: 'Scale', prompt: 'Draft a formal consumer complaint petition for the Consumer Forum regarding: ' },
+  { name: 'Draft FIR', icon: 'FileText', prompt: 'Draft a formal First Information Report (FIR) complaint letter to the police station for: ' },
+  { name: 'Draft Legal Reply', icon: 'Plus', prompt: 'Draft a professional legal reply statement answering a legal notice for: ' },
+  { name: 'Summarize Judgment', icon: 'FileText', prompt: 'Provide a comprehensive legal summary of the following judgment, including facts, issues, arguments, and final order: ' },
+  { name: 'Summarize Legal Document', icon: 'FileText', prompt: 'Summarize this legal document, highlighting key liabilities, terms, timelines, and risks: ' },
+  { name: 'Translate Legal Document', icon: 'Sparkles', prompt: 'Translate the following legal document while preserving technical legal terminology and meaning: ' },
+  { name: 'Explain Contract Clause', icon: 'Briefcase', prompt: 'Explain this contract clause, its implications, legal enforceability, and potential risks: ' },
+  { name: 'Compare IPC vs BNS', icon: 'Scale', prompt: 'Compare the provisions of the Indian Penal Code (IPC) and Bharatiya Nyaya Sanhita (BNS) regarding the offence of: ' },
+  { name: 'Explain Legal Terminology', icon: 'Clock', prompt: 'Explain the legal term and maxim: ' },
+  { name: 'Legal Research', icon: 'Search', prompt: 'Conduct detailed legal research on: ' },
+  { name: 'Citation Generator', icon: 'Landmark', prompt: 'Generate standard legal citations and formats for the following judgment: ' },
+  { name: 'Bare Act Lookup', icon: 'Search', prompt: 'Retrieve and explain the raw text of the following bare act provision: ' },
+  { name: 'Recent Legal Updates', icon: 'Clock', prompt: 'Show recent legal updates, amendments, or landmark notifications regarding: ' },
+  { name: 'Legal Q&A', icon: 'HelpCircle', prompt: 'Ask a specific legal question: ' },
+  { name: 'Legal Checklist', icon: 'FileText', prompt: 'Create a comprehensive compliance and procedural legal checklist for: ' }
 ];
 
 const getActionIcon = (iconName) => {
@@ -827,11 +836,17 @@ Please continue the conversation naturally using this context. Never ask the use
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleScroll = () => {
+  const checkScrollBottom = useCallback(() => {
     if (!scrollContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 120;
-    setShowScrollBottomBtn(!isNearBottom);
+    const isGenerating = isTyping || generationState === 'streaming';
+    const isScrollable = scrollHeight > clientHeight;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setShowScrollBottomBtn(!!(isGenerating && isScrollable && !isNearBottom));
+  }, [isTyping, generationState]);
+
+  const handleScroll = () => {
+    checkScrollBottom();
   };
   const [attachments, setAttachments] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -1022,6 +1037,10 @@ Please continue the conversation naturally using this context. Never ask the use
     }
     prevUserMsgCountRef.current = userMsgCount;
   }, [messages.length, userMsgCount]);
+
+  useEffect(() => {
+    checkScrollBottom();
+  }, [messages, isTyping, generationState, checkScrollBottom]);
 
   // ─── FOCUS INPUT ON MOUNT ──────────────────────────────────────────────────
   useEffect(() => {
@@ -1731,17 +1750,6 @@ Please continue the conversation naturally using this context. Never ask the use
         </div>
 
         <div className="flex items-center gap-3 select-none">
-          {/* Case Summary Toggle Button */}
-          <button
-            type="button"
-            onClick={() => setShowSummaryDrawer(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold transition-all cursor-pointer"
-            title="View Case Summary details"
-          >
-            <SlidersHorizontal size={13} />
-            <span>Case Summary</span>
-          </button>
-
           {/* Export Chat dropdown */}
           <div className="relative">
             <button
@@ -1822,83 +1830,44 @@ Please continue the conversation naturally using this context. Never ask the use
         <div className={`max-w-[960px] w-full mx-auto space-y-8 pb-32 ${messages.filter(m => !m.isIntro).length === 0 ? 'flex-1 flex flex-col justify-center' : ''}`}>
           
           {messages.filter(m => !m.isIntro).length === 0 ? (
-            /* ─── EMPTY STATE VIEW ─── */
-            <div className="space-y-8 py-6 max-w-[760px] mx-auto w-full text-left font-sans select-none">
+            /* ─── EMPTY STATE VIEW (GENERAL LEGAL CHAT HERO) ─── */
+            <div className="space-y-8 py-6 max-w-[760px] mx-auto w-full text-center font-sans select-none flex flex-col items-center">
               
-              {/* Shortened AI greeting card */}
-              <div className="p-6 border border-[#4F46E5]/15 bg-white rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-                <div className="space-y-4 flex-1">
-                  <div>
-                    <span className="text-[9px] font-black uppercase text-[#4F46E5] tracking-widest block mb-1">AI LEGAL COPILOT READY</span>
-                    <h2 className="text-lg font-black text-slate-850 uppercase tracking-tight">
-                      {currentCase?.title || currentCase?.name || 'Rajesh Sharma vs Amit Verma'}
-                    </h2>
-                    <p className="text-[11px] text-slate-405 font-bold uppercase tracking-wider mt-1">
-                      {currentCase?.court || 'District Court Jabalpur'} • Civil Property Dispute
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
-                    {['Parties', 'Evidence', 'Timeline', 'Previous Orders', 'Applicable Laws'].map((item) => (
-                      <div key={item} className="flex items-center gap-1.5 text-[10px] text-slate-600 font-bold">
-                        <span className="text-emerald-500 font-black">✓</span>
-                        <span>{item}</span>
-                      </div>
-                    ))}
-                  </div>
+              {/* General Chat Hero */}
+              <div className="flex flex-col items-center justify-center gap-4 text-center my-6">
+                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-950/20 text-[#4F46E5] rounded-3xl flex items-center justify-center mb-2 shadow-lg shadow-indigo-500/5">
+                  <Scale size={40} className="text-[#4F46E5]" />
                 </div>
-
-                <div className="flex flex-col gap-2 shrink-0 select-none">
-                  <button
-                    type="button"
-                    onClick={() => setShowSummaryDrawer(true)}
-                    className="px-4 py-2 border border-[#4F46E5]/20 hover:border-[#4F46E5] text-[#4F46E5] text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-xs bg-transparent cursor-pointer"
-                  >
-                    View Case Summary
-                  </button>
-                </div>
+                <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-wider">AI LEGAL CHAT</h1>
+                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
+                  Professional legal research and assistance.
+                </p>
               </div>
 
-              {/* suggested prompts & recent activity */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                <div className="space-y-3.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block pl-1">Suggested Prompts</span>
-                  <div className="space-y-2">
-                    {[
-                      "Draft a Legal Notice",
-                      "Summarize entire case",
-                      "Generate strongest arguments"
-                    ].map((promptText, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleQuickAction(promptText)}
-                        className="w-full text-left p-3.5 bg-white hover:bg-indigo-50/[0.03] border border-slate-200 hover:border-[#4F46E5] rounded-2xl flex items-center justify-between shadow-xs transition-all group cursor-pointer"
-                      >
-                        <span className="text-xs font-bold text-slate-700 group-hover:text-[#4F46E5] transition-colors">{promptText}</span>
-                        <ChevronRight size={14} className="text-slate-300 group-hover:text-[#4F46E5] group-hover:translate-x-0.5 transition-all shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-3.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block pl-1">Recent Activity</span>
-                  <div className="space-y-2">
-                    {[
-                      { action: 'Evidence Analysis Complete', date: 'Just now', type: 'System' },
-                      { action: 'Legal Notice Draft saved', date: '10 mins ago', type: 'Notice' },
-                      { action: 'Workspace memory loaded', date: '1 hour ago', type: 'Loader' }
-                    ].map((item, idx) => (
-                      <div key={idx} className="p-3 bg-white border border-slate-100 rounded-xl flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2 font-bold text-slate-750">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          <span>{item.action}</span>
-                        </div>
-                        <span className="text-[10px] text-slate-400 font-semibold">{item.date}</span>
-                      </div>
-                    ))}
-                  </div>
+              {/* Suggestions Grid */}
+              <div className="w-full space-y-4 pt-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block text-left pl-1">Example Suggestions</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {[
+                    "Explain Section 420 IPC",
+                    "Draft a legal notice",
+                    "Explain contract clauses",
+                    "Summarize a judgement",
+                    "Compare IPC and BNS",
+                    "Find Supreme Court precedents",
+                    "Explain consumer rights",
+                    "Help prepare legal arguments"
+                  ].map((promptText, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleQuickAction(promptText)}
+                      className="text-left p-4 bg-white hover:bg-indigo-50/[0.03] border border-slate-200 hover:border-[#4F46E5] rounded-2xl flex items-center justify-between shadow-sm transition-all group cursor-pointer"
+                    >
+                      <span className="text-xs font-bold text-slate-700 group-hover:text-[#4F46E5] transition-colors">{promptText}</span>
+                      <ChevronRight size={14} className="text-slate-300 group-hover:text-[#4F46E5] group-hover:translate-x-0.5 transition-all shrink-0" />
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -2208,16 +2177,6 @@ Please continue the conversation naturally using this context. Never ask the use
             </div>
           )}
 
-          {showScrollBottomBtn && (
-            <button
-              type="button"
-              onClick={scrollToBottom}
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-4 py-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-full shadow-xl text-[11px] font-bold text-[#4F46E5] dark:text-indigo-400 hover:bg-slate-50 dark:hover:bg-zinc-750 transition-all select-none cursor-pointer scale-95 hover:scale-100"
-            >
-              <ChevronDown size={14} className="animate-bounce text-[#4F46E5] dark:text-indigo-400" />
-              <span>New response below</span>
-            </button>
-          )}
           <div ref={messagesEndRef} />
         </div>
       </main>
@@ -2271,8 +2230,9 @@ Please continue the conversation naturally using this context. Never ask the use
                         key={action.name}
                         type="button"
                         onClick={() => {
-                          sendMessage(action.prompt);
+                          setInputValue(action.prompt);
                           setShowPlusMenu(false);
+                          inputRef.current?.focus();
                         }}
                         className="flex items-center gap-2.5 p-2 bg-slate-50 hover:bg-indigo-50/30 border border-slate-100 hover:border-[#4F46E5] rounded-xl text-[11px] font-bold text-slate-750 text-left transition-all cursor-pointer border-none"
                       >
@@ -2374,9 +2334,9 @@ Please continue the conversation naturally using this context. Never ask the use
         </div>
       </footer>
 
-      {/* Redesigned Floating Scroll Bottom Indicator (Solid White Background Overlay) */}
+      {/* Redesigned Floating Scroll Bottom Indicator */}
       <AnimatePresence>
-        {(!isEndVisible && messages.filter(m => !m.isIntro).length > 0) && (
+        {showScrollBottomBtn && (
           <motion.div 
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -2386,12 +2346,11 @@ Please continue the conversation naturally using this context. Never ask the use
           >
             <button
               onClick={scrollToBottom}
-              className="pointer-events-auto px-4 py-2 border border-[#4F46E5]/15 hover:border-[#4F46E5]/40 text-[#4F46E5] text-xs font-bold rounded-full shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer hover:-translate-y-0.5 active:bg-[#4F46E5]/5 active:border-[#4F46E5]"
-              style={{ backgroundColor: '#ffffff', opacity: 1 }}
-              title="Jump to Latest"
+              className="pointer-events-auto px-4 py-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-[#4F46E5] dark:text-indigo-400 text-xs font-bold rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center gap-1.5 cursor-pointer hover:-translate-y-0.5 active:bg-[#4F46E5]/5 active:border-[#4F46E5] z-50"
+              title="New response below"
             >
               <ChevronDown size={14} className="animate-bounce" />
-              <span>Jump to Latest</span>
+              <span>New response below</span>
             </button>
           </motion.div>
         )}

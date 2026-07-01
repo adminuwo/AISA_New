@@ -246,8 +246,8 @@ export const useAILegalCRM = ({
     // setMessages([]); // REMOVED for master fix: Let initChat handle clearing if session changes
 
     // Navigate to the dedicated case route
-    if (location.pathname !== `/dashboard/case/${c._id}`) {
-      navigate(`/dashboard/case/${c._id}`, { replace: true });
+    if (location.pathname !== `/dashboard/cases/${c._id}/chat`) {
+      navigate(`/dashboard/cases/${c._id}/chat`, { replace: true });
     }
 
     setTimeout(() => {

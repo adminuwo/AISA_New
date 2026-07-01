@@ -62,6 +62,7 @@ const FullScreenCaseAssistant = ({
   handleNewChat
 }) => {
   const messagesEndRef = useRef(null);
+  const chatInputRef = useRef(null);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
 
@@ -262,15 +263,17 @@ const FullScreenCaseAssistant = ({
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
   const prevUserMsgCountRef = useRef(0);
 
-  const handleScroll = () => {
+  const checkScrollBottom = useCallback(() => {
     if (!scrollContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 80;
-    if (isNearBottom) {
-      setShowScrollBottomBtn(false);
-    } else if (isChatSending) {
-      setShowScrollBottomBtn(true);
-    }
+    const isGenerating = isChatSending;
+    const isScrollable = scrollHeight > clientHeight;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setShowScrollBottomBtn(!!(isGenerating && isScrollable && !isNearBottom));
+  }, [isChatSending]);
+
+  const handleScroll = () => {
+    checkScrollBottom();
   };
 
   const scrollToLatest = () => {
@@ -292,14 +295,8 @@ const FullScreenCaseAssistant = ({
   }, [userMsgCount]);
 
   useEffect(() => {
-    if (scrollContainerRef.current && isChatSending) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-      const isNearBottom = scrollHeight - scrollTop - clientHeight < 80;
-      if (!isNearBottom) {
-        setShowScrollBottomBtn(true);
-      }
-    }
-  }, [aiMessages, isChatSending]);
+    checkScrollBottom();
+  }, [aiMessages, isChatSending, checkScrollBottom]);
 
   // Copy text helper
   const handleCopyText = (text) => {
@@ -681,17 +678,28 @@ const FullScreenCaseAssistant = ({
             </div>
           )}
 
-          {showScrollBottomBtn && (
+      {/* Redesigned Floating Scroll Bottom Indicator */}
+      <AnimatePresence>
+        {showScrollBottomBtn && (
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.18 }}
+            className="absolute bottom-[96px] left-1/2 -translate-x-1/2 z-40 pointer-events-none"
+          >
             <button
-              type="button"
               onClick={scrollToLatest}
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-4 py-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-full shadow-xl text-[11px] font-bold text-[#4F46E5] dark:text-indigo-400 hover:bg-slate-50 dark:hover:bg-zinc-750 transition-all select-none cursor-pointer scale-95 hover:scale-100"
+              className="pointer-events-auto px-4 py-2.5 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-[#4F46E5] dark:text-indigo-400 text-xs font-bold rounded-full shadow-xl hover:shadow-2xl transition-all flex items-center gap-1.5 cursor-pointer hover:-translate-y-0.5 active:bg-[#4F46E5]/5 active:border-[#4F46E5] z-50"
+              title="New response below"
             >
-              <ChevronDown size={14} className="animate-bounce text-[#4F46E5] dark:text-indigo-400" />
+              <ChevronDown size={14} className="animate-bounce" />
               <span>New response below</span>
             </button>
-          )}
-          <div ref={messagesEndRef} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div ref={messagesEndRef} />
         </div>
       </main>
 
@@ -726,8 +734,9 @@ const FullScreenCaseAssistant = ({
                         key={action.name}
                         type="button"
                         onClick={() => {
-                          handleSendAiMessage(null, action.prompt);
+                          setChatInput(action.prompt);
                           setShowPlusMenu(false);
+                          chatInputRef.current?.focus();
                         }}
                         className="flex items-center gap-2.5 p-2 bg-slate-50 hover:bg-indigo-50/30 border border-slate-100 hover:border-[#4F46E5] rounded-xl text-[11px] font-bold text-slate-750 text-left transition-all cursor-pointer border-none"
                       >
@@ -766,6 +775,7 @@ const FullScreenCaseAssistant = ({
               className="flex-1 flex items-center gap-2"
             >
               <input 
+                ref={chatInputRef}
                 type="text" 
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}

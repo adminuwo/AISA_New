@@ -5517,8 +5517,10 @@ const triggerBackgroundArgumentsSync = async (targetData, manual = false) => {
                                   key={action.name}
                                   type="button"
                                   onClick={() => {
-                                    handleSendAiMessage(null, action.prompt);
+                                    setChatInput(action.prompt);
                                     setShowSidebarPlusMenu(false);
+                                    const inp = document.querySelector('input[placeholder="Type message..."]');
+                                    inp?.focus();
                                   }}
                                   className="flex items-center gap-2.5 p-1.5 hover:bg-indigo-50/30 border border-transparent hover:border-[#4F46E5] rounded-xl text-[10px] font-bold text-slate-750 text-left transition-all cursor-pointer bg-transparent border-none"
                                 >

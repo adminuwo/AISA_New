@@ -1429,45 +1429,70 @@ export const apiService = {
   },
 
   // --- Projects ---
+  // --- Projects Cache Layer ---
   async getProjects() {
-    const isMock = localStorage.getItem('token') === 'mock_token';
-    if (isMock) {
-      const stored = localStorage.getItem('mock_projects');
-      if (stored) return JSON.parse(stored);
-      const defaults = [
-        {
-          _id: 'mock_case_1',
-          name: 'Supreme Court Civil Dispute',
-          isLegalCase: true,
-          caseFacts: 'This is a mock legal case involving land disputation.',
-          legalStrategy: [],
-          evidence: [],
-          hearings: [],
-          citations: []
-        }
-      ];
-      localStorage.setItem('mock_projects', JSON.stringify(defaults));
-      return defaults;
+    if (window.__projectsCache) {
+      console.log("[SPA Cache] Returning cached projects list");
+      return window.__projectsCache;
     }
-    try {
-      const response = await apiClient.get('/projects');
-      return response.data;
-    } catch (error) {
-      console.error("Failed to fetch projects:", error);
-      return [];
+    if (window.__projectsPromise) {
+      return window.__projectsPromise;
     }
+    
+    const fetchPromise = (async () => {
+      const isMock = localStorage.getItem('token') === 'mock_token';
+      if (isMock) {
+        const stored = localStorage.getItem('mock_projects');
+        const data = stored ? JSON.parse(stored) : [
+          {
+            _id: 'mock_case_1',
+            name: 'Supreme Court Civil Dispute',
+            isLegalCase: true,
+            caseFacts: 'This is a mock legal case involving land disputation.',
+            legalStrategy: [],
+            evidence: [],
+            hearings: [],
+            citations: []
+          }
+        ];
+        window.__projectsCache = data;
+        return data;
+      }
+      try {
+        const response = await apiClient.get('/projects');
+        window.__projectsCache = response.data;
+        return response.data;
+      } catch (error) {
+        console.error("Failed to fetch projects:", error);
+        return [];
+      } finally {
+        window.__projectsPromise = null;
+      }
+    })();
+    
+    window.__projectsPromise = fetchPromise;
+    return fetchPromise;
   },
 
   async getProject(projectId) {
+    if (!window.__singleProjectCache) window.__singleProjectCache = {};
+    if (window.__singleProjectCache[projectId]) {
+      console.log(`[SPA Cache] Returning cached project details for: ${projectId}`);
+      return window.__singleProjectCache[projectId];
+    }
     const isMock = localStorage.getItem('token') === 'mock_token';
     if (isMock) {
       const stored = JSON.parse(localStorage.getItem('mock_projects') || '[]');
       const project = stored.find(p => p._id === projectId);
-      if (project) return project;
+      if (project) {
+        window.__singleProjectCache[projectId] = project;
+        return project;
+      }
       throw new Error("Project not found");
     }
     try {
       const response = await apiClient.get(`/projects/${projectId}`);
+      window.__singleProjectCache[projectId] = response.data;
       return response.data;
     } catch (error) {
       console.error("Failed to fetch project:", error);
@@ -1476,6 +1501,10 @@ export const apiService = {
   },
 
   async createProject(data) {
+    // Invalidate Cache
+    window.__projectsCache = null;
+    window.__projectsPromise = null;
+    
     const isMock = localStorage.getItem('token') === 'mock_token';
     const payload = typeof data === 'string' ? { name: data } : data;
     if (isMock) {
@@ -1504,6 +1533,11 @@ export const apiService = {
   },
 
   async updateProject(projectId, data) {
+    // Invalidate Cache
+    window.__projectsCache = null;
+    window.__projectsPromise = null;
+    if (window.__singleProjectCache) delete window.__singleProjectCache[projectId];
+    
     const isMock = localStorage.getItem('token') === 'mock_token';
     if (isMock) {
       const stored = JSON.parse(localStorage.getItem('mock_projects') || '[]');
@@ -1528,6 +1562,11 @@ export const apiService = {
   },
 
   async deleteProject(projectId) {
+    // Invalidate Cache
+    window.__projectsCache = null;
+    window.__projectsPromise = null;
+    if (window.__singleProjectCache) delete window.__singleProjectCache[projectId];
+    
     const isMock = localStorage.getItem('token') === 'mock_token';
     if (isMock) {
       const stored = JSON.parse(localStorage.getItem('mock_projects') || '[]');
@@ -1545,6 +1584,11 @@ export const apiService = {
   },
 
   async renameProject(id, name) {
+    // Invalidate Cache
+    window.__projectsCache = null;
+    window.__projectsPromise = null;
+    if (window.__singleProjectCache) delete window.__singleProjectCache[id];
+    
     const isMock = localStorage.getItem('token') === 'mock_token';
     if (isMock) {
       const stored = JSON.parse(localStorage.getItem('mock_projects') || '[]');

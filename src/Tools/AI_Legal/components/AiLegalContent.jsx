@@ -88,7 +88,7 @@ const AiLegalContent = ({
     if (setCurrentProjectId) setCurrentProjectId(caseId);
     if (setLegalView) setLegalView('CHAT');
     if (setSelectedLegalTool) setSelectedLegalTool({ id: 'legal_my_case', name: 'My Case Assistant' });
-    navigate(`/dashboard/case/${caseId}`, { replace: true });
+    navigate(`/dashboard/cases/${caseId}/chat`, { replace: true });
   }, [setCurrentCase, setCurrentProjectId, setLegalView, setSelectedLegalTool, navigate]);
 
   const handleOpenEditModal = useCallback(async (c) => {
@@ -143,20 +143,20 @@ const AiLegalContent = ({
   }, [renameValue]);
 
   // Fetch cases when entering CASE_MANAGEMENT module
-  const loadLocalCases = async () => {
+  const loadLocalCases = useCallback(async () => {
     try {
       const cases = await legalService.getCases();
       setLocalCases(cases || []);
     } catch (e) {
       console.error('[AiLegalContent] Failed to fetch local cases:', e);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (activeModule === 'CASE_MANAGEMENT') {
       loadLocalCases();
     }
-  }, [activeModule, caseRefreshKey]);
+  }, [activeModule, caseRefreshKey, loadLocalCases]);
 
   // Debounce search query
   useEffect(() => {
@@ -313,13 +313,7 @@ const AiLegalContent = ({
     }
   ], []);
 
-  useEffect(() => {
-    loadDashboardData();
-    checkTourStatus();
-    loadSavedTools();
-  }, []);
-
-  const loadSavedTools = async () => {
+  const loadSavedTools = useCallback(async () => {
     try {
       const saved = localStorage.getItem('aisa_legal_saved_tools');
       if (saved) {
@@ -328,7 +322,7 @@ const AiLegalContent = ({
     } catch (error) {
       console.error('Error loading saved tools:', error);
     }
-  };
+  }, []);
 
   const toggleSavedTool = async (tool) => {
     try {
@@ -381,7 +375,7 @@ const AiLegalContent = ({
     }
   };
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
       await purgeLegacyMockData();
@@ -396,7 +390,7 @@ const AiLegalContent = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const handleCreateCase = async (caseData) => {
     try {
@@ -439,7 +433,7 @@ const AiLegalContent = ({
     }
   };
 
-  const checkTourStatus = () => {
+  const checkTourStatus = useCallback(() => {
     try {
       const status = localStorage.getItem('aisa_legal_tour_seen');
       if (!status) {
@@ -448,7 +442,13 @@ const AiLegalContent = ({
     } catch (e) {
       console.error(e);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadDashboardData();
+    checkTourStatus();
+    loadSavedTools();
+  }, [loadDashboardData, checkTourStatus, loadSavedTools]);
 
   const completeTour = () => {
     try {
@@ -827,6 +827,11 @@ const AiLegalContent = ({
                     key={tool.id}
                     className="group relative bg-white dark:bg-zinc-900 border border-[#ECECEC] dark:border-zinc-850 rounded-[18px] p-4 sm:p-5 flex flex-col justify-between h-auto sm:h-[208px] cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:-translate-y-1 hover:border-violet-500 dark:hover:border-violet-500 hover:shadow-[0_8px_24px_rgba(124,58,237,0.08)] transition-all duration-300 ease-out select-none"
                     onClick={() => handleToolPress(tool)}
+                    onMouseEnter={() => {
+                      if (typeof window.__preloadLegalModules === 'function') {
+                        window.__preloadLegalModules();
+                      }
+                    }}
                   >
                     {/* Bookmark on Hover */}
                     <button

@@ -310,6 +310,11 @@ const DashboardCard = ({ tool, onSelect, isActive, isDark, isCentered }) => {
       whileHover={{ y: -6, scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => onSelect(tool.id)}
+      onMouseEnter={() => {
+        if (tool.id === 'legal' && typeof window.__preloadLegalModules === 'function') {
+          window.__preloadLegalModules();
+        }
+      }}
       className={`group relative cursor-pointer h-full ${isCentered ? 'w-[calc(50vw-20px)] sm:w-auto max-w-[185px]' : 'w-full sm:w-auto'}`}
     >
       {/* Animated Glow on Hover */}

@@ -960,6 +960,43 @@ const Chat = () => {
 
   const [showGmailModal, setShowGmailModal] = useState(false);
 
+  // ─── SPA Preloader & Prefetcher ───
+  useEffect(() => {
+    const preloadAll = () => {
+      console.log("[SPA] Preloading all heavy AI Legal chunks in background...");
+      import('../Tools/AI_Legal/components/AiLegalContent').catch(() => {});
+      import('../Tools/AI_Legal/components/LegalChatScreen').catch(() => {});
+      import('../Tools/AI_Legal/components/DraftMaker').catch(() => {});
+      import('../Tools/AI_Legal/components/ArgumentBuilder').catch(() => {});
+      import('../Tools/AI_Legal/components/EvidenceAnalysis').catch(() => {});
+      import('../Tools/AI_Legal/components/FullScreenCaseAssistant').catch(() => {});
+      import('../Tools/AI_Legal/components/ContractReview').catch(() => {});
+      import('../Tools/AI_Legal/components/CasePredictor').catch(() => {});
+      import('../Tools/AI_Legal/components/StrategyEngine').catch(() => {});
+      import('../Tools/AI_Legal/components/LegalResearch').catch(() => {});
+      import('../Tools/AI_Legal/components/ComplianceCenter').catch(() => {});
+      import('../Tools/AI_Legal/components/HearingManagement').catch(() => {});
+      import('../Tools/AI_Legal/components/LegalWorkspaceWelcome').catch(() => {});
+      
+      // Also pre-fetch projects in parallel
+      apiService.getProjects().catch(() => {});
+    };
+
+    // Preload silently 1.5 seconds after mounting to avoid initial paint blocking
+    const timer = setTimeout(preloadAll, 1500);
+
+    // Expose prefetch function on window for card hovers
+    window.__preloadLegalModules = () => {
+      console.log("[SPA] Prefetching on hover...");
+      preloadAll();
+    };
+
+    return () => {
+      clearTimeout(timer);
+      delete window.__preloadLegalModules;
+    };
+  }, []);
+
   // ─── Connector OAuth Callback Handler ───
   // Guard ensures the navigate() call only runs once per connector callback,
   // preventing the URL change from re-triggering this effect.
@@ -1056,84 +1093,119 @@ const Chat = () => {
   const isDetectionPausedRef = useRef(false); // Pause detection after explicit dismissal
   const [currentProjectId, setCurrentProjectId] = useRecoilState(activeProjectIdData);
 
-  // ─── Deep Link Case Handling (MASTER PERSISTENCE) ───
+  // ─── Deep Link Case & General Chat Route Handling ───
   const lastHydratedRef = useRef(null);
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const caseIdInUrl = params.get('caseId') || caseId;
+    const isGeneralChatRoute = location.pathname.startsWith('/dashboard/chat');
+    const isCasesDashboardRoute = location.pathname === '/dashboard/cases';
+    const isCaseAssistantRoute = location.pathname.startsWith('/dashboard/cases/') && location.pathname.endsWith('/chat');
+    const isLegacyCaseRoute = location.pathname.startsWith('/dashboard/case/');
 
-    if (caseIdInUrl && /^[a-f\d]{24}$/i.test(caseIdInUrl)) {
-      // 1. Sync Project ID
-      if (currentProjectId !== caseIdInUrl) {
-        console.log(`[DeepLink] Case ID detected: ${caseIdInUrl}`);
-        setCurrentProjectId(caseIdInUrl);
-        localStorage.setItem('aisa_active_project_id', caseIdInUrl);
+    if (isGeneralChatRoute) {
+      lastHydratedRef.current = null;
+      console.log("[RouteSync] Entering General Chat route. Syncing context.");
+      
+      // Clear case context if present
+      if (currentProjectId && currentProjectId !== 'default' && currentProjectId !== 'all') {
+        setCurrentProjectId('default');
+        localStorage.setItem('aisa_active_project_id', 'default');
       }
-
-      // 2. Hydrate Workspace Metadata (Tools/Views)
-      if (currentMode !== 'LEGAL_TOOLKIT') setCurrentMode('LEGAL_TOOLKIT');
-
-      const ws = getWorkspace(caseIdInUrl);
-      if (ws?.activeTool) {
-        if (!selectedLegalTool || selectedLegalTool.id === 'legal_general_chat' || selectedLegalTool.id === 'legal_my_case') {
-          if (selectedLegalTool?.id !== ws.activeTool.id) setSelectedLegalTool(ws.activeTool);
-          if (activeTool !== ws.activeTool.name) setActiveTool(ws.activeTool.name);
+      if (currentCase !== null) {
+        setCurrentCase(null);
+        localStorage.removeItem('aisa_current_case');
+      }
+      
+      // If we were on Case Assistant tool, clear it to NORMAL_CHAT
+      if (selectedLegalTool?.id === 'legal_my_case') {
+        setSelectedLegalTool(null);
+        setCurrentMode('NORMAL_CHAT');
+        setActiveTool(null);
+      }
+    } else if (isCasesDashboardRoute) {
+      lastHydratedRef.current = null;
+      console.log("[RouteSync] Entering Legal Cases Dashboard.");
+      
+      // Clear case context
+      if (currentProjectId && currentProjectId !== 'default' && currentProjectId !== 'all') {
+        setCurrentProjectId('default');
+        localStorage.setItem('aisa_active_project_id', 'default');
+      }
+      if (currentCase !== null) {
+        setCurrentCase(null);
+        localStorage.removeItem('aisa_current_case');
+      }
+      
+      // Force Legal Toolkit & dashboard view
+      if (currentMode !== 'LEGAL_TOOLKIT') {
+        setCurrentMode('LEGAL_TOOLKIT');
+      }
+      if (legalView !== 'DASHBOARD') {
+        setLegalView('DASHBOARD');
+      }
+      if (activeTool !== 'legal') {
+        setActiveTool('legal');
+      }
+    } else if (isCaseAssistantRoute || isLegacyCaseRoute) {
+      const activeCaseId = caseId;
+      if (activeCaseId && /^[a-f\d]{24}$/i.test(activeCaseId)) {
+        console.log(`[RouteSync] Entering Case Assistant. Case ID: ${activeCaseId}`);
+        if (currentProjectId !== activeCaseId) {
+          setCurrentProjectId(activeCaseId);
+          localStorage.setItem('aisa_active_project_id', activeCaseId);
         }
-      } else {
-        if (!selectedLegalTool || selectedLegalTool.id === 'legal_general_chat') {
+        if (currentMode !== 'LEGAL_TOOLKIT') {
+          setCurrentMode('LEGAL_TOOLKIT');
+        }
+        if (selectedLegalTool?.id !== 'legal_my_case') {
           setSelectedLegalTool({ id: 'legal_my_case', name: 'My Case Assistant' });
-          if (activeTool !== 'legal') setActiveTool('legal');
         }
-      }
+        if (activeTool !== 'legal') {
+          setActiveTool('legal');
+        }
+        if (legalView !== 'CHAT') {
+          setLegalView('CHAT');
+        }
 
-      if (legalView !== 'CHAT') setLegalView('CHAT');
-      if (activeLegalToolkit) setActiveLegalToolkit(false);
+        // Fetch case project if not loaded or mismatch
+        if (currentCase?._id !== activeCaseId) {
+          apiService.getProject(activeCaseId)
+            .then(proj => {
+              if (proj) {
+                setCurrentCase(proj);
+                localStorage.setItem('aisa_current_case', JSON.stringify(proj));
+              }
+            })
+            .catch(err => {
+              console.error("[RouteSync] Failed to fetch case project:", err);
+            });
+        }
 
-      // 3. Hydrate Messages & Session Recovery
-      if (lastHydratedRef.current !== caseIdInUrl) {
-        lastHydratedRef.current = caseIdInUrl;
-
-        const restoreSession = async () => {
-          // Hydrate messages from store first (instant UI)
+        // Recovery of session
+        const ws = getWorkspace(activeCaseId);
+        if (lastHydratedRef.current !== activeCaseId) {
+          lastHydratedRef.current = activeCaseId;
           if (ws?.messages && ws.messages.length > 0 && messages.length === 0) {
             console.log(`[Persistence] Restoring ${ws.messages.length} messages from workspace store.`);
             setMessages(ws.messages);
           }
-
-          // If no sessionId in URL, find the last one for this case
-          if (!sessionId) {
-            try {
-              const caseSessions = await chatStorageService.getSessions(caseIdInUrl);
-              if (Array.isArray(caseSessions) && caseSessions.length > 0) {
-                const lastSid = caseSessions[0].sessionId;
-                console.log(`[Persistence] Redirecting to last case session: ${lastSid}`);
-                navigate(`/dashboard/chat/${lastSid}?caseId=${caseIdInUrl}`, { replace: true });
-              }
-            } catch (err) {
-              console.error("[Persistence] Failed to fetch case sessions:", err);
-            }
-          }
-        };
-        restoreSession();
+        }
       }
-    } else if (!caseIdInUrl && !location.pathname.startsWith('/dashboard/case') && (sessionId === 'new' || !sessionId)) {
+    } else {
+      // Normal chat or other modes
       lastHydratedRef.current = null;
-      // If we are in a general chat route and there's no caseId in URL, 
-      // reset the active case context so they return to normal chat mode
       if (currentProjectId && currentProjectId !== 'default' && currentProjectId !== 'all') {
-        console.log("[Navigation] Resetting case context since no caseId in route/URL");
         setCurrentProjectId('default');
         localStorage.setItem('aisa_active_project_id', 'default');
         setCurrentCase(null);
-        // Only reset mode if it was locked to a case tool
-        if (currentMode === 'LEGAL_TOOLKIT' && selectedLegalTool?.id === 'legal_my_case') {
+        localStorage.removeItem('aisa_current_case');
+        if (currentMode === 'LEGAL_TOOLKIT') {
           setCurrentMode('NORMAL_CHAT');
           setSelectedLegalTool(null);
           setActiveTool(null);
         }
       }
     }
-  }, [location.search, location.pathname, caseId, sessionId, currentProjectId, setCurrentProjectId, setCurrentMode, setMessages, setLegalView, setActiveLegalToolkit, selectedLegalTool, currentMode]);
+  }, [location.pathname, caseId, currentProjectId, currentCase?._id, selectedLegalTool?.id, currentMode, activeTool, legalView, setMessages, getWorkspace, navigate]);
 
   // Listen for 'forceGlobal' navigation state to reset case context
   useEffect(() => {
@@ -3721,7 +3793,7 @@ const Chat = () => {
           lastLoadedSessionRef.current = 'new';
 
           // Only clear messages if we are NOT in the middle of a redirect to a case session
-          const isCaseRoute = location.pathname.startsWith('/dashboard/case/');
+          const isCaseRoute = location.pathname.startsWith('/dashboard/case/') || location.pathname.startsWith('/dashboard/cases/');
           if (!isCaseRoute) {
             setMessages([]);
           }

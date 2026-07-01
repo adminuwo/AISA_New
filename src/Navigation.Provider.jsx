@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Routes, Route, Outlet, Navigate, BrowserRouter, useNavigate, useLocation, Link } from 'react-router-dom';
+import { Routes, Route, Outlet, Navigate, BrowserRouter, useNavigate, useLocation, Link, useParams } from 'react-router-dom';
 
 import Landing from './landingpage/Landing';
 import Login from './pages/Login';
@@ -437,6 +437,11 @@ const SSOInterceptor = ({ children }) => {
   return children;
 };
 
+const NavigateToCaseChat = () => {
+  const { caseId } = useParams();
+  return <Navigate to={`/dashboard/cases/${caseId}/chat`} replace />;
+};
+
 const NavigateProvider = () => {
   const [tglState] = useRecoilState(toggleState);
 
@@ -478,7 +483,8 @@ const NavigateProvider = () => {
           <Route path="chat" element={<Navigate to="new" replace state={{ forceGlobal: true }} />} />
           <Route path="chat/:sessionId" element={<Chat />} />
           <Route path="cases" element={<Chat />} />
-          <Route path="case/:caseId" element={<Chat />} />
+          <Route path="case/:caseId" element={<NavigateToCaseChat />} />
+          <Route path="cases/:caseId/chat" element={<Chat />} />
           <Route path="social-agent" element={<ProtectedRoute><SocialAgentPage /></ProtectedRoute>} />
           <Route path="ai-personal-assistant" element={<ProtectedRoute><AiPersonalAssistantDashboard /></ProtectedRoute>} />
           <Route path="ai-base" element={<ProtectedRoute><Suspense fallback={<div className="flex h-full items-center justify-center">Loading AI Base...</div>}><AiBase /></Suspense></ProtectedRoute>} />

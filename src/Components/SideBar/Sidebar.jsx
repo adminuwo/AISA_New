@@ -502,7 +502,7 @@ const Sidebar = ({ isOpen, onClose, onOpenSettings }) => {
     setCurrentProjectId(projectId);
     const p = projects.find(proj => proj._id === projectId);
     if (p?.isLegalCase) {
-      navigate(`/dashboard/case/${projectId}`);
+      navigate(`/dashboard/cases/${projectId}/chat`);
     } else {
       navigate('/dashboard/chat/new');
     }
