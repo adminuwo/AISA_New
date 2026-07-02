@@ -208,15 +208,6 @@ const IntentSuggestionBanner = ({ suggestion, onAccept, onDismiss, isDarkMode = 
                             Pipeline
                         </span>
                     )}
-                    {creditCost > 0 && (
-                        <span style={{
-                            marginLeft: '6px',
-                            fontSize: '11px',
-                            color: isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
-                        }}>
-                            · {formatCreditCost(creditCost)}
-                        </span>
-                    )}
                 </div>
 
                 {/* Auto-dismiss countdown ring (subtle) */}

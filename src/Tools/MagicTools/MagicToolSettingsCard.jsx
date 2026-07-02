@@ -256,10 +256,6 @@ const MagicToolSettingsCard = ({ isOpen, onClose, toolType, config, onChange, pr
                                                                         <span className={`text-[14px] font-black truncate pr-2 transition-colors ${isActive ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-zinc-300' : 'text-slate-700')}`}>{model.name}</span>
                                                                         
                                                                         <div className="flex items-center gap-1.5 shrink-0">
-                                                                            <span className={`text-[8.5px] font-black uppercase tracking-[0.1em] transition-colors ${isActive ? 'text-primary' : (isDark ? 'text-zinc-500' : 'text-slate-500')}`}>
-                                                                                {model.price === 0 ? 'Free' : `${model.price} CR`}
-                                                                            </span>
-                                                                            
                                                                             {isActive && (
                                                                                 <motion.div
                                                                                     initial={{ scale: 0, rotate: -90 }}

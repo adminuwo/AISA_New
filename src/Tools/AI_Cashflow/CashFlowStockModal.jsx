@@ -373,7 +373,7 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
              .catch((err) => { 
                  setIsLoadingTab(false);
                  if (err.response?.status === 403 && err.response?.data?.code === 'OUT_OF_CREDITS') {
-                    setTabError(`Insufficient Credits (Required: ${cashflowCost})`);
+                    setTabError('Please upgrade your plan to unlock this feature.');
                  } else {
                     const errMsg = err.response?.data?.error || `Failed to load intraday data.`;
                     setTabError(errMsg);
@@ -407,7 +407,7 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
                 setIsLoadingTab(false);
                 if (data.error) {
                    if (data.code === 'OUT_OF_CREDITS') {
-                      setTabError(`Insufficient Credits (Required: ${cashflowCost})`);
+                      setTabError('Please upgrade your plan to unlock this feature.');
                    } else {
                       setTabError(data.error);
                    }
@@ -438,7 +438,7 @@ const CashFlowStockModal = ({ isOpen, onClose, onSelect, isDarkMode, initialStoc
                 setUnlockedTabs(prev => prev.includes(mappedTab) ? prev : [...prev, mappedTab]);
              }).catch(err => {
                 if (err.response?.status === 403 && err.response?.data?.code === 'OUT_OF_CREDITS') {
-                   setTabError(`Insufficient Credits (Required: ${cashflowCost})`);
+                    setTabError('Please upgrade your plan to unlock this feature.');
                 } else {
                    const errMsg = err.response?.data?.error || `Failed to load ${activeTab}.`;
                    setTabError(errMsg);

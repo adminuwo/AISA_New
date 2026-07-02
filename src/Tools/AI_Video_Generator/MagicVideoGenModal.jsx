@@ -407,7 +407,7 @@ const MagicVideoGenModal = ({ isOpen, onClose, onCreditDeduction }) => {
                                     {showHistory ? 'Your Video History' : 'Image to Video Magic'}
                                 </h2>
                                 <p className="text-[8px] sm:text-[9px] text-slate-500 font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em]">
-                                    {showHistory ? 'Previously generated videos' : `Google Vertex AI Veo ⚡ ${getCreditCost()} Credits`}
+                                    {showHistory ? 'Previously generated videos' : 'Google Vertex AI Veo ⚡ Video Generation'}
                                 </p>
                             </div>
                         </div>
@@ -545,8 +545,8 @@ const MagicVideoGenModal = ({ isOpen, onClose, onCreditDeduction }) => {
                                         onChange={setModelId} 
                                         disabled={isGenerating}
                                         options={[
-                                            { value: "veo-3.1-fast-generate-001", label: `Veo 3.1 Fast (${getCreditCost('veo-3.1-fast-generate-001', resolution)}/gen)` },
-                                            { value: "veo-3.1-generate-001", label: `Veo 3.1 Pro (${getCreditCost('veo-3.1-generate-001', resolution)}/gen)` }
+                                            { value: "veo-3.1-fast-generate-001", label: 'Veo 3.1 Fast' },
+                                            { value: "veo-3.1-generate-001", label: 'Veo 3.1 Pro' }
                                         ]} 
                                     />
                                 </div>
@@ -560,9 +560,9 @@ const MagicVideoGenModal = ({ isOpen, onClose, onCreditDeduction }) => {
                                         onChange={setResolution} 
                                         disabled={isGenerating}
                                         options={[
-                                            { value: "720p", label: `720p (${getCreditCost(modelId, '720p')} cr)` },
-                                            { value: "1080p", label: `1080p (${getCreditCost(modelId, '1080p')} cr)` },
-                                            { value: "4k", label: `4K ${modelId.includes('fast') ? '(Pro Only)' : '(' + getCreditCost(modelId, '4k') + ' cr)'}`, disabled: modelId.includes('fast') }
+                                            { value: "720p", label: '720p' },
+                                            { value: "1080p", label: '1080p' },
+                                            { value: "4k", label: `4K ${modelId.includes('fast') ? '(Pro Only)' : ''}`, disabled: modelId.includes('fast') }
                                         ]} 
                                     />
                                 </div>

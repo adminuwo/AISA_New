@@ -132,7 +132,7 @@ const MagicImageEditModal = ({ isOpen, onClose, onCreditDeduction }) => {
                             </div>
                             <div>
                                 <h2 className="text-lg font-bold text-maintext">AI Image Editor</h2>
-                                <p className="text-xs text-subtext font-medium">Google Vertex AI Magic ⚡ 20 Credits</p>
+                                <p className="text-xs text-subtext font-medium">Google Vertex AI Magic ⚡ AI Image Editor</p>
                             </div>
                         </div>
                         <button
