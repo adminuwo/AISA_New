@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  ChevronLeft, ChevronRight, Gavel, Plus, FileText, Copy, 
-  Share2, FileDown, History, Search, X, Shield, Clock, 
-  Brain, Scale, BookOpen, AlertTriangle, TrendingUp, Mic, 
+import {
+  ChevronLeft, ChevronRight, Gavel, Plus, FileText, Copy,
+  Share2, FileDown, History, Search, X, Shield, Clock,
+  Brain, Scale, BookOpen, AlertTriangle, TrendingUp, Mic,
   Database, Cpu, Briefcase, Building2, Landmark, Folder, Printer, CheckCircle2,
   Award, Check, Eye, RefreshCw, Send, AlertCircle, Trash2, ChevronDown, ChevronUp,
   Info, Sparkles, Download, ArrowRight, Lock, PlusCircle, Activity, Flame, Calendar,
-  DollarSign, CheckSquare, Square, UserCheck, Upload, Cloud
+  DollarSign, CheckSquare, Square, UserCheck, Upload, Cloud, Save, RotateCcw, Menu
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { generateChatResponse } from '../../../services/geminiService';
@@ -326,11 +326,11 @@ const parseEvidenceText = (text) => {
     const name = parts[0] || 'Evidence #' + (idx + 1);
     const detail = parts[1] || '';
     const detailsMap = detail.split(', ');
-    
+
     let admissibility = 'High';
     let strength = 'Strong';
     let credibility = 'High';
-    
+
     detailsMap.forEach(d => {
       if (d.toLowerCase().includes('admissibility')) {
         admissibility = d.split(':')[1]?.trim() || admissibility;
@@ -421,7 +421,7 @@ const generatePath = (val) => {
 
 const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdateCase }) => {
   const isDark = theme === 'dark';
-  
+
   // Platform States
   const [strategySource, setStrategySource] = useState('EXISTING_CASE');
   const [caseTitle, setCaseTitle] = useState('');
@@ -429,7 +429,7 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
   const [linkedCaseId, setLinkedCaseId] = useState(currentCase?._id || '');
   const [isSyncing, setIsSyncing] = useState(false);
   const [localProjects, setLocalProjects] = useState(allProjects);
-  
+
   // Dynamic switch fields for Manual/Doc mode
   const [clientName, setClientName] = useState('');
   const [opponentName, setOpponentName] = useState('');
@@ -449,12 +449,12 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
 
   // Accordion active group state (Single accordion mode)
   const [activeAccordion, setActiveAccordion] = useState('facts');
-  
+
   // Structured builders
   const [evidenceList, setEvidenceList] = useState([]);
   const [witnessList, setWitnessList] = useState([]);
   const [timelineList, setTimelineList] = useState([]);
-  
+
   // Inline Add states
   const [newEv, setNewEv] = useState({ name: '', type: 'Document', admissibility: 'High', strength: 'Strong', credibility: 'High', risk: 'Low' });
   const [newWit, setNewWit] = useState({ name: '', role: '', supports: 'Plaintiff', credibilityScore: 85 });
@@ -466,6 +466,9 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
 
   // Active Case Auto-load flag
   const [isUsingActiveCase, setIsUsingActiveCase] = useState(!!currentCase);
+
+  const [manualObjective, setManualObjective] = useState('Define Trial Strategy');
+  const [sidebarAdvancedOpen, setSidebarAdvancedOpen] = useState(false);
 
   // Scenario Builder Raw States (synced with visual lists)
   const [scenarioTimeline, setScenarioTimeline] = useState('');
@@ -479,8 +482,42 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
   // Simulation & Loader States
   const [isAuditing, setIsAuditing] = useState(false);
   const [auditStep, setAuditStep] = useState('');
-  const [strategyResult, setStrategyResult] = useState(null);
+  const [strategyResult, _setStrategyResult] = useState(null);
+  const setStrategyResult = (val) => {
+    console.log("[StrategyEngine] setStrategyResult called with:", val);
+    console.trace("[StrategyEngine] setStrategyResult Call Stack");
+    _setStrategyResult(val);
+  };
+  const lastLoadedCaseIdRef = useRef(null);
+  const [briefMenuOpen, setBriefMenuOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activeSimulationStep, setActiveSimulationStep] = useState(0);
+
+  const loadingRef = useRef(null);
+  const reportRef = useRef(null);
+
+  // Automatic scrolling effects
+  useEffect(() => {
+    if (isAuditing) {
+      const timer = setTimeout(() => {
+        if (loadingRef.current) {
+          loadingRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuditing]);
+
+  useEffect(() => {
+    if (strategyResult) {
+      const timer = setTimeout(() => {
+        if (reportRef.current) {
+          reportRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [strategyResult]);
 
   // Modals & History
   const [historyVisible, setHistoryVisible] = useState(false);
@@ -499,7 +536,7 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
 
   const handleSpeechSummary = () => {
     if (!strategyResult) return;
-    
+
     if (isSpeaking) {
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
@@ -510,7 +547,7 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
-    
+
     setIsSpeaking(true);
     window.speechSynthesis.speak(utterance);
   };
@@ -525,7 +562,7 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
   const [templateSearch, setTemplateSearch] = useState('');
   const [selectedTemplateCategory, setSelectedTemplateCategory] = useState('All');
   const [previewTemplate, setPreviewTemplate] = useState(null);
-  
+
   // Checklist & Audit
   const [tasks, setTasks] = useState([]);
   const [newTaskText, setNewTaskText] = useState('');
@@ -674,13 +711,6 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
     }
   }, [currentCase, strategySource]);
 
-  // Execute Auto-Run if intended by Context
-  useEffect(() => {
-    if (triggerAutoRun && currentCase && !strategyResult && !isAuditing && strategySource === 'EXISTING_CASE') {
-      toast.success(`✓ Case workspace prefilled successfully`, { icon: '🏛️' });
-      runLitigationSimulation();
-    }
-  }, [triggerAutoRun, currentCase, strategyResult, isAuditing, strategySource]);
 
   const resetPlatformState = () => {
     setCaseTitle('');
@@ -702,6 +732,9 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
 
   const hydrateFromCase = (caseObj) => {
     if (!caseObj) return;
+    const isDifferentCase = lastLoadedCaseIdRef.current !== caseObj._id;
+    lastLoadedCaseIdRef.current = caseObj._id;
+
     const ls = caseObj.litigationStrategy;
     if (ls) {
       setCaseTitle(ls.caseTitle || caseObj.name || '');
@@ -713,7 +746,14 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
       setScenarioRelief(ls.scenarioRelief || '');
       setScenarioOrders(ls.scenarioOrders || '');
       setScenarioNotes(ls.scenarioNotes || '');
-      setStrategyResult(ls.activeStrategy || null);
+
+      if (isDifferentCase) {
+        console.log(`[StrategyEngine] Case ID changed from previous to ${caseObj._id}. Hydrating strategyResult from DB.`);
+        setStrategyResult(ls.activeStrategy || null);
+      } else {
+        console.log(`[StrategyEngine] Same Case ID ${caseObj._id} updated. Retaining local strategyResult.`);
+      }
+
       setTasks(ls.tasks || []);
       setAuditLogs(ls.auditLogs || []);
 
@@ -722,7 +762,12 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
       setWitnessList(parseWitnessText(ls.scenarioWitnesses || ''));
       setTimelineList(parseTimelineText(ls.scenarioTimeline || caseObj.hearingDate ? `Hearing: ${caseObj.hearingDate}` : ''));
     } else {
-      resetPlatformState();
+      if (isDifferentCase) {
+        console.log(`[StrategyEngine] Case ID changed to ${caseObj._id} (no litigationStrategy). Resetting platform state.`);
+        resetPlatformState();
+      } else {
+        console.log(`[StrategyEngine] Same Case ID ${caseObj._id} updated (no litigationStrategy). Retaining local strategyResult.`);
+      }
       setCaseTitle(caseObj.name || '');
       setCaseFacts(caseObj.description || caseObj.summary || '');
       setTimelineList(parseTimelineText(caseObj.hearingDate ? `Hearing: ${caseObj.hearingDate}` : ''));
@@ -813,7 +858,7 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
           scenarioRelief,
           scenarioOrders,
           scenarioNotes,
-          activeStrategy: strategyResult,
+          activeStrategy: strategyResult || currentLs.activeStrategy || null,
           tasks,
           auditLogs,
           ...updates
@@ -845,6 +890,47 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
 
     if (strategySource === 'EXISTING_CASE') {
       await syncToDatabase({ auditLogs: updatedLogs });
+    }
+  };
+
+  const handleSaveStrategy = async () => {
+    if (!strategyResult) return;
+    try {
+      if (strategySource !== 'EXISTING_CASE') {
+        setIsSyncing(true);
+        const title = caseTitle.trim() || 'Custom Courtroom Strategy';
+        const newProj = await apiService.createProject({
+          name: title,
+          isLegalCase: true,
+          description: caseFacts.trim() || `Strategy brief for ${title}.`
+        });
+        setLinkedCaseId(newProj._id);
+        setStrategySource('EXISTING_CASE');
+        setLocalProjects(prev => [newProj, ...prev]);
+        if (onUpdateCase) onUpdateCase(newProj);
+
+        await apiService.updateProject(newProj._id, {
+          activeStrategy: strategyResult,
+          scenarioTimeline: serializeTimelineList(timelineList),
+          scenarioEvidence: serializeEvidenceList(evidenceList),
+          scenarioWitnesses: serializeWitnessList(witnessList)
+        });
+
+        toast.success(`📁 Case saved and synchronized in Database: "${title}"`);
+      } else {
+        const { activeId } = await ensureCaseCreated();
+        if (activeId) {
+          await syncToDatabase({
+            activeStrategy: strategyResult
+          });
+          toast.success("Strategy successfully updated in Database!");
+        }
+      }
+    } catch (err) {
+      console.error("Save strategy failed:", err);
+      toast.error("Failed to save strategy: " + err.message);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -895,7 +981,7 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
       const totalTasks = tasks.length;
       const completedTasks = tasks.filter(t => t.completed).length;
       const taskPercentage = totalTasks > 0 ? Math.round((completedTasks * 100) / totalTasks) : 100;
-      
+
       const overall = Math.round((base.evidence + base.witness + base.documentation + base.argument + taskPercentage) / 5);
       return {
         ...base,
@@ -915,7 +1001,8 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
 
   // Dynamic AI Strategy Completion Check metrics
   const strategyReadinessCalculated = useMemo(() => {
-    const infoOk = clientName.trim() && opponentName.trim() ? 1 : 0;
+    const isManual = strategySource === 'MANUAL_SCENARIO';
+    const infoOk = isManual ? (caseTitle.trim() ? 1 : 0) : (clientName.trim() && opponentName.trim() ? 1 : 0);
     const factsOk = caseFacts.trim().length > 15 ? 1 : 0;
     const timelineOk = timelineList.length > 0 ? 1 : 0;
     const evidenceOk = evidenceList.length > 0 ? 1 : 0;
@@ -923,7 +1010,7 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
     const opponentOk = scenarioOpponent.trim().length > 10 ? 1 : 0;
 
     const score = Math.round(((infoOk * 15) + (factsOk * 25) + (timelineOk * 15) + (evidenceOk * 15) + (witnessesOk * 15) + (opponentOk * 15)));
-    
+
     return {
       info: infoOk === 1,
       facts: factsOk === 1,
@@ -970,7 +1057,7 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
   // --- AI Litigation Auditor Simulation ---
   const runLitigationSimulation = async (actionType = 'FULL_SIMULATION') => {
     const targetCase = currentCase || allProjects.find(p => p._id === linkedCaseId);
-    
+
     // Sync lists back to text forms before run
     const currentFactsText = [
       caseFacts.trim() ? `Case Facts: ${caseFacts.trim()}` : '',
@@ -985,7 +1072,7 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
 
     const factsText = currentFactsText.trim() || targetCase?.description || targetCase?.summary || '';
     const currentTitle = caseTitle.trim() || targetCase?.name || 'Custom Courtroom Strategy';
-    
+
     if (!factsText.trim()) {
       toast.error("Please provide case facts or load templates first.");
       return;
@@ -997,7 +1084,11 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
 
     const toastId = toast.loading(`AI litigation workspace: compiling ${actionType.replace('_', ' ').toLowerCase()}...`);
 
-    let customizedPrompt = `Matter Title: ${currentTitle}\nClient Name: ${clientName}\nOpponent Name: ${opponentName}\nCourt Name: ${courtName}\nMatter Type: ${matterType}\n\nCase Facts Scenario Details:\n${factsText}`;
+    let customizedPrompt = `Matter Title: ${currentTitle}\nClient Name: ${clientName}\nOpponent Name: ${opponentName}\nCourt Name: ${courtName}\nMatter Type: ${matterType}`;
+    if (strategySource === 'MANUAL_SCENARIO') {
+      customizedPrompt += `\nPrimary Strategic Objective: ${manualObjective}`;
+    }
+    customizedPrompt += `\n\nCase Facts Scenario Details:\n${factsText}`;
     if (actionType === 'RISK_ASSESSMENT') {
       customizedPrompt += `\n\n[INSTRUCTION: Focus deeply on litigation and procedural risks. Ensure the "risks" and "stats.litigationRisk" fields are calibrated, and prioritize risk mitigations in "aiRecommendations".]`;
     } else if (actionType === 'EVIDENCE_REVIEW') {
@@ -1022,11 +1113,11 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
       );
 
       const responseText = typeof response === 'string' ? response : (response?.reply || '');
-      
+
       if (responseText.includes("System Busy") || responseText.includes("System Message") || responseText.includes("System Error")) {
-          throw new Error(responseText);
+        throw new Error(responseText);
       }
-      
+
       let parsed = null;
       try {
         const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) || responseText.match(/(\{[\s\S]*\})/);
@@ -1056,21 +1147,21 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
             "opponentRiskLevel": "Medium"
           },
           "strategies": {
-            "primary": { 
-              "title": "Primary Argument & Proof Staging", 
-              "description": `Leverage the core claims under legal provisions relevant to ${matterType || 'Civil'} disputes. Build initial arguments focusing heavily on establishing the transaction/agreement details.` 
+            "primary": {
+              "title": "Primary Argument & Proof Staging",
+              "description": `Leverage the core claims under legal provisions relevant to ${matterType || 'Civil'} disputes. Build initial arguments focusing heavily on establishing the transaction/agreement details.`
             },
-            "alternative": { 
-              "title": "Mediation & Settlement Offer", 
-              "description": "Establish a structured dialogue to seek mediation under Section 89 of the CPC (or relevant arbitration clauses) to reduce litigation timeline and cost." 
+            "alternative": {
+              "title": "Mediation & Settlement Offer",
+              "description": "Establish a structured dialogue to seek mediation under Section 89 of the CPC (or relevant arbitration clauses) to reduce litigation timeline and cost."
             },
-            "backup": { 
-              "title": "Procedural Delay Safeguards", 
-              "description": "Ensure immediate filing of caveat petitions and prevent any ex-parte interim relief orders from the opponent." 
+            "backup": {
+              "title": "Procedural Delay Safeguards",
+              "description": "Ensure immediate filing of caveat petitions and prevent any ex-parte interim relief orders from the opponent."
             },
-            "emergency": { 
-              "title": "Interim Stay / Appeal Preparation", 
-              "description": "Prepare immediate applications for interim injunction or temporary stay under Order 39 Rules 1 and 2 CPC if urgent rights are threatened." 
+            "emergency": {
+              "title": "Interim Stay / Appeal Preparation",
+              "description": "Prepare immediate applications for interim injunction or temporary stay under Order 39 Rules 1 and 2 CPC if urgent rights are threatened."
             }
           },
           "winningRoadmap": [
@@ -1084,7 +1175,7 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
             { "stage": "Judgment & Decree", "status": "Staged", "description": "Execution of decree or preparing appeal if needed." }
           ],
           "evidenceStrategy": {
-            "strong": evidenceList.length > 0 
+            "strong": evidenceList.length > 0
               ? evidenceList.map(e => ({ "evidence": e.title || e.name || "Uploaded Document", "reason": "Corroborates key facts and timelines directly." }))
               : [{ "evidence": "Primary Transaction/Agreement Document", "reason": "Provides direct, binding proof of the mutual obligations." }],
             "weak": [
@@ -1113,11 +1204,11 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
               { "witness": "Third-Party Secondary Observers", "purpose": "Vulnerable to timeline discrepancy challenges during cross." }
             ],
             "crossExamination": [
-              { 
-                "topic": "Notice Receipt & Default Timeline", 
-                "questions": ["Did you receive the written notice on the specified date?", "Why was there no formal response filed within 15 days?"], 
-                "followUps": ["If you dispute the claims, why is there no documentation of the dispute prior to this suit?"], 
-                "traps": ["Confirming the agreement signing while disputing its terms."] 
+              {
+                "topic": "Notice Receipt & Default Timeline",
+                "questions": ["Did you receive the written notice on the specified date?", "Why was there no formal response filed within 15 days?"],
+                "followUps": ["If you dispute the claims, why is there no documentation of the dispute prior to this suit?"],
+                "traps": ["Confirming the agreement signing while disputing its terms."]
               }
             ]
           },
@@ -1135,12 +1226,12 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
             "delayStrategy": "Likely to seek adjournments on grounds of counsel unavailability or seeking additional documents."
           },
           "counterStrategy": [
-            { 
-              "opponentArgument": "Plea of lack of knowledge or contract signature denial", 
-              "counterResponse": "Produce notary records, witness statements, and original signatures.", 
-              "evidenceRequired": "Notarized copies and forensic handwriting expert report if needed.", 
-              "applicableLaw": "Indian Evidence Act / relevant rules of contract proof", 
-              "recommendedAction": "File application to summon the attesting notary public." 
+            {
+              "opponentArgument": "Plea of lack of knowledge or contract signature denial",
+              "counterResponse": "Produce notary records, witness statements, and original signatures.",
+              "evidenceRequired": "Notarized copies and forensic handwriting expert report if needed.",
+              "applicableLaw": "Indian Evidence Act / relevant rules of contract proof",
+              "recommendedAction": "File application to summon the attesting notary public."
             }
           ],
           "judgePerspective": {
@@ -1166,19 +1257,19 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
             ]
           },
           "precedents": [
-            { 
-              "citation": "A. B. Builders v. Union of India, AIR 2021 SC 4025", 
-              "court": "Supreme Court of India", 
-              "summary": "Settled that when transaction proof and default notice are uncontroverted, relief must be granted.", 
-              "similarityScore": 92, 
-              "type": "Binding Precedent" 
+            {
+              "citation": "A. B. Builders v. Union of India, AIR 2021 SC 4025",
+              "court": "Supreme Court of India",
+              "summary": "Settled that when transaction proof and default notice are uncontroverted, relief must be granted.",
+              "similarityScore": 92,
+              "type": "Binding Precedent"
             },
-            { 
-              "citation": "Rajesh Kumar v. Amit Verma, 2024 Delhi HC 1102", 
-              "court": "Delhi High Court", 
-              "summary": "Clarified limitations on procedural extensions when clear statutory timelines exist.", 
-              "similarityScore": 88, 
-              "type": "Persuasive Precedent" 
+            {
+              "citation": "Rajesh Kumar v. Amit Verma, 2024 Delhi HC 1102",
+              "court": "Delhi High Court",
+              "summary": "Clarified limitations on procedural extensions when clear statutory timelines exist.",
+              "similarityScore": 88,
+              "type": "Persuasive Precedent"
             }
           ],
           "laws": [
@@ -1210,13 +1301,13 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
             "fallback": "Complete trial litigation for full recovery."
           },
           "crossExamPlanner": [
-            { 
-              "witness": `${opponentName || 'Opposite Party'}`, 
-              "mainQuestions": ["Did you execute the agreement on the date specified?", "Is this signature yours?"], 
-              "followUps": ["If yes, why was the payment/obligation not performed?"], 
-              "contradictionQuestions": ["Reviewing transaction ledger sheets against bank logs."], 
-              "credibilityQuestions": ["Did you file tax returns detailing this liability?"], 
-              "closingQuestions": ["Admit that the payment remains unpaid to date."] 
+            {
+              "witness": `${opponentName || 'Opposite Party'}`,
+              "mainQuestions": ["Did you execute the agreement on the date specified?", "Is this signature yours?"],
+              "followUps": ["If yes, why was the payment/obligation not performed?"],
+              "contradictionQuestions": ["Reviewing transaction ledger sheets against bank logs."],
+              "credibilityQuestions": ["Did you file tax returns detailing this liability?"],
+              "closingQuestions": ["Admit that the payment remains unpaid to date."]
             }
           ],
           "finalArguments": {
@@ -1244,7 +1335,7 @@ const StrategyEngine = ({ currentCase, onBack, theme, allProjects = [], onUpdate
 
       setStrategyResult(parsed);
       setActiveWorkflowStep('winning_probability');
-      
+
       // Only write/sync to database if strategySource is EXISTING_CASE
       if (strategySource === 'EXISTING_CASE') {
         const { activeId } = await ensureCaseCreated();
@@ -1310,7 +1401,7 @@ Schema: [{"name": "Witness Name", "role": "Role description", "supports": "Plain
         'legal'
       );
       const responseText = typeof response === 'string' ? response : (response?.reply || '');
-      
+
       let parsed = null;
       const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) || responseText.match(/(\{[\s\S]*\})/) || responseText.match(/(\[[\s\S]*\])/);
       if (jsonMatch) {
@@ -1401,7 +1492,7 @@ Schema: [{"name": "Witness Name", "role": "Role description", "supports": "Plain
     }
     setIsExtractingDocs(true);
     const tid = toast.loading("AI OCR & Legal Document Parsing active...");
-    
+
     // Simulate OCR steps for UI
     setUploadedFiles(prev => prev.map(f => ({ ...f, status: 'OCR Running' })));
     await new Promise(r => setTimeout(r, 1500));
@@ -1440,7 +1531,7 @@ Schema: [{"name": "Witness Name", "role": "Role description", "supports": "Plain
       );
 
       const responseText = typeof response === 'string' ? response : (response?.reply || '');
-      
+
       let parsed = null;
       const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) || responseText.match(/(\{[\s\S]*\})/) || responseText.match(/(\[[\s\S]*\])/);
       if (jsonMatch) {
@@ -1495,78 +1586,54 @@ Schema: [{"name": "Witness Name", "role": "Role description", "supports": "Plain
       return;
     }
 
+    const reportElement = reportRef.current;
+    const reportHtml = reportElement ? reportElement.innerHTML : '';
+
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map(el => el.outerHTML)
+      .join('\n');
+
     const html = `
       <html>
       <head>
         <meta charset="UTF-8"/>
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-        <title>AI LEGAL™ Litigation Command Report - ${caseTitle}</title>
+        <title>AI LEGAL™ Strategy Report - ${caseTitle}</title>
+        ${styles}
         <style>
-          body { font-family: 'Inter', sans-serif; padding: 40px; line-height: 1.6; color: #0f172a; bg: #ffffff; }
-          .header { border-bottom: 3px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
-          .title { font-family: 'Outfit', sans-serif; font-size: 24pt; font-weight: 800; color: #1e1b4b; margin: 0; }
-          .subtitle { font-size: 11pt; color: #6366f1; font-weight: 600; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
-          .meta-section { margin-bottom: 25px; background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; }
-          .meta-grid { display: grid; grid-template-cols: repeat(4, 1fr); gap: 15px; text-align: center; }
-          .meta-card { padding: 10px; background: white; border-radius: 12px; border: 1px solid #e2e8f0; }
-          .meta-val { font-size: 16pt; font-weight: 800; color: #4f46e5; }
-          .meta-lbl { font-size: 8pt; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 4px; }
-          .section-title { font-family: 'Outfit', sans-serif; font-size: 14pt; font-weight: 800; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; color: #1e1b4b; margin-top: 30px; margin-bottom: 15px; text-transform: uppercase; }
-          .card { padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; background: #fafafa; margin-bottom: 15px; }
-          .card-title { font-weight: 700; font-size: 11pt; color: #1e1b4b; margin-bottom: 6px; }
-          .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 8pt; font-weight: 700; text-transform: uppercase; }
-          .badge-green { background: #d1fae5; color: #065f46; }
-          .badge-red { background: #fee2e2; color: #991b1b; }
-          .footer { margin-top: 60px; border-top: 1px solid #e2e8f0; font-size: 9pt; text-align: center; padding-top: 15px; color: #64748b; }
+          @page { size: A4; margin: 15mm; }
+          body {
+            font-family: 'Inter', sans-serif;
+            background-color: white !important;
+            color: #0f172a !important;
+            padding: 20px !important;
+          }
+          /* Hide print action bar */
+          .no-print {
+            display: none !important;
+          }
+          @media print {
+            body { padding: 0 !important; }
+            /* Prevent page breaks inside cards or lists */
+            .p-4, .p-5, .p-6, .p-8, .p-12, .border, tr, p, h3, li {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+          }
         </style>
       </head>
-      <body>
-        <div class="header">
-          <h1 class="title">AI LEGAL™ Litigation Command Brief</h1>
-          <div class="subtitle">Courtroom Strategy, Simulation & Exposure Report</div>
-          <div style="margin-top: 10px; font-size: 11pt; font-weight: 500;">Matter: <strong>${caseTitle || 'Litigation Strategy Brief'}</strong></div>
+      <body class="${isDark ? 'dark' : ''}">
+        <div class="max-w-5xl mx-auto">
+          ${reportHtml}
         </div>
-
-        <div class="meta-section">
-          <div class="meta-grid">
-            <div class="meta-card"><div class="meta-val">${strategyResult.stats?.winningProbability}%</div><div class="meta-lbl">Winning Prob.</div></div>
-            <div class="meta-card"><div class="meta-val">${strategyResult.stats?.litigationRisk}%</div><div class="meta-lbl">Litigation Risk</div></div>
-            <div class="meta-card"><div class="meta-val">${strategyResult.stats?.overallStrategyScore}%</div><div class="meta-lbl">Strategy Score</div></div>
-            <div class="meta-card"><div class="meta-val">${strategyResult.stats?.courtReadiness}%</div><div class="meta-lbl">Readiness</div></div>
-          </div>
-        </div>
-
-        <div class="section-title">AI Strategic Recommendation</div>
-        <div class="card" style="border-left: 5px solid #4f46e5;">
-          <div class="card-title">Recommendation Brief</div>
-          <p>${strategyResult.finalOpinion?.reasoning || 'No strategy brief available.'}</p>
-        </div>
-
-        <div class="section-title">Litigation Strategy Breakdown</div>
-        <p><strong>Primary:</strong> ${strategyResult.strategies?.primary?.description || 'N/A'}</p>
-        <p><strong>Alternative:</strong> ${strategyResult.strategies?.alternative?.description || 'N/A'}</p>
-        <p><strong>Backup:</strong> ${strategyResult.strategies?.backup?.description || 'N/A'}</p>
-
-        <div class="section-title">Argument Roadmap</div>
-        <div class="card">
-          <p><strong>Opening statements:</strong> ${strategyResult.finalArguments?.opening || 'N/A'}</p>
-          <p><strong>Core Courtroom arguments:</strong> ${strategyResult.finalArguments?.arguments?.join(', ') || 'N/A'}</p>
-          <p><strong>Closing prayer:</strong> ${strategyResult.finalArguments?.prayer || 'N/A'}</p>
-        </div>
-
-        <div class="section-title">Judicial Precedents Mapping</div>
-        <ul>
-          ${strategyResult.precedents?.map(p => `
-            <li style="margin-bottom: 12px;">
-              <strong>${p.citation}</strong> (${p.court}) - Similarity Match: ${p.similarityScore}%
-              <br/><span style="font-size: 10pt; color: #475569;">Summary Ratio Decidendi: ${p.summary}</span>
-            </li>
-          `).join('') || '<li>None</li>'}
-        </ul>
-
-        <div class="footer">
-          Generated automatically by AI LEGAL™ Strategy Engine. Confidential client counsel brief.
-        </div>
+        <script>
+          window.onload = () => {
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 800);
+          };
+        </script>
       </body>
       </html>
     `;
@@ -1574,55 +1641,259 @@ Schema: [{"name": "Witness Name", "role": "Role description", "supports": "Plain
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      logAudit("Exported PDF Strategy", "Exported litigation strategy PDF report.");
-    }, 500);
   };
 
   const handleExportDoc = () => {
     if (!strategyResult) return;
-    
-    const docContent = `
-AI LEGAL™ LITIGATION STRATEGY REPORT
-====================================
 
-Matter: ${caseTitle || 'Litigation Strategy Brief'}
-Winning Probability: ${strategyResult.stats?.winningProbability}%
-Litigation Risk Score: ${strategyResult.stats?.litigationRisk}%
-Precedent Match Support: ${strategyResult.stats?.precedentSupport}%
-Overall Court Readiness Score: ${readinessMetrics.overall}%
+    const strengthsList = strategyResult.evidenceStrategy?.strong?.map(e => e.evidence) || [];
+    const weaknessesList = strategyResult.evidenceStrategy?.missing?.map(e => e.evidence) || [];
+    const risksList = strategyResult.risks?.map(r => r.description) || [];
 
-RECOMMENDED STRATEGY BRIEF:
----------------------------
-- Primary Legal Strategy: ${strategyResult.strategies?.primary?.description || 'N/A'}
-- Alternative Legal Strategy: ${strategyResult.strategies?.alternative?.description || 'N/A'}
-- Backup Strategy Action: ${strategyResult.strategies?.backup?.description || 'N/A'}
-- Final Opinion Reasoning: ${strategyResult.finalOpinion?.reasoning || 'N/A'}
+    const docHtml = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <title>AI LEGAL™ Full Litigation Strategy Report</title>
+        <!--[if gte mso 9]>
+        <xml>
+          <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+          </w:WordDocument>
+        </xml>
+        <![endif]-->
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            margin: 1in;
+            color: #0f172a;
+            line-height: 1.5;
+            font-size: 10.5pt;
+          }
+          .header {
+            border-bottom: 3px solid #6366f1;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+          }
+          .title {
+            font-size: 22pt;
+            font-weight: bold;
+            color: #1e1b4b;
+            margin: 0;
+          }
+          .subtitle {
+            font-size: 9pt;
+            color: #6366f1;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+          }
+          .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          .meta-table td {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            font-size: 10pt;
+            background-color: #f8fafc;
+          }
+          .section-title {
+            font-size: 13pt;
+            font-weight: bold;
+            color: #1e1b4b;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 4px;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+          }
+          .kpi-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          .kpi-table td {
+            padding: 12px;
+            border: 1px solid #c7d2fe;
+            background-color: #f5f3ff;
+            text-align: center;
+            width: 25%;
+          }
+          .kpi-val {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #4f46e5;
+          }
+          .kpi-lbl {
+            font-size: 8pt;
+            color: #4338ca;
+            text-transform: uppercase;
+            font-weight: bold;
+          }
+          .card-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+          }
+          .card-table td {
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            background-color: #fafafa;
+          }
+          .footer {
+            margin-top: 40px;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 10px;
+            font-size: 8pt;
+            color: #94a3b8;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="subtitle">AI LEGAL™ Litigation Command</div>
+          <h1 class="title">Litigation Strategy & Intelligence Report</h1>
+          <div style="font-size: 8.5pt; color: #64748b; margin-top: 5px;">CONFIDENTIAL ATTORNEY WORK PRODUCT // PRIVILEGED & CONFIDENTIAL</div>
+        </div>
 
-COURTROOM MILESTONES TIMELINE:
-------------------------------
-${strategyResult.winningRoadmap?.map((t, idx) => `${idx + 1}. ${t.stage} [${t.status}]: ${t.description}`).join('\n')}
+        <h3>Case Overview</h3>
+        <table class="meta-table">
+          <tr>
+            <td><strong>Matter Title:</strong></td>
+            <td>${caseTitle || 'Custom Courtroom Strategy'}</td>
+            <td><strong>Court / Jurisdiction:</strong></td>
+            <td>${courtName || 'Not Specified'}</td>
+          </tr>
+          <tr>
+            <td><strong>Client / Petitioner:</strong></td>
+            <td>${clientName || 'Not Specified'}</td>
+            <td><strong>Opposing Party:</strong></td>
+            <td>${opponentName || 'Not Specified'}</td>
+          </tr>
+          <tr>
+            <td><strong>Current Stage:</strong></td>
+            <td>${caseStage || 'Pre-litigation'}</td>
+            <td><strong>Assigned Advocate:</strong></td>
+            <td>${assignedAdvocate || 'Senior Counsel'}</td>
+          </tr>
+        </table>
 
-EVIDENCE & FACT DEPOSITION STRATEGY:
-------------------------------------
-Strong Evidence Elements:
-${strategyResult.evidenceStrategy?.strong?.map(e => `* ${e.evidence} - ${e.reason}`).join('\n')}
-Missing Key Proofs:
-${strategyResult.evidenceStrategy?.missing?.map(e => `* ${e.evidence} - ${e.reason}`).join('\n')}
+        <table class="kpi-table">
+          <tr>
+            <td><div class="kpi-val">${strategyResult.stats?.winningProbability}%</div><div class="kpi-lbl">Winning Prob.</div></td>
+            <td><div class="kpi-val">${strategyResult.stats?.overallStrategyScore}%</div><div class="kpi-lbl">Case Strength</div></td>
+            <td><div class="kpi-val">${strategyResult.stats?.litigationRisk}%</div><div class="kpi-lbl">Litigation Risk</div></td>
+            <td><div class="kpi-val">${readinessMetrics.overall}%</div><div class="kpi-lbl">Readiness</div></td>
+          </tr>
+        </table>
 
-WITNESS CROSS EXAMINATION ROADMAP:
-----------------------------------
-${strategyResult.witnessStrategy?.crossExamination?.map((c, idx) => `${idx + 1}. Topic: ${c.topic}\n   Questions: ${c.questions?.join(', ')}`).join('\n')}
+        <div class="section-title">AI Strategic Recommendation</div>
+        <table class="card-table" style="border-left: 5px solid #4f46e5;">
+          <tr>
+            <td>
+              <strong>Recommendation Opinion:</strong>
+              <p>${strategyResult.finalOpinion?.reasoning || strategyResult.strategies?.primary?.description || 'N/A'}</p>
+            </td>
+          </tr>
+        </table>
 
-JUDICIAL PRECEDENTS & LAW CODES:
---------------------------------
-${strategyResult.precedents?.map(p => `* ${p.citation} (${p.court}) - Match: ${p.similarityScore}%\n  Ratio: ${p.summary}`).join('\n')}
+        <div class="section-title">Litigation Strategy Breakdown</div>
+        <p><strong>Primary Strategy:</strong> ${strategyResult.strategies?.primary?.description || 'N/A'}</p>
+        <p><strong>Alternative Strategy:</strong> ${strategyResult.strategies?.alternative?.description || 'N/A'}</p>
+        <p><strong>Backup Strategy:</strong> ${strategyResult.strategies?.backup?.description || 'N/A'}</p>
 
-Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
-`;
+        <div class="section-title">Argument Roadmap</div>
+        <table class="card-table">
+          <tr>
+            <td>
+              <p><strong>Opening Statement:</strong> ${strategyResult.finalArguments?.opening || 'N/A'}</p>
+              <p><strong>Core Courtroom Arguments:</strong></p>
+              <ul>
+                ${strategyResult.finalArguments?.arguments?.map(arg => `<li>${arg}</li>`).join('') || '<li>N/A</li>'}
+              </ul>
+              <p><strong>Closing Prayer:</strong> ${strategyResult.finalArguments?.prayer || 'N/A'}</p>
+            </td>
+          </tr>
+        </table>
 
-    const blob = new Blob([docContent], { type: 'application/msword' });
+        <div class="section-title">Evidence & Fact Deposition Strategy</div>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 15px;">
+              <h4 style="color:#16a34a; margin-top:0;">Strong Evidence Elements</h4>
+              <ul>
+                ${strengthsList.map(s => `<li style="margin-bottom:6px;">${s}</li>`).join('') || '<li>None</li>'}
+              </ul>
+            </td>
+            <td style="width: 50%; vertical-align: top; padding-left: 15px;">
+              <h4 style="color:#dc2626; margin-top:0;">Missing Key Proofs</h4>
+              <ul>
+                ${weaknessesList.map(w => `<li style="margin-bottom:6px;">${w}</li>`).join('') || '<li>None</li>'}
+              </ul>
+            </td>
+          </tr>
+        </table>
+
+        <div class="section-title">Timeline & Courtroom Roadmap</div>
+        <table class="meta-table">
+          <tr style="background-color: #cbd5e1;">
+            <th style="padding: 8px; text-align: left; font-size: 10pt;">Stage</th>
+            <th style="padding: 8px; text-align: left; font-size: 10pt;">Status</th>
+            <th style="padding: 8px; text-align: left; font-size: 10pt;">Description</th>
+          </tr>
+          ${strategyResult.winningRoadmap?.map(t => `
+            <tr>
+              <td style="padding: 8px; border: 1px solid #cbd5e1; font-size: 9.5pt; font-weight: bold;">${t.stage}</td>
+              <td style="padding: 8px; border: 1px solid #cbd5e1; font-size: 9.5pt; color: #4338ca; font-weight: bold;">${t.status}</td>
+              <td style="padding: 8px; border: 1px solid #cbd5e1; font-size: 9.5pt;">${t.description}</td>
+            </tr>
+          `).join('') || '<tr><td colspan="3">None</td></tr>'}
+        </table>
+
+        <div class="section-title">Witness Cross Examination Roadmap</div>
+        <ul>
+          ${strategyResult.witnessStrategy?.crossExamination?.map(c => `
+            <li style="margin-bottom: 12px;">
+              <strong>Topic: ${c.topic}</strong>
+              <br/>Suggested Questions: ${c.questions?.join(' // ')}
+            </li>
+          `).join('') || '<li>None</li>'}
+        </ul>
+
+        <div class="section-title">Top Litigation Risks</div>
+        <ul>
+          ${risksList.map(r => `<li>${r}</li>`).join('') || '<li>None</li>'}
+        </ul>
+
+        <div class="section-title">Judicial Precedents Mapping</div>
+        <table class="meta-table">
+          <tr style="background-color: #cbd5e1;">
+            <th style="padding: 8px; text-align: left; font-size: 10pt;">Citation</th>
+            <th style="padding: 8px; text-align: left; font-size: 10pt;">Court</th>
+            <th style="padding: 8px; text-align: left; font-size: 10pt;">Match</th>
+            <th style="padding: 8px; text-align: left; font-size: 10pt;">Ratio Decidendi</th>
+          </tr>
+          ${strategyResult.precedents?.map(p => `
+            <tr>
+              <td style="padding: 8px; border: 1px solid #cbd5e1; font-size: 9.5pt; font-weight: bold;">${p.citation}</td>
+              <td style="padding: 8px; border: 1px solid #cbd5e1; font-size: 9.5pt;">${p.court}</td>
+              <td style="padding: 8px; border: 1px solid #cbd5e1; font-size: 9.5pt; color: #16a34a; font-weight: bold;">${p.similarityScore}%</td>
+              <td style="padding: 8px; border: 1px solid #cbd5e1; font-size: 9.5pt;">${p.summary}</td>
+            </tr>
+          `).join('') || '<tr><td colspan="4">None</td></tr>'}
+        </table>
+
+        <div class="footer">
+          Generated: ${new Date().toLocaleString()} // AI LEGAL™ Strategy Engine. Confidential client reference only.
+        </div>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([docHtml], { type: 'application/msword' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -1631,8 +1902,380 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    logAudit("Exported Word Brief", "Downloaded litigation strategy document brief.");
+    logAudit("Exported Word Report", "Downloaded litigation strategy document report.");
     toast.success("Word Document exported successfully!");
+  };
+
+  const handlePrintBriefPDF = () => {
+    if (!strategyResult) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error("Popup blocked! Enable popups to print/export.");
+      return;
+    }
+
+    const timestamp = new Date().toLocaleString();
+    const strengthsList = strategyResult.evidenceStrategy?.strong?.map(e => e.evidence) || ['Clear document trail', 'Consistent witness testimony'];
+    const weaknessesList = strategyResult.evidenceStrategy?.missing?.map(e => e.evidence) || ['Corroborative forensic proof', 'Written communication records'];
+    const risksList = strategyResult.risks?.map(r => r.description) || ['Procedural delays', 'Counter-claim exposure'];
+
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map(el => el.outerHTML)
+      .join('\n');
+
+    const html = `
+      <html>
+      <head>
+        <meta charset="UTF-8"/>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+        <title>AI LEGAL™ Executive Litigation Brief - ${caseTitle}</title>
+        ${styles}
+        <style>
+          @page { size: A4; margin: 20mm; }
+          body {
+            font-family: 'Inter', sans-serif;
+            background-color: white !important;
+            color: #0f172a !important;
+            padding: 20px !important;
+          }
+          @media print {
+            body { padding: 0 !important; }
+            .page-break-avoid {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+          }
+        </style>
+      </head>
+      <body class="${isDark ? 'dark' : ''}">
+        <div class="max-w-4xl mx-auto p-6 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[24px] shadow-sm space-y-6">
+          
+          <!-- Official Legal Document Header -->
+          <div class="text-center border-b pb-4 border-slate-200 dark:border-zinc-800/80">
+            <div class="flex justify-center items-center gap-2 mb-1 text-indigo-650 dark:text-indigo-400">
+              <span class="font-extrabold text-base uppercase tracking-[0.2em] text-slate-800 dark:text-slate-200">AI Legal™ Litigation Command Brief</span>
+            </div>
+            <div class="font-mono text-[9px] uppercase tracking-widest text-slate-400 dark:text-zinc-550">
+              Confidential Attorney Work Product // Privileged Communication // Strictly Confidential
+            </div>
+          </div>
+
+          <!-- Matter Details Section -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-50 dark:bg-black/20 p-4 rounded-xl border dark:border-zinc-800/50">
+            <div>
+              <p class="text-slate-400 uppercase font-bold text-[8px] mb-0.5">Matter Title</p>
+              <p class="font-extrabold text-slate-850 dark:text-slate-200">${caseTitle || 'Custom Courtroom Strategy'}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 uppercase font-bold text-[8px] mb-0.5">Court / Jurisdiction</p>
+              <p class="font-extrabold text-slate-850 dark:text-slate-205">${courtName || 'Not Specified'}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 uppercase font-bold text-[8px] mb-0.5">Client / Petitioner</p>
+              <p class="font-extrabold text-slate-850 dark:text-slate-200">${clientName || 'Not Specified'}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 uppercase font-bold text-[8px] mb-0.5">Opposing Party</p>
+              <p class="font-extrabold text-slate-850 dark:text-slate-200">${opponentName || 'Not Specified'}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 uppercase font-bold text-[8px] mb-0.5">Current Stage</p>
+              <p class="font-extrabold text-slate-850 dark:text-slate-200">${caseStage || 'Pre-litigation'}</p>
+            </div>
+            <div>
+              <p class="text-slate-400 uppercase font-bold text-[8px] mb-0.5">Assigned Advocate</p>
+              <p class="font-extrabold text-slate-850 dark:text-slate-200">${assignedAdvocate || 'Senior Counsel'}</p>
+            </div>
+          </div>
+
+          <!-- Simulation KPIs -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="p-4 border rounded-xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/50 text-center">
+              <span class="text-emerald-500 text-lg font-black block">${strategyResult.stats?.winningProbability}%</span>
+              <span class="text-[8px] font-bold text-slate-400 uppercase">Winning Prob.</span>
+            </div>
+            <div class="p-4 border rounded-xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/50 text-center">
+              <span class="text-indigo-500 text-lg font-black block">${strategyResult.stats?.overallStrategyScore}%</span>
+              <span class="text-[8px] font-bold text-slate-400 uppercase">Case Strength</span>
+            </div>
+            <div class="p-4 border rounded-xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/50 text-center">
+              <span class="text-amber-600 text-lg font-black block">${strategyResult.stats?.litigationRisk}%</span>
+              <span class="text-[8px] font-bold text-slate-400 uppercase">Litigation Risk</span>
+            </div>
+            <div class="p-4 border rounded-xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/50 text-center">
+              <span class="text-violet-500 text-lg font-black block">${readinessMetrics.overall}%</span>
+              <span class="text-[8px] font-bold text-slate-400 uppercase">Readiness</span>
+            </div>
+          </div>
+
+          <!-- Executive Summary -->
+          <div class="space-y-2 page-break-avoid">
+            <h3 class="text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 border-b pb-1">Executive Summary</h3>
+            <p class="text-xs font-medium text-slate-700 dark:text-slate-300 leading-relaxed">
+              ${strategyResult.strategies?.primary?.description || strategyResult.finalOpinion?.reasoning || 'N/A'}
+            </p>
+          </div>
+
+          <!-- Strengths & Weaknesses Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 page-break-avoid">
+            <div class="space-y-2">
+              <h3 class="text-xs font-black uppercase tracking-wider text-emerald-600 border-b pb-1">Top Strengths</h3>
+              <div class="space-y-1">
+                ${strengthsList.slice(0, 4).map(s => `<div class="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-start gap-1.5">✓ ${s}</div>`).join('') || '<div class="text-xs italic text-slate-400">None identified</div>'}
+              </div>
+            </div>
+            <div class="space-y-2">
+              <h3 class="text-xs font-black uppercase tracking-wider text-red-650 border-b pb-1">Key Weaknesses</h3>
+              <div class="space-y-1">
+                ${weaknessesList.slice(0, 4).map(w => `<div class="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-start gap-1.5">✗ ${w}</div>`).join('') || '<div class="text-xs italic text-slate-400">None identified</div>'}
+              </div>
+            </div>
+          </div>
+
+          <!-- Recommended Actions -->
+          <div class="space-y-2 page-break-avoid">
+            <h3 class="text-xs font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1">Recommended Actions & Strategy</h3>
+            <div class="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
+              <p><strong>Primary Strategy:</strong> ${strategyResult.strategies?.primary?.description || 'N/A'}</p>
+              <p><strong>Alternative Action:</strong> ${strategyResult.strategies?.alternative?.description || 'N/A'}</p>
+            </div>
+          </div>
+
+          <!-- Immediate Next Steps -->
+          <div class="space-y-2 page-break-avoid">
+            <h3 class="text-xs font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1">Immediate Next Steps</h3>
+            <div class="space-y-1.5 text-[11px] font-medium text-slate-700 dark:text-slate-300">
+              ${(strategyResult.aiRecommendations?.doFirst || []).slice(0, 3).map(act => `<div class="flex items-start gap-1.5">➔ <strong>[Do First]</strong> ${act}</div>`).join('')}
+              ${(strategyResult.aiRecommendations?.doNext || []).slice(0, 2).map(act => `<div class="flex items-start gap-1.5">➔ <strong>[Do Next]</strong> ${act}</div>`).join('')}
+              ${(!strategyResult.aiRecommendations?.doFirst?.length && !strategyResult.aiRecommendations?.doNext?.length) ? `<div class="text-xs italic text-slate-400">None listed.</div>` : ''}
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="border-t pt-4 text-center text-[9px] text-slate-400 flex justify-between items-center font-mono">
+            <span>Generated: ${timestamp} // AI LEGAL™ Strategy Engine</span>
+            <span>Confidential Attorney-Client Privileged Brief</span>
+          </div>
+
+        </div>
+
+        <script>
+          window.onload = () => {
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 800);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+  };
+
+  const handleExportBriefDoc = () => {
+    if (!strategyResult) return;
+
+    const strengthsList = strategyResult.evidenceStrategy?.strong?.map(e => e.evidence) || ['Clear document trail', 'Consistent witness testimony'];
+    const weaknessesList = strategyResult.evidenceStrategy?.missing?.map(e => e.evidence) || ['Corroborative forensic proof', 'Written communication records'];
+    const risksList = strategyResult.risks?.map(r => r.description) || ['Procedural delays', 'Counter-claim exposure'];
+
+    const docHtml = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <title>AI LEGAL™ Executive Litigation Brief</title>
+        <!--[if gte mso 9]>
+        <xml>
+          <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+          </w:WordDocument>
+        </xml>
+        <![endif]-->
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            margin: 1in;
+            color: #0f172a;
+            line-height: 1.5;
+            font-size: 10.5pt;
+          }
+          .header {
+            border-bottom: 3px solid #4f46e5;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+          }
+          .title {
+            font-size: 20pt;
+            font-weight: bold;
+            color: #1e1b4b;
+            margin: 0;
+          }
+          .subtitle {
+            font-size: 9pt;
+            color: #6366f1;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+          }
+          .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          .meta-table td {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            font-size: 10pt;
+            background-color: #f8fafc;
+          }
+          .section-title {
+            font-size: 13pt;
+            font-weight: bold;
+            color: #1e1b4b;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 4px;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+          }
+          .kpi-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          .kpi-table td {
+            padding: 12px;
+            border: 1px solid #c7d2fe;
+            background-color: #f5f3ff;
+            text-align: center;
+            width: 25%;
+          }
+          .kpi-val {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #4f46e5;
+          }
+          .kpi-lbl {
+            font-size: 8pt;
+            color: #4338ca;
+            text-transform: uppercase;
+            font-weight: bold;
+          }
+          .recommendation-box {
+            background-color: #f0fdf4;
+            border-left: 4px solid #16a34a;
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 4px;
+          }
+          .footer {
+            margin-top: 40px;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 10px;
+            font-size: 8pt;
+            color: #94a3b8;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="subtitle">AI LEGAL™ Litigation Command</div>
+          <h1 class="title">Executive Litigation Brief</h1>
+          <div style="font-size: 8.5pt; color: #64748b; margin-top: 5px;">CONFIDENTIAL ATTORNEY WORK PRODUCT // PRIVILEGED CLIENT BRIEFING</div>
+        </div>
+
+        <h3>Matter Details</h3>
+        <table class="meta-table">
+          <tr>
+            <td><strong>Matter Title:</strong></td>
+            <td>${caseTitle || 'Custom Courtroom Strategy'}</td>
+            <td><strong>Court / Jurisdiction:</strong></td>
+            <td>${courtName || 'Not Specified'}</td>
+          </tr>
+          <tr>
+            <td><strong>Client / Petitioner:</strong></td>
+            <td>${clientName || 'Not Specified'}</td>
+            <td><strong>Opposing Party:</strong></td>
+            <td>${opponentName || 'Not Specified'}</td>
+          </tr>
+          <tr>
+            <td><strong>Current Stage:</strong></td>
+            <td>${caseStage || 'Pre-litigation'}</td>
+            <td><strong>Assigned Advocate:</strong></td>
+            <td>${assignedAdvocate || 'Senior Counsel'}</td>
+          </tr>
+        </table>
+
+        <table class="kpi-table">
+          <tr>
+            <td><div class="kpi-val">${strategyResult.stats?.winningProbability}%</div><div class="kpi-lbl">Winning Prob.</div></td>
+            <td><div class="kpi-val">${strategyResult.stats?.overallStrategyScore}%</div><div class="kpi-lbl">Case Strength</div></td>
+            <td><div class="kpi-val">${strategyResult.stats?.litigationRisk}%</div><div class="kpi-lbl">Litigation Risk</div></td>
+            <td><div class="kpi-val">${readinessMetrics.overall}%</div><div class="kpi-lbl">Readiness</div></td>
+          </tr>
+        </table>
+
+        <div class="section-title">Executive Summary</div>
+        <p>${strategyResult.strategies?.primary?.description || strategyResult.finalOpinion?.reasoning || 'N/A'}</p>
+
+        <div class="section-title">Top Key Strengths & Weaknesses</div>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="width: 50%; vertical-align: top; padding-right: 15px;">
+              <h4 style="color:#16a34a; margin-top:0;">Top Strengths</h4>
+              <ul>
+                ${strengthsList.slice(0, 4).map(s => `<li style="margin-bottom:6px;">${s}</li>`).join('') || '<li>None</li>'}
+              </ul>
+            </td>
+            <td style="width: 50%; vertical-align: top; padding-left: 15px;">
+              <h4 style="color:#dc2626; margin-top:0;">Key Weaknesses</h4>
+              <ul>
+                ${weaknessesList.slice(0, 4).map(w => `<li style="margin-bottom:6px;">${w}</li>`).join('') || '<li>None</li>'}
+              </ul>
+            </td>
+          </tr>
+        </table>
+
+        <div class="section-title">Litigation Strategy & Recommended Actions</div>
+        <p><strong>Primary Strategy:</strong> ${strategyResult.strategies?.primary?.description || 'N/A'}</p>
+        <p><strong>Alternative Action:</strong> ${strategyResult.strategies?.alternative?.description || 'N/A'}</p>
+
+        <div class="section-title">Immediate Next Steps</div>
+        <ul>
+          ${(strategyResult.aiRecommendations?.doFirst || []).slice(0, 3).map(act => `<li><strong>[Do First]</strong> ${act}</li>`).join('')}
+          ${(strategyResult.aiRecommendations?.doNext || []).slice(0, 2).map(act => `<li><strong>[Do Next]</strong> ${act}</li>`).join('')}
+        </ul>
+
+        <div class="recommendation-box">
+          <div style="font-weight:bold; color:#15803d; text-transform:uppercase; margin-bottom:4px; font-size:9.5pt;">Final Recommendation</div>
+          <p style="margin: 0; color:#14532d; font-weight:bold;">
+            ${strategyResult.finalOpinion?.reasoning || 'Proceed with case evaluation and prepare filings.'}
+          </p>
+        </div>
+
+        <div class="footer">
+          Generated: ${new Date().toLocaleString()} // AI LEGAL™ Strategy Engine. Confidential client reference only.
+        </div>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([docHtml], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${(caseTitle || 'Brief').replace(/\s+/g, '_')}_AI_LEGAL_Executive_Brief.doc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    logAudit("Exported Litigation Brief Word", "Downloaded executive litigation brief Word Document.");
+    toast.success("Executive Brief Word Document exported successfully!");
   };
 
   const handleQuickToolSelect = (toolId, toolName) => {
@@ -1647,7 +2290,7 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
       setScenarioRelief(seed.relief);
       setScenarioOrders(seed.orders);
       setScenarioNotes(seed.notes);
-      
+
       // Load structured builders
       setEvidenceList(parseEvidenceText(seed.evidence));
       setWitnessList(parseWitnessText(seed.witnesses));
@@ -1681,7 +2324,7 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
         caseFacts: p.litigationStrategy.caseFacts || p.description,
         activeStrategy: p.litigationStrategy.activeStrategy,
         stats: p.litigationStrategy.activeStrategy.stats,
-        timestamp: p.litigationStrategy.auditLogs?.[p.litigationStrategy.auditLogs.length - 1]?.timestamp 
+        timestamp: p.litigationStrategy.auditLogs?.[p.litigationStrategy.auditLogs.length - 1]?.timestamp
           ? new Date(p.litigationStrategy.auditLogs[p.litigationStrategy.auditLogs.length - 1].timestamp).toLocaleString()
           : new Date(p.updatedAt || p.createdAt || Date.now()).toLocaleString()
       }));
@@ -1718,8 +2361,8 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
 
   const filteredTemplates = useMemo(() => {
     return allTools.filter(t => {
-      const matchesSearch = t.name.toLowerCase().includes(templateSearch.toLowerCase()) || 
-                            t.desc.toLowerCase().includes(templateSearch.toLowerCase());
+      const matchesSearch = t.name.toLowerCase().includes(templateSearch.toLowerCase()) ||
+        t.desc.toLowerCase().includes(templateSearch.toLowerCase());
       const matchesCategory = selectedTemplateCategory === 'All' || t.category === selectedTemplateCategory;
       return matchesSearch && matchesCategory;
     });
@@ -1758,7 +2401,7 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
       const name = newCaseForm.accused
         ? `${newCaseForm.clientName} vs ${newCaseForm.accused}`
         : `${newCaseForm.clientName} Case File`;
-        
+
       const payload = {
         name,
         clientName: newCaseForm.clientName,
@@ -1775,7 +2418,7 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
       setLocalProjects(prev => [newProj, ...prev]);
       setLinkedCaseId(newProj._id);
       hydrateFromCase(newProj);
-      
+
       toast.success("New litigation matter created successfully!", { id: tid });
       setNewCaseModalOpen(false);
       setNewCaseForm({
@@ -1889,60 +2532,482 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
     return missing;
   }, [caseFacts, timelineList, evidenceList, witnessList]);
 
+  const renderSidebarContent = () => {
+    return (
+      <>
+        {/* Choose Strategy Source selection */}
+        <div className="space-y-2.5">
+          <label className="text-[9px] font-black uppercase tracking-widest text-indigo-500">Choose Input Source</label>
+          <div className="flex flex-col gap-2 p-1.5 bg-slate-100/50 dark:bg-[#131c31] rounded-2xl border dark:border-zinc-800">
+            {[
+              { id: 'EXISTING_CASE', name: 'Existing Case', desc: 'Auto-load case from files' },
+              { id: 'UPLOAD_DOCUMENTS', name: 'Upload Documents', desc: 'AI auto-extracts case files' },
+              { id: 'MANUAL_SCENARIO', name: 'Manual Strategy', desc: 'Manually specify case profile' }
+            ].map(src => {
+              const active = strategySource === src.id;
+              return (
+                <button
+                  key={src.id}
+                  onClick={() => handleStrategySourceChange(src.id)}
+                  className={`flex items-center justify-between py-2.5 px-3 rounded-xl text-left transition-all duration-200 ${
+                    active
+                      ? 'bg-indigo-50/50 dark:bg-indigo-950/20 border-2 border-indigo-600 dark:border-indigo-500 shadow-md'
+                      : 'bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700'
+                  }`}
+                >
+                  <div className="leading-tight">
+                    <p className={`text-[10px] font-black uppercase tracking-wide ${active ? 'text-indigo-650 dark:text-indigo-400' : 'text-slate-707 dark:text-slate-300'}`}>{src.name}</p>
+                    <p className={`text-[8px] mt-0.5 ${active ? 'text-indigo-650/80 dark:text-indigo-400/80 font-bold' : 'text-slate-400 dark:text-zinc-500'}`}>{src.desc}</p>
+                  </div>
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${active ? 'border-indigo-600 dark:border-indigo-500' : 'border-slate-300 dark:border-zinc-700'}`}>
+                    {active && <div className="w-2 h-2 rounded-full bg-indigo-600 dark:bg-indigo-500" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Conditional inputs below selection */}
+        <div className="space-y-4 shrink-0 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
+          {strategySource === 'EXISTING_CASE' ? (
+            <div className="space-y-3">
+              <label className="text-[9px] font-black uppercase tracking-widest text-indigo-500">Active Case Switching</label>
+              <div className="space-y-2">
+                <select
+                  value={linkedCaseId || ''}
+                  onChange={e => handleCaseSelect(e.target.value)}
+                  className={`w-full border rounded-xl px-3 py-2.5 text-xs font-bold outline-none cursor-pointer appearance-none ${isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-850'
+                    }`}
+                >
+                  <option value="">-- Select Case File --</option>
+                  {localProjects.map(p => (
+                    <option key={p._id} value={p._id}>{p.name}</option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={() => setNewCaseModalOpen(true)}
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed rounded-xl text-[10px] font-black uppercase tracking-wider text-indigo-500 hover:bg-indigo-500/5 transition-all"
+                >
+                  <PlusCircle size={13} />
+                  <span>Create New Scenario</span>
+                </button>
+              </div>
+
+              {/* Use Active Case Toggle */}
+              <div className="flex items-center justify-between p-2.5 border rounded-xl bg-indigo-500/5 border-indigo-500/10 mt-1.5">
+                <div className="flex items-center gap-2">
+                  <Folder size={14} className="text-indigo-500 shrink-0" />
+                  <div className="leading-none">
+                    <p className="text-[10px] font-black text-slate-800 dark:text-white uppercase">Use Active Case</p>
+                    <p className="text-[8px] text-slate-400 mt-0.5">Auto-fill all case fields</p>
+                  </div>
+                </div>
+                <div
+                  onClick={() => handleUseActiveCaseToggle(!isUsingActiveCase)}
+                  className={`w-4 h-4 rounded flex items-center justify-center border cursor-pointer transition-all duration-200 ${
+                    isUsingActiveCase
+                      ? 'bg-indigo-600 border-indigo-600 text-white'
+                      : 'border-slate-300 dark:border-zinc-700 bg-transparent'
+                  }`}
+                >
+                  {isUsingActiveCase && <Check size={10} strokeWidth={3} className="text-white" />}
+                </div>
+              </div>
+            </div>
+          ) : strategySource === 'UPLOAD_DOCUMENTS' ? (
+            <div className="space-y-3">
+              <label className="text-[9px] font-black uppercase tracking-widest text-indigo-500">Document Upload Workspace</label>
+
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById('strategy-doc-uploader').click()}
+                className="border-2 border-dashed border-slate-300 dark:border-zinc-800 hover:border-indigo-500 rounded-2xl p-5 text-center cursor-pointer transition-all flex flex-col items-center gap-2 bg-slate-500/3"
+              >
+                <Upload className="text-slate-400" size={24} />
+                <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-bold">Drag & drop files or click to browse</span>
+                <span className="text-[8px] text-slate-404 uppercase font-semibold">Supports PDFs, Plaints, Agreements, FIRs</span>
+                <input
+                  id="strategy-doc-uploader"
+                  type="file"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Uploaded File List */}
+              {uploadedFiles.length > 0 && (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar">
+                  {uploadedFiles.map(file => (
+                    <div key={file.id} className="p-2.5 border rounded-xl bg-slate-500/5 flex items-center justify-between text-xs font-semibold gap-2">
+                      <div className="min-w-0 flex items-center gap-1.5">
+                        <FileText size={14} className="text-slate-405 shrink-0" />
+                        <span className="truncate text-slate-800 dark:text-slate-300">{file.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${file.status === 'OCR Running' ? 'bg-amber-500/10 text-amber-500 animate-pulse' :
+                            file.status === 'OCR Complete' ? 'bg-emerald-500/10 text-emerald-500' :
+                              file.status === 'Extracting' ? 'bg-violet-500/10 text-violet-500 animate-pulse' :
+                                file.status === 'Extracted' ? 'bg-green-500/10 text-green-500 font-black' :
+                                  'bg-slate-205 text-slate-450'
+                          }`}>{file.status}</span>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
+                          }}
+                          className="p-0.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded text-red-500 font-bold"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <button
+                    onClick={runDocumentAnalysis}
+                    disabled={isExtractingDocs}
+                    className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-indigo-650 hover:bg-indigo-705 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50"
+                  >
+                    {isExtractingDocs ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Sparkles size={12} />}
+                    <span>AI Parse Uploaded Documents</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Manual Mode intent-driven input fields directly in sidebar */
+            <div className="space-y-4 text-xs font-semibold">
+              <label className="text-[9px] font-black uppercase tracking-widest text-indigo-500">Legal Strategy Config</label>
+
+              {/* Primary Input 1: Strategy Goal / Practice Area */}
+              <div className="space-y-1">
+                <span className="text-[8px] uppercase font-black text-slate-400">Strategy Goal / Practice Area</span>
+                <input
+                  type="text"
+                  value={caseTitle}
+                  onChange={e => setCaseTitle(e.target.value)}
+                  placeholder="e.g. Cyber Crime Bail, Injunction Request"
+                  className={`w-full border rounded-xl px-3 py-2.5 text-xs font-bold outline-none ${
+                    isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                />
+              </div>
+
+              {/* Primary Input 2: Large description textarea */}
+              <div className="space-y-1">
+                <span className="text-[8px] uppercase font-black text-slate-400">Legal Problem / Fact Scenario</span>
+                <textarea
+                  rows={6}
+                  value={caseFacts}
+                  onChange={e => setCaseFacts(e.target.value)}
+                  placeholder="Describe the legal issue, facts, objectives, or situation in detail..."
+                  className={`w-full border rounded-xl px-3 py-2 text-xs font-bold outline-none resize-none ${
+                    isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                />
+              </div>
+
+              {/* Primary Input 3: Objective dropdown */}
+              <div className="space-y-1">
+                <span className="text-[8px] uppercase font-black text-slate-404">Litigation Strategy Objective</span>
+                <select
+                  value={manualObjective}
+                  onChange={e => setManualObjective(e.target.value)}
+                  className={`w-full border rounded-xl px-3 py-2.5 text-xs font-bold outline-none cursor-pointer ${
+                    isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                >
+                  <option value="Define Trial Strategy">Define Trial Strategy</option>
+                  <option value="Assess Litigation Risk">Assess Litigation Risk</option>
+                  <option value="Formulate Settlement Positions">Formulate Settlement Positions</option>
+                  <option value="Prepare Cross Examination">Prepare Cross Examination</option>
+                  <option value="Analyze Evidence Admissibility">Analyze Evidence Admissibility</option>
+                  <option value="Predict Judicial Outcome">Predict Judicial Outcome</option>
+                </select>
+              </div>
+
+              {/* Primary Input 4: Optional supporting document upload */}
+              <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
+                <span className="text-[8px] uppercase font-black text-slate-400">Optional Supporting Documents</span>
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => document.getElementById('manual-strategy-doc-uploader').click()}
+                  className="border border-dashed border-slate-300 dark:border-zinc-800 hover:border-indigo-500 rounded-xl p-3 text-center cursor-pointer transition-all flex flex-col items-center gap-1.5 bg-slate-500/3"
+                >
+                  <Upload className="text-slate-404" size={16} />
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold">Drag & drop or click to upload</span>
+                  <input
+                    id="manual-strategy-doc-uploader"
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileSelect}
+                  />
+                </div>
+
+                {/* Uploaded Files display inside Manual strategy sidebar */}
+                {uploadedFiles.length > 0 && (
+                  <div className="space-y-1.5 max-h-24 overflow-y-auto custom-scrollbar">
+                    {uploadedFiles.map(file => (
+                      <div key={file.id} className="flex items-center justify-between p-1.5 border rounded-lg bg-slate-50 dark:bg-zinc-800/50 dark:border-zinc-800 text-[10px] font-bold">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <FileText size={11} className="text-indigo-500 shrink-0" />
+                          <span className="truncate text-slate-800 dark:text-slate-300">{file.name}</span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
+                          }}
+                          className="p-1 hover:bg-red-50 dark:hover:bg-red-955/20 text-red-500 rounded shrink-0 font-bold"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Optional Metadata Accordion (Advanced Parameters) */}
+              <div className="pt-2 border-t border-slate-100 dark:border-zinc-800/80">
+                <button
+                  type="button"
+                  onClick={() => setSidebarAdvancedOpen(!sidebarAdvancedOpen)}
+                  className="w-full flex items-center justify-between py-2.5 text-[9px] font-black uppercase tracking-wider text-slate-400 hover:text-slate-600 dark:hover:text-white transition-all"
+                >
+                  <span>Advanced Case Parameters</span>
+                  {sidebarAdvancedOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                </button>
+
+                {sidebarAdvancedOpen && (
+                  <div className="space-y-3 pt-2 text-xs font-semibold animate-fadeIn">
+                    <div className="space-y-1">
+                      <span className="text-[8px] uppercase font-black text-slate-404">Client Name</span>
+                      <input
+                        type="text"
+                        value={clientName}
+                        onChange={e => setClientName(e.target.value)}
+                        placeholder="Client Name"
+                        className={`w-full border rounded-xl px-3 py-2 text-xs font-bold outline-none ${
+                          isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-205 text-slate-800'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[8px] uppercase font-black text-slate-404">Opponent Name</span>
+                      <input
+                        type="text"
+                        value={opponentName}
+                        onChange={e => setOpponentName(e.target.value)}
+                        placeholder="Opponent Name"
+                        className={`w-full border rounded-xl px-3 py-2 text-xs font-bold outline-none ${
+                          isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-205 text-slate-800'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <span className="text-[8px] uppercase font-black text-slate-404">Matter Court</span>
+                        <select
+                          value={matterType}
+                          onChange={e => setMatterType(e.target.value)}
+                          className={`w-full border rounded-xl px-2 py-2 text-xs font-bold outline-none cursor-pointer ${
+                            isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-205 text-slate-800'
+                          }`}
+                        >
+                          <option value="Civil">Civil</option>
+                          <option value="Criminal">Criminal</option>
+                          <option value="Corporate">Corporate</option>
+                          <option value="Property">Property</option>
+                          <option value="Family">Family</option>
+                          <option value="Tax">Tax</option>
+                          <option value="Employment">Employment</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[8px] uppercase font-black text-slate-404">Current Stage</span>
+                        <select
+                          value={caseStage}
+                          onChange={e => setCaseStage(e.target.value)}
+                          className={`w-full border rounded-xl px-2 py-2 text-xs font-bold outline-none cursor-pointer ${
+                            isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-205 text-slate-800'
+                          }`}
+                        >
+                          <option value="Pre-litigation">Pre-litigation</option>
+                          <option value="Filing">Filing</option>
+                          <option value="Arguments">Arguments</option>
+                          <option value="Appeal">Appeal</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[8px] uppercase font-black text-slate-404">Court Jurisdiction</span>
+                      <input
+                        type="text"
+                        value={courtName}
+                        onChange={e => setCourtName(e.target.value)}
+                        placeholder="e.g. High Court of Delhi"
+                        className={`w-full border rounded-xl px-3 py-2 text-xs font-bold outline-none ${
+                          isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <span className="text-[8px] uppercase font-black text-slate-404">Hearing Date</span>
+                        <input
+                          type="text"
+                          value={hearingDate}
+                          onChange={e => setHearingDate(e.target.value)}
+                          placeholder="e.g. Oct 12, 2026"
+                          className={`w-full border rounded-xl px-2 py-2 text-xs font-bold outline-none ${
+                            isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-202'
+                          }`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[8px] uppercase font-black text-slate-404">Advocate</span>
+                        <input
+                          type="text"
+                          value={assignedAdvocate}
+                          onChange={e => setAssignedAdvocate(e.target.value)}
+                          placeholder="Advocate Name"
+                          className={`w-full border rounded-xl px-2 py-2 text-xs font-bold outline-none ${
+                            isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Search Strategy Templates Select Box */}
+        <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-zinc-800/80">
+          <label className="text-[9px] font-black uppercase tracking-widest text-indigo-500">Search Strategy Templates</label>
+          <div className="relative">
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  handleQuickToolSelect(e.target.value);
+                }
+              }}
+              className={`w-full border rounded-xl px-3 py-2.5 text-xs font-bold outline-none cursor-pointer appearance-none ${isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-202 text-slate-850'
+                }`}
+            >
+              <option value="">-- Load Preset Template --</option>
+              {allTools.map(t => (
+                <option key={t.id} value={t.id}>{t.name} ({t.category})</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </>
+    );
+  };
+
   return (
     <div className="flex-1 flex flex-col w-full h-full min-h-0 bg-slate-50 dark:bg-transparent overflow-hidden select-none">
-      
+
+      {/* Mobile/Tablet Off-canvas Sidebar Drawer Overlay */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 z-[9999] lg:hidden flex">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+          {/* Drawer Panel */}
+          <div className={`relative w-[300px] sm:w-[340px] h-full flex flex-col p-5 space-y-5 overflow-y-auto custom-scrollbar shadow-2xl transition-transform duration-300 animate-slideInLeft ${
+            isDark ? 'bg-[#0c1224] border-r border-slate-800' : 'bg-white border-r border-slate-205'
+          }`}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-zinc-800/80">
+              <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Strategy Controls</span>
+              <button 
+                onClick={() => setMobileSidebarOpen(false)}
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full text-slate-400"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            {renderSidebarContent()}
+          </div>
+        </div>
+      )}
+
       {/* Header bar - minimal vertical footprint */}
-      <div className={`flex flex-col px-6 py-3 border-b shrink-0 gap-1 ${isDark ? 'border-slate-800 bg-[#0B1020]/90' : 'border-slate-200 bg-white'} backdrop-blur-xl`}>
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={onBack} 
-              className={`w-[68px] h-8 flex items-center justify-center gap-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors shrink-0 ${
-                isDark ? 'bg-[#1A2540] border-slate-800 text-slate-300 hover:bg-[#202E50]' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-              }`}
+      <div className={`flex flex-col px-4 sm:px-6 py-3 border-b shrink-0 gap-1.5 ${isDark ? 'border-slate-800 bg-[#0B1020]/90' : 'border-slate-200 bg-white'} backdrop-blur-xl`}>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {/* Hamburger menu for mobile/tablet */}
+            <button
+              type="button"
+              onClick={() => setMobileSidebarOpen(true)}
+              className="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-[#1A2540] hover:bg-slate-100 dark:hover:bg-[#202E50]"
+            >
+              <Menu size={16} />
+            </button>
+
+            <button
+              onClick={onBack}
+              className={`w-[68px] h-10 flex items-center justify-center gap-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors shrink-0 ${isDark ? 'bg-[#1A2540] border-slate-800 text-slate-300 hover:bg-[#202E50]' : 'bg-slate-50 border-slate-205 text-slate-700 hover:bg-slate-100'
+                }`}
             >
               <ChevronLeft size={11} />
               <span>Back</span>
             </button>
-            
-            <div className="flex flex-col">
+
+            <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className={`text-[20px] font-black leading-none tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <h1 className={`text-base sm:text-[20px] font-black leading-none tracking-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   Strategy Engine
                 </h1>
                 {isSyncing && (
-                  <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-wider animate-pulse bg-emerald-500/10 px-1.5 py-0.5 rounded">Syncing</span>
+                  <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-wider animate-pulse bg-emerald-500/10 px-1.5 py-0.5 rounded shrink-0">Syncing</span>
                 )}
               </div>
-              <p className={`text-[11px] font-medium leading-none mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-[10px] sm:text-[11px] font-medium leading-none mt-1 truncate hidden sm:block ${isDark ? 'text-slate-400' : 'text-slate-505'}`}>
                 AI-powered litigation simulation, opponent prediction, judicial risk analysis, evidence evaluation and courtroom strategy planning.
               </p>
             </div>
           </div>
 
-          <div className="shrink-0 flex items-center gap-3">
-            <div className="hidden lg:flex flex-col text-right text-[10px] text-slate-400 font-semibold mr-1">
+          <div className="flex items-center flex-wrap gap-2.5 lg:shrink-0">
+            <div className="hidden xl:flex flex-col text-right text-[10px] text-slate-400 font-semibold mr-1">
               <span>Recent Strategy count: <strong>{historyData.length}</strong></span>
               <span>Last Simulation: <strong>{historyData[0]?.timestamp || 'Never'}</strong></span>
             </div>
-            <button 
-              onClick={() => setIsNotesDrawerOpen(true)} 
-              className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-black uppercase tracking-wider transition-colors ${
-                isDark ? 'bg-[#1A2540] border-slate-800 text-amber-400 hover:bg-[#202E50]' : 'bg-amber-50 border-amber-250/20 text-amber-700 hover:bg-amber-100'
-              }`}
+            <button
+              onClick={() => setIsNotesDrawerOpen(true)}
+              className={`h-11 px-4 flex items-center gap-1.5 border rounded-xl text-xs font-black uppercase tracking-wider transition-colors shrink-0 ${isDark ? 'bg-[#1A2540] border-slate-800 text-amber-400 hover:bg-[#202E50]' : 'bg-amber-50 border-amber-250/20 text-amber-700 hover:bg-amber-100'
+                }`}
             >
-              <BookOpen size={13} className="shrink-0" />
+              <BookOpen size={14} className="shrink-0" />
               <span>Advocate Notes</span>
             </button>
-            <button 
-              onClick={() => setHistoryVisible(true)} 
-              className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-black uppercase tracking-wider transition-colors ${
-                isDark ? 'bg-[#1A2540] border-slate-800 text-indigo-400 hover:bg-[#202E50]' : 'bg-indigo-50 border-indigo-200/30 text-indigo-600 hover:bg-indigo-100'
-              }`}
+            <button
+              onClick={() => setHistoryVisible(true)}
+              className={`h-11 px-4 flex items-center gap-1.5 border rounded-xl text-xs font-black uppercase tracking-wider transition-colors shrink-0 ${isDark ? 'bg-[#1A2540] border-slate-800 text-indigo-400 hover:bg-[#202E50]' : 'bg-indigo-50 border-indigo-200/30 text-indigo-650 hover:bg-indigo-100'
+                }`}
             >
-              <History size={13} className="shrink-0" />
-              <span>Simulation History ({historyData.length})</span>
+              <History size={14} className="shrink-0" />
+              <span>History ({historyData.length})</span>
             </button>
           </div>
         </div>
@@ -1950,818 +3015,674 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
 
       <div className="flex-1 flex w-full min-h-0 overflow-hidden">
         {/* LEFT SIDEBAR: fixed control panel */}
-        <div className={`w-[340px] flex flex-col border-r shrink-0 overflow-y-auto custom-scrollbar p-4 space-y-5 ${isDark ? 'border-slate-800 bg-[#0c1224]' : 'border-slate-200 bg-white'}`}>
-          
-          {/* Choose Strategy Source selection */}
-          <div className="space-y-2.5">
-            <label className="text-[9px] font-black uppercase tracking-widest text-indigo-500">Choose Input Source</label>
-            <div className="flex flex-col gap-2 p-1.5 bg-slate-100/50 dark:bg-[#131c31] rounded-2xl border dark:border-zinc-800">
-              {[
-                { id: 'EXISTING_CASE', name: 'Existing Case', desc: 'Auto-load case from files' },
-                { id: 'UPLOAD_DOCUMENTS', name: 'Upload Documents', desc: 'AI auto-extracts case files' },
-                { id: 'MANUAL_SCENARIO', name: 'Manual Strategy', desc: 'Manually specify case profile' }
-              ].map(src => {
-                const active = strategySource === src.id;
-                return (
-                  <button
-                    key={src.id}
-                    onClick={() => handleStrategySourceChange(src.id)}
-                    className={`flex items-center justify-between py-2.5 px-3 rounded-xl text-left transition-all ${
-                      active 
-                        ? 'bg-indigo-650 text-white shadow-md' 
-                        : 'text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/20'
-                    }`}
-                  >
-                    <div className="leading-tight">
-                      <p className="text-[10px] font-black uppercase tracking-wide">{src.name}</p>
-                      <p className={`text-[8px] mt-0.5 ${active ? 'text-indigo-200' : 'text-slate-400'}`}>{src.desc}</p>
+        <div className={`hidden lg:flex w-[340px] flex-col border-r shrink-0 overflow-y-auto custom-scrollbar p-4 space-y-5 ${isDark ? 'border-slate-800 bg-[#0c1224]' : 'border-slate-200 bg-white'}`}>
+          {renderSidebarContent()}
+        </div>
+
+        {/* RIGHT AREA: Litigation Command workspace */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar px-3 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
+          <div className="max-w-5xl w-full mx-auto space-y-4 sm:space-y-5 select-text">
+
+            {/* Simple Visual Stepper */}
+            <div className="w-full overflow-x-auto custom-scrollbar-horizontal pb-2 md:pb-0">
+              <div className={`p-4 border rounded-3xl flex items-center justify-between md:justify-around shadow-sm min-w-[500px] md:min-w-0 ${isDark ? 'bg-[#131c31]/20 border-slate-800' : 'bg-white border-slate-200'
+                }`}>
+                {[
+                  { key: 'INPUT', name: 'Input Config' },
+                  { key: 'ANALYSIS', name: 'AI Analysis' },
+                  { key: 'REPORT', name: 'Strategy Report' }
+                ].map((step, idx) => {
+                  // Determine step state
+                  let stepState = 'upcoming';
+                  if (step.key === 'INPUT') {
+                    stepState = (!strategyResult && !isAuditing) ? 'current' : 'completed';
+                  } else if (step.key === 'ANALYSIS') {
+                    stepState = isAuditing ? 'current' : (strategyResult ? 'completed' : 'upcoming');
+                  } else if (step.key === 'REPORT') {
+                    stepState = strategyResult ? 'current' : 'upcoming';
+                  }
+
+                  // Determine next step's state for the connector color
+                  let nextStepState = 'upcoming';
+                  if (idx === 0) {
+                    nextStepState = isAuditing ? 'current' : (strategyResult ? 'completed' : 'upcoming');
+                  } else if (idx === 1) {
+                    nextStepState = strategyResult ? 'current' : 'upcoming';
+                  }
+
+                  // Connector color mapping
+                  const connectorColor = nextStepState === 'completed'
+                    ? 'text-emerald-500 font-black'
+                    : (nextStepState === 'current' ? 'text-indigo-600 dark:text-indigo-400 font-black' : 'text-slate-300 dark:text-zinc-700');
+
+                  return (
+                    <div key={step.key} className="flex items-center gap-2 shrink-0">
+                      {stepState === 'completed' ? (
+                        <>
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black bg-emerald-500 text-white shadow-md shadow-emerald-500/10 shrink-0">
+                            ✓
+                          </div>
+                          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500">
+                            {step.name}
+                          </span>
+                        </>
+                      ) : stepState === 'current' ? (
+                        <>
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black bg-indigo-600 dark:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 border-2 border-indigo-600 dark:border-indigo-500 shrink-0">
+                            {idx + 1}
+                          </div>
+                          <span className="text-[10px] font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400">
+                            {step.name}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black bg-slate-100 dark:bg-zinc-800 text-slate-404 border border-slate-200 dark:border-zinc-750 shrink-0">
+                            {idx + 1}
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-550">
+                            {step.name}
+                          </span>
+                        </>
+                      )}
+                      {idx < 2 && (
+                        <span className={`text-[12px] ml-4 transition-all duration-350 shrink-0 ${connectorColor}`}>➔</span>
+                      )}
                     </div>
-                    <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center ${active ? 'border-white' : 'border-slate-300 dark:border-zinc-700'}`}>
-                      {active && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                    </div>
-                  </button>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          {/* Conditional inputs below selection */}
-          <div className="space-y-4 shrink-0 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
-            {strategySource === 'EXISTING_CASE' ? (
-              <div className="space-y-3">
-                <label className="text-[9px] font-black uppercase tracking-widest text-indigo-500">Active Case Switching</label>
-                <div className="space-y-2">
-                  <select
-                    value={linkedCaseId || ''}
-                    onChange={e => handleCaseSelect(e.target.value)}
-                    className={`w-full border rounded-xl px-3 py-2.5 text-xs font-bold outline-none cursor-pointer appearance-none ${
-                      isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-850'
-                    }`}
-                  >
-                    <option value="">-- Select Case File --</option>
-                    {localProjects.map(p => (
-                      <option key={p._id} value={p._id}>{p.name}</option>
-                    ))}
-                  </select>
-
-                  <button
-                    onClick={() => setNewCaseModalOpen(true)}
-                    className="w-full flex items-center justify-center gap-1.5 py-2.5 border border-dashed rounded-xl text-[10px] font-black uppercase tracking-wider text-indigo-500 hover:bg-indigo-500/5 transition-all"
-                  >
-                    <PlusCircle size={13} />
-                    <span>Create New Scenario</span>
-                  </button>
-                </div>
-
-                {/* Use Active Case Toggle */}
-                <div className="flex items-center justify-between p-2.5 border rounded-xl bg-indigo-500/5 border-indigo-500/10 mt-1.5">
+            {/* Case Summary Panel */}
+            {strategySource !== 'MANUAL_SCENARIO' && (
+              <div className={`border rounded-3xl p-4 shadow-sm space-y-3.5 transition-all duration-300 ${isDark ? 'bg-[#131c31]/30 border-slate-800' : 'bg-white border-slate-200'
+                }`}>
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-zinc-800/80">
                   <div className="flex items-center gap-2">
-                    <Folder size={14} className="text-indigo-500 shrink-0" />
-                    <div className="leading-none">
-                      <p className="text-[10px] font-black text-slate-800 dark:text-white uppercase">Use Active Case</p>
-                      <p className="text-[8px] text-slate-400 mt-0.5">Auto-fill all case fields</p>
-                    </div>
+                    <Briefcase size={14} className="text-indigo-505" />
+                    <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-900 dark:text-white">Active Case Summary</h3>
                   </div>
-                  <input 
-                    type="checkbox"
-                    checked={isUsingActiveCase}
-                    onChange={e => handleUseActiveCaseToggle(e.target.checked)}
-                    className="w-3.5 h-3.5 text-indigo-650 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
-                  />
-                </div>
-              </div>
-            ) : strategySource === 'UPLOAD_DOCUMENTS' ? (
-              <div className="space-y-3">
-                <label className="text-[9px] font-black uppercase tracking-widest text-indigo-500">Document Upload Workspace</label>
-                
-                <div 
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => document.getElementById('strategy-doc-uploader').click()}
-                  className="border-2 border-dashed border-slate-300 dark:border-zinc-800 hover:border-indigo-500 rounded-2xl p-5 text-center cursor-pointer transition-all flex flex-col items-center gap-2 bg-slate-500/3"
-                >
-                  <Upload className="text-slate-400" size={24} />
-                  <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-bold">Drag & drop files or click to browse</span>
-                  <span className="text-[8px] text-slate-400 uppercase font-semibold">Supports PDFs, Plaints, Agreements, FIRs</span>
-                  <input 
-                    id="strategy-doc-uploader"
-                    type="file"
-                    multiple
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                </div>
-
-                {/* Uploaded File List */}
-                {uploadedFiles.length > 0 && (
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar">
-                    {uploadedFiles.map(file => (
-                      <div key={file.id} className="p-2.5 border rounded-xl bg-slate-500/5 flex items-center justify-between text-xs font-semibold gap-2">
-                        <div className="min-w-0 flex items-center gap-1.5">
-                          <FileText size={14} className="text-slate-400 shrink-0" />
-                          <span className="truncate text-slate-800 dark:text-slate-300">{file.name}</span>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
-                            file.status === 'OCR Running' ? 'bg-amber-500/10 text-amber-500 animate-pulse' :
-                            file.status === 'OCR Complete' ? 'bg-emerald-500/10 text-emerald-500' :
-                            file.status === 'Extracting' ? 'bg-violet-500/10 text-violet-500 animate-pulse' :
-                            file.status === 'Extracted' ? 'bg-green-500/10 text-green-500 font-black' :
-                            'bg-slate-205 text-slate-450'
-                          }`}>{file.status}</span>
-                          
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
-                            }}
-                            className="p-0.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded text-red-500 font-bold"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-
-                    <button
-                      onClick={runDocumentAnalysis}
-                      disabled={isExtractingDocs}
-                      className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-indigo-650 hover:bg-indigo-705 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50"
-                    >
-                      {isExtractingDocs ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Sparkles size={12} />}
-                      <span>AI Parse Uploaded Documents</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Manual Mode input fields directly in sidebar */
-              <div className="space-y-3.5 text-xs font-semibold">
-                <label className="text-[9px] font-black uppercase tracking-widest text-indigo-500">Case Profile Details</label>
-                
-                <div className="space-y-1">
-                  <span className="text-[8px] uppercase font-black text-slate-400">Case Title / Matter</span>
-                  <input 
-                    type="text"
-                    value={caseTitle}
-                    onChange={e => setCaseTitle(e.target.value)}
-                    placeholder="e.g. Rajesh Sharma vs Amit Verma"
-                    className={`w-full border rounded-xl px-3 py-2 text-xs font-bold outline-none ${
-                      isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                    }`}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[8px] uppercase font-black text-slate-400">Client / Petitioner</span>
-                  <input 
-                    type="text"
-                    value={clientName}
-                    onChange={e => setClientName(e.target.value)}
-                    placeholder="Client Name"
-                    className={`w-full border rounded-xl px-3 py-2 text-xs font-bold outline-none ${
-                      isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                    }`}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[8px] uppercase font-black text-slate-400">Opponent / Respondent</span>
-                  <input 
-                    type="text"
-                    value={opponentName}
-                    onChange={e => setOpponentName(e.target.value)}
-                    placeholder="Opponent Name"
-                    className={`w-full border rounded-xl px-3 py-2 text-xs font-bold outline-none ${
-                      isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                    }`}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <span className="text-[8px] uppercase font-black text-slate-400">Matter Court</span>
-                    <select
-                      value={matterType}
-                      onChange={e => setMatterType(e.target.value)}
-                      className={`w-full border rounded-xl px-2 py-2 text-xs font-bold outline-none cursor-pointer ${
-                        isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                      }`}
-                    >
-                      <option value="Civil">Civil</option>
-                      <option value="Criminal">Criminal</option>
-                      <option value="Corporate">Corporate</option>
-                      <option value="Property">Property</option>
-                      <option value="Family">Family</option>
-                      <option value="Tax">Tax</option>
-                      <option value="Employment">Employment</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-[8px] uppercase font-black text-slate-400">Current Stage</span>
-                    <select
-                      value={caseStage}
-                      onChange={e => setCaseStage(e.target.value)}
-                      className={`w-full border rounded-xl px-2 py-2 text-xs font-bold outline-none cursor-pointer ${
-                        isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-205 text-slate-800'
-                      }`}
-                    >
-                      <option value="Pre-litigation">Pre-litigation</option>
-                      <option value="Filing">Filing</option>
-                      <option value="Arguments">Arguments</option>
-                      <option value="Appeal">Appeal</option>
-                    </select>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${caseTitle ? 'bg-emerald-500 animate-pulse' : 'bg-slate-405'}`} />
+                    <span className="text-[8px] font-black text-slate-400 uppercase">AI Readiness: {caseTitle ? 'Ready' : 'Incomplete'}</span>
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-[8px] uppercase font-black text-slate-400">Court Jurisdiction</span>
-                  <input 
-                    type="text"
-                    value={courtName}
-                    onChange={e => setCourtName(e.target.value)}
-                    placeholder="e.g. High Court of Delhi"
-                    className={`w-full border rounded-xl px-3 py-2 text-xs font-bold outline-none ${
-                      isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <span className="text-[8px] uppercase font-black text-slate-400">Hearing Date</span>
-                    <input 
-                      type="text"
-                      value={hearingDate}
-                      onChange={e => setHearingDate(e.target.value)}
-                      placeholder="e.g. Oct 12, 2026"
-                      className={`w-full border rounded-xl px-2 py-2 text-xs font-bold outline-none ${
-                        isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    />
+                {/* 5 clean fields */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs font-semibold">
+                  <div className="space-y-0.5">
+                    <span className="text-[8px] uppercase font-black text-slate-400 tracking-wide">Case Title / Parties</span>
+                    <p className="font-extrabold text-slate-800 dark:text-slate-200 truncate">{caseTitle || 'Custom Scenario'}</p>
                   </div>
-                  <div className="space-y-1">
-                    <span className="text-[8px] uppercase font-black text-slate-400">Advocate</span>
-                    <input 
-                      type="text"
-                      value={assignedAdvocate}
-                      onChange={e => setAssignedAdvocate(e.target.value)}
-                      placeholder="Advocate Name"
-                      className={`w-full border rounded-xl px-2 py-2 text-xs font-bold outline-none ${
-                        isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    />
+                  <div className="space-y-0.5">
+                    <span className="text-[8px] uppercase font-black text-slate-400 tracking-wide">Court Category</span>
+                    <p className="font-extrabold text-indigo-500 truncate">{matterType || 'Civil'}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-[8px] uppercase font-black text-slate-400 tracking-wide">Jurisdiction</span>
+                    <p className="font-bold text-slate-705 dark:text-slate-300 truncate">{courtName || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-[8px] uppercase font-black text-slate-400 tracking-wide">Litigation Stage</span>
+                    <span className="inline-block px-1.5 py-0.5 bg-amber-500/10 text-amber-600 rounded text-[7.5px] font-black uppercase w-fit">{caseStage || 'Pre-trial'}</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-[8px] uppercase font-black text-slate-400 tracking-wide">Evidence dossiers</span>
+                    <p className="font-bold text-violet-500">{evidenceList.length} Items</p>
                   </div>
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Search Strategy Templates Select Box */}
-          <div className="space-y-1.5 pt-3 border-t border-slate-100 dark:border-zinc-800/80">
-            <label className="text-[9px] font-black uppercase tracking-widest text-indigo-500">Search Strategy Templates</label>
-            <div className="relative">
-              <select 
-                onChange={(e) => {
-                  if (e.target.value) {
-                    handleQuickToolSelect(e.target.value);
-                  }
-                }}
-                className={`w-full border rounded-xl px-3 py-2.5 text-xs font-bold outline-none cursor-pointer appearance-none ${
-                  isDark ? 'bg-[#131c31] border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-850'
-                }`}
-              >
-                <option value="">-- Load Preset Template --</option>
-                {allTools.map(t => (
-                  <option key={t.id} value={t.id}>{t.name} ({t.category})</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-        </div>              {/* RIGHT AREA: Litigation Command workspace */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar px-6 py-5 space-y-5">
-          <div className="max-w-5xl w-full mx-auto space-y-5 select-text">
-            
-            {/* Simple Visual Stepper */}
-            <div className={`p-4 border rounded-3xl flex items-center justify-around shadow-sm ${
-              isDark ? 'bg-[#131c31]/20 border-slate-800' : 'bg-white border-slate-200'
-            }`}>
-              {[
-                { key: 'INPUT', name: 'Input Config', active: !strategyResult && !isAuditing, done: !!strategyResult || isAuditing },
-                { key: 'ANALYSIS', name: 'AI Analysis', active: isAuditing, done: !!strategyResult },
-                { key: 'REPORT', name: 'Strategy Report', active: !!strategyResult, done: !!strategyResult }
-              ].map((step, idx) => {
-                return (
-                  <div key={step.key} className="flex items-center gap-2">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all duration-300 ${
-                      step.active ? 'bg-indigo-650 text-white shadow-lg' : 
-                      step.done ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' :
-                      'bg-slate-100 dark:bg-zinc-800 text-slate-400'
-                    }`}>
-                      {step.done && !step.active ? '✓' : idx + 1}
-                    </div>
-                    <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
-                      step.active ? 'text-indigo-650 dark:text-indigo-400' : 
-                      step.done ? 'text-emerald-500' : 'text-slate-400'
-                    }`}>
-                      {step.name}
-                    </span>
-                    {idx < 2 && (
-                      <span className="text-[12px] text-slate-300 dark:text-zinc-700 ml-4">➔</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Case Summary Panel */}
-            <div className={`border rounded-3xl p-4 shadow-sm space-y-3.5 transition-all duration-300 ${
-              isDark ? 'bg-[#131c31]/30 border-slate-800' : 'bg-white border-slate-200'
-            }`}>
-              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-zinc-800/80">
-                <div className="flex items-center gap-2">
-                  <Briefcase size={14} className="text-indigo-505" />
-                  <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-900 dark:text-white">Active Case Summary</h3>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${caseTitle ? 'bg-emerald-500 animate-pulse' : 'bg-slate-405'}`} />
-                  <span className="text-[8px] font-black text-slate-400 uppercase">AI Readiness: {caseTitle ? 'Ready' : 'Incomplete'}</span>
-                </div>
-              </div>
-
-              {/* 5 clean fields */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs font-semibold">
-                <div className="space-y-0.5">
-                  <span className="text-[8px] uppercase font-black text-slate-400 tracking-wide">Case Title / Parties</span>
-                  <p className="font-extrabold text-slate-800 dark:text-slate-200 truncate">{caseTitle || 'Custom Scenario'}</p>
-                </div>
-                <div className="space-y-0.5">
-                  <span className="text-[8px] uppercase font-black text-slate-400 tracking-wide">Court Category</span>
-                  <p className="font-extrabold text-indigo-500 truncate">{matterType || 'Civil'}</p>
-                </div>
-                <div className="space-y-0.5">
-                  <span className="text-[8px] uppercase font-black text-slate-400 tracking-wide">Jurisdiction</span>
-                  <p className="font-bold text-slate-705 dark:text-slate-300 truncate">{courtName || 'N/A'}</p>
-                </div>
-                <div className="space-y-0.5">
-                  <span className="text-[8px] uppercase font-black text-slate-400 tracking-wide">Litigation Stage</span>
-                  <span className="inline-block px-1.5 py-0.5 bg-amber-500/10 text-amber-600 rounded text-[7.5px] font-black uppercase w-fit">{caseStage || 'Pre-trial'}</span>
-                </div>
-                <div className="space-y-0.5">
-                  <span className="text-[8px] uppercase font-black text-slate-400 tracking-wide">Evidence dossiers</span>
-                  <p className="font-bold text-violet-500">{evidenceList.length} Items</p>
-                </div>
-              </div>
-            </div>
 
             {/* SCENARIO BUILDER: Single collapsible accordions */}
-            <div className="space-y-2">
-              
-              {/* Accordion 1: Case Facts */}
-              <div className={`border rounded-2xl overflow-hidden transition-all duration-300 ${
-                activeAccordion === 'facts' 
-                  ? 'border-indigo-500/30 ring-1 ring-indigo-500/10 shadow-md' 
-                  : (isDark ? 'border-zinc-800' : 'border-slate-200')
-              }`}>
-                <div 
-                  onClick={() => toggleAccordion('facts')}
-                  className={`px-4 py-3 flex items-center justify-between cursor-pointer ${
-                    activeAccordion === 'facts' 
-                      ? (isDark ? 'bg-indigo-550/10' : 'bg-indigo-500/5') 
-                      : (isDark ? 'bg-black/10' : 'bg-slate-50')
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <FileText size={14} className="text-indigo-500" />
-                    <span className="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-wider">Case Facts & Claims</span>
-                  </div>
-                  {activeAccordion === 'facts' ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
-                </div>
-                {activeAccordion === 'facts' && (
-                  <div className={`p-4 space-y-3 ${isDark ? 'bg-[#0B1020]/20' : 'bg-white'}`}>
-                    <div className="flex justify-between items-center text-[8px] font-black text-slate-400 uppercase">
-                      <span>Facts statement brief</span>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => setCaseFacts('')} className="hover:text-red-500">Clear</button>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(caseFacts);
-                            toast.success("Copied to clipboard!");
-                          }} 
-                          className="hover:text-indigo-500"
-                        >
-                          Copy
-                        </button>
-                      </div>
-                    </div>
+            {strategySource !== 'MANUAL_SCENARIO' && (
+              <div className="space-y-2">
 
-                    {!caseFacts.trim() && (
-                      <div className="text-center py-6 text-xs text-slate-405 font-bold bg-slate-500/5 rounded-xl border border-dashed leading-relaxed">
-                        No case facts entered yet. Type your facts manually, load a scenario template, or upload documents to auto-extract.
-                      </div>
-                    )}
-
-                    <textarea
-                      rows={5}
-                      value={caseFacts}
-                      onChange={e => setCaseFacts(e.target.value)}
-                      placeholder="Enter detailed facts of the case, breach details, transaction issues..."
-                      className={`w-full border rounded-xl px-3 py-2 text-xs font-semibold outline-none resize-none ${
-                        isDark ? 'bg-black/25 border-zinc-800 text-white' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Accordion 2: Evidence Dossier */}
-              <div className={`border rounded-2xl overflow-hidden transition-all duration-300 ${
-                activeAccordion === 'evidence' 
-                  ? 'border-indigo-500/30 ring-1 ring-indigo-500/10 shadow-md' 
-                  : (isDark ? 'border-zinc-800' : 'border-slate-200')
-              }`}>
-                <div 
-                  onClick={() => toggleAccordion('evidence')}
-                  className={`px-4 py-3 flex items-center justify-between cursor-pointer ${
-                    activeAccordion === 'evidence' 
-                      ? (isDark ? 'bg-indigo-550/10' : 'bg-indigo-500/5') 
-                      : (isDark ? 'bg-black/10' : 'bg-slate-50')
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Database size={14} className="text-indigo-500" />
-                    <span className="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-wider">Evidence Dossier</span>
-                  </div>
-                  {activeAccordion === 'evidence' ? <ChevronUp size={14} className="text-slate-405" /> : <ChevronDown size={14} className="text-slate-405" />}
-                </div>
-                {activeAccordion === 'evidence' && (
-                  <div className={`p-4 space-y-4 ${isDark ? 'bg-[#0B1020]/20' : 'bg-white'}`}>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[8px] font-black text-slate-405 uppercase">Deposition Evidence Cards</span>
-                      <button 
-                        onClick={() => runAIFieldExtraction('evidence')}
-                        className="flex items-center gap-1 px-2.5 py-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-550 rounded-lg text-[8px] font-black uppercase transition-all"
-                      >
-                        <Sparkles size={10} />
-                        <span>AI Extract Evidence</span>
-                      </button>
-                    </div>
-
-                    {/* Evidence cards grid */}
-                    {evidenceList.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                        {evidenceList.map(e => (
-                          <div key={e.id} className="p-3 border rounded-xl bg-slate-500/5 space-y-2 relative flex flex-col justify-between">
-                            <div className="flex justify-between items-start gap-1">
-                              <div>
-                                <span className="text-[8px] font-black text-slate-400 uppercase">{e.type}</span>
-                                <h4 className="text-xs font-black text-slate-850 dark:text-white mt-0.5">{e.name}</h4>
-                              </div>
-                              <button 
-                                onClick={() => handleRemoveEvidence(e.id)} 
-                                className="p-1 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded shrink-0 font-bold"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                            
-                            {/* Badges */}
-                            <div className="flex flex-wrap gap-1 items-center pt-2 border-t border-slate-100 dark:border-white/5">
-                              <span className={`px-2 py-0.5 text-[7px] font-black uppercase rounded ${
-                                e.admissibility === 'High' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
-                              }`}>Admis: {e.admissibility}</span>
-                              <span className={`px-2 py-0.5 text-[7px] font-black uppercase rounded ${
-                                e.strength === 'Strong' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-505'
-                              }`}>Strength: {e.strength}</span>
-                              <span className={`px-2 py-0.5 text-[7px] font-black uppercase rounded ${
-                                e.risk === 'Low' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-505'
-                              }`}>Risk: {e.risk}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-xs text-slate-400 font-semibold bg-slate-500/5 rounded-xl border border-dashed">
-                        No evidence cards added. Add manually below or click 'AI Extract Evidence' to identify potential proofs.
-                      </div>
-                    )}
-
-                    {/* Inline form */}
-                    <div className="p-3.5 border rounded-xl bg-slate-500/5 space-y-3.5 text-xs">
-                      <span className="text-[8px] font-black text-slate-400 uppercase">Create Evidence dossier</span>
-                      <div className="grid grid-cols-2 gap-2 font-semibold">
-                        <input
-                          type="text"
-                          placeholder="Evidence Proof name"
-                          value={newEv.name}
-                          onChange={e => setNewEv(prev => ({ ...prev, name: e.target.value }))}
-                          className={`border rounded-lg px-2.5 py-1.5 outline-none col-span-2 ${isDark ? 'bg-black/20 border-zinc-800 text-white' : 'bg-white text-slate-800'}`}
-                        />
-                        <select
-                          value={newEv.type}
-                          onChange={e => setNewEv(prev => ({ ...prev, type: e.target.value }))}
-                          className={`border rounded-lg px-2.5 py-1.5 outline-none ${isDark ? 'bg-black/20 border-zinc-800 text-white' : 'bg-white text-slate-800'}`}
-                        >
-                          <option value="Document">Document</option>
-                          <option value="Digital">Digital Log</option>
-                          <option value="Physical">Physical Proof</option>
-                          <option value="Oral">Oral Testimony</option>
-                        </select>
-                        <select
-                          value={newEv.admissibility}
-                          onChange={e => setNewEv(prev => ({ ...prev, admissibility: e.target.value }))}
-                          className={`border rounded-lg px-2.5 py-1.5 outline-none ${isDark ? 'bg-black/20 border-zinc-800 text-white' : 'bg-white text-slate-800'}`}
-                        >
-                          <option value="High">Admissibility: High</option>
-                          <option value="Medium">Admissibility: Medium</option>
-                          <option value="Low">Admissibility: Low</option>
-                        </select>
-                        <select
-                          value={newEv.strength}
-                          onChange={e => setNewEv(prev => ({ ...prev, strength: e.target.value }))}
-                          className={`border rounded-lg px-2.5 py-1.5 outline-none ${isDark ? 'bg-black/20 border-zinc-800 text-white' : 'bg-white text-slate-800'}`}
-                        >
-                          <option value="Strong">Strength: Strong</option>
-                          <option value="Medium">Strength: Medium</option>
-                          <option value="Weak">Strength: Weak</option>
-                        </select>
-                        <select
-                          value={newEv.risk}
-                          onChange={e => setNewEv(prev => ({ ...prev, risk: e.target.value }))}
-                          className={`border rounded-lg px-2.5 py-1.5 outline-none ${isDark ? 'bg-black/20 border-zinc-800 text-white' : 'bg-white text-slate-800'}`}
-                        >
-                          <option value="Low">Risk Exposure: Low</option>
-                          <option value="Medium">Risk Exposure: Medium</option>
-                          <option value="High">Risk Exposure: High</option>
-                        </select>
-                      </div>
-                      <button
-                        onClick={handleAddEvidence}
-                        className="w-full py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
-                      >
-                        Add Evidence
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Witness Pool (Only shown if witnesses detected) */}
-              {witnessList.length > 0 && (
-                <div className={`border rounded-2xl overflow-hidden transition-all duration-300 ${
-                  activeAccordion === 'witnesses' 
-                    ? 'border-indigo-500/30 ring-1 ring-indigo-500/10 shadow-md' 
-                    : (isDark ? 'border-zinc-800' : 'border-slate-200')
-                }`}>
-                  <div 
-                    onClick={() => toggleAccordion('witnesses')}
-                    className={`px-4 py-3 flex items-center justify-between cursor-pointer ${
-                      activeAccordion === 'witnesses' 
-                        ? (isDark ? 'bg-indigo-550/10' : 'bg-indigo-500/5') 
+                {/* Accordion 1: Case Facts */}
+                <div className={`rounded-2xl overflow-hidden transition-all duration-300 ${activeAccordion === 'facts'
+                    ? 'border-2 border-indigo-500 shadow-lg dark:border-indigo-400'
+                    : 'border border-slate-200 dark:border-zinc-800'
+                  }`}>
+                  <div
+                    onClick={() => toggleAccordion('facts')}
+                    className={`px-4 py-3 flex items-center justify-between cursor-pointer ${activeAccordion === 'facts'
+                        ? (isDark ? 'bg-indigo-500/10' : 'bg-indigo-50/50')
                         : (isDark ? 'bg-black/10' : 'bg-slate-50')
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2">
-                      <UserCheck size={14} className="text-indigo-500" />
-                      <span className="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-wider">Witness Pool</span>
+                      <FileText size={14} className={activeAccordion === 'facts' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'} />
+                      <span className={`text-[10px] font-black uppercase tracking-wider ${activeAccordion === 'facts' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-805 dark:text-white'}`}>Case Facts & Claims</span>
                     </div>
-                    {activeAccordion === 'witnesses' ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                    {activeAccordion === 'facts' ? <ChevronUp size={14} className="text-indigo-600 dark:text-indigo-400" /> : <ChevronDown size={14} className="text-slate-400" />}
                   </div>
-                  {activeAccordion === 'witnesses' && (
+                  {activeAccordion === 'facts' && (
+                    <div className={`p-4 space-y-3.5 ${isDark ? 'bg-[#0B1020]/20' : 'bg-white'}`}>
+                      <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <span>Facts statement brief</span>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setCaseFacts('')} className="hover:text-red-500">Clear</button>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(caseFacts);
+                              toast.success("Copied to clipboard!");
+                            }}
+                            className="hover:text-indigo-500"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+
+                      {!caseFacts.trim() && (
+                        <div className="p-3 border rounded-xl bg-amber-500/5 border-amber-500/10 text-[10.5px] font-bold text-amber-600">
+                          ⚠️ Case facts currently empty. Enter details or use active cases to populate strategy targets.
+                        </div>
+                      )}
+
+                      <textarea
+                        rows={5}
+                        value={caseFacts}
+                        onChange={e => setCaseFacts(e.target.value)}
+                        placeholder="Enter detailed facts of the case, breach details, transaction issues..."
+                        className={`w-full border rounded-xl px-3 py-2 text-xs font-semibold outline-none resize-none ${isDark ? 'bg-black/25 border-zinc-800 text-white' : 'bg-slate-50 border-slate-200'
+                          }`}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Accordion 2: Evidence Dossier */}
+                <div className={`rounded-2xl overflow-hidden transition-all duration-300 ${activeAccordion === 'evidence'
+                    ? 'border-2 border-indigo-500 shadow-lg dark:border-indigo-400'
+                    : 'border border-slate-200 dark:border-zinc-800'
+                  }`}>
+                  <div
+                    onClick={() => toggleAccordion('evidence')}
+                    className={`px-4 py-3 flex items-center justify-between cursor-pointer ${activeAccordion === 'evidence'
+                        ? (isDark ? 'bg-indigo-500/10' : 'bg-indigo-50/50')
+                        : (isDark ? 'bg-black/10' : 'bg-slate-50')
+                      }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Database size={14} className={activeAccordion === 'evidence' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'} />
+                      <span className={`text-[10px] font-black uppercase tracking-wider ${activeAccordion === 'evidence' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-805 dark:text-white'}`}>Evidence Dossier</span>
+                    </div>
+                    {activeAccordion === 'evidence' ? <ChevronUp size={14} className="text-indigo-600 dark:text-indigo-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                  </div>
+                  {activeAccordion === 'evidence' && (
                     <div className={`p-4 space-y-4 ${isDark ? 'bg-[#0B1020]/20' : 'bg-white'}`}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                        {witnessList.map(w => (
-                          <div key={w.id} className="p-3 border rounded-xl bg-slate-500/5 space-y-2 relative flex flex-col justify-between">
-                            <div className="flex justify-between items-start gap-1">
-                              <div>
-                                <h4 className="text-xs font-black text-slate-850 dark:text-white">{w.name}</h4>
-                                <span className="text-[8px] font-bold text-slate-400">{w.role}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[8px] font-black text-slate-405 uppercase">Deposition Evidence Cards</span>
+                        <button
+                          onClick={() => runAIFieldExtraction('evidence')}
+                          className="flex items-center gap-1 px-2.5 py-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-555 rounded-lg text-[8px] font-black uppercase transition-all"
+                        >
+                          <Sparkles size={9} />
+                          <span>Autofill Dossier</span>
+                        </button>
+                      </div>
+
+                      {/* Evidence cards grid */}
+                      {evidenceList.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {evidenceList.map(e => (
+                            <div key={e.id} className="p-3 border rounded-xl bg-slate-500/3 flex flex-col justify-between space-y-2">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <span className="text-[8px] font-black text-slate-400 uppercase">{e.type}</span>
+                                  <h4 className="text-xs font-black text-slate-850 dark:text-white mt-0.5">{e.name}</h4>
+                                </div>
+                                <button
+                                  onClick={() => handleRemoveEvidence(e.id)}
+                                  className="p-1 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded shrink-0 font-bold"
+                                >
+                                  ✕
+                                </button>
                               </div>
-                              <button 
-                                onClick={() => handleRemoveWitness(w.id)} 
-                                className="p-1 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded shrink-0 font-semibold"
-                              >
-                                <Trash2 size={12} />
-                              </button>
+
+                              {/* Badges */}
+                              <div className="flex flex-wrap gap-1 items-center pt-2 border-t border-slate-100 dark:border-white/5">
+                                <span className={`px-2 py-0.5 text-[7px] font-black uppercase rounded ${e.admissibility === 'High' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
+                                  }`}>Admis: {e.admissibility}</span>
+                                <span className={`px-2 py-0.5 text-[7px] font-black uppercase rounded ${e.strength === 'Strong' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-505'
+                                  }`}>Strength: {e.strength}</span>
+                                <span className={`px-2 py-0.5 text-[7px] font-black uppercase rounded ${e.risk === 'Low' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-505'
+                                  }`}>Risk: {e.risk}</span>
+                              </div>
                             </div>
-                            
-                            <div className="flex flex-wrap gap-1 items-center pt-2 border-t border-slate-100 dark:border-white/5">
-                              <span className={`px-2 py-0.5 text-[7px] font-black uppercase rounded ${
-                                w.supports === 'Plaintiff' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
-                              }`}>Supports: {w.supports}</span>
-                              <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-550 rounded text-[7px] font-black uppercase">Credibility: {w.credibilityScore}%</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-3 border rounded-xl bg-slate-500/5 text-center text-slate-405 font-bold">
+                          No evidence logged yet. Use AI Autofill or add manually below.
+                        </div>
+                      )}
+
+                      {/* Inline form */}
+                      <div className="p-3 border rounded-xl bg-slate-500/3 space-y-3.5">
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Add custom evidence item</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                          <div className="space-y-1">
+                            <span className="text-[8px] uppercase text-slate-405">Evidence Title / Name</span>
+                            <input
+                              type="text"
+                              value={newEv.name}
+                              onChange={e => setNewEv({ ...newEv, name: e.target.value })}
+                              placeholder="e.g. Agreement sheet copy"
+                              className={`w-full border rounded-lg px-2.5 py-1.5 text-xs font-semibold outline-none ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-slate-205'}`}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <span className="text-[8px] uppercase text-slate-405">Category</span>
+                              <select
+                                value={newEv.type}
+                                onChange={e => setNewEv({ ...newEv, type: e.target.value })}
+                                className={`w-full border rounded-lg px-1.5 py-1.5 text-[10.5px] outline-none font-bold ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-slate-205'}`}
+                              >
+                                <option value="Document">Document</option>
+                                <option value="Digital">Digital</option>
+                                <option value="Physical">Physical</option>
+                                <option value="Oral">Oral</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-[8px] uppercase text-slate-455">Admissibility</span>
+                              <select
+                                value={newEv.admissibility}
+                                onChange={e => setNewEv({ ...newEv, admissibility: e.target.value })}
+                                className={`w-full border rounded-lg px-1.5 py-1.5 text-[10.5px] outline-none font-bold ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-slate-205'}`}
+                              >
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                              </select>
                             </div>
                           </div>
-                        ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <span className="text-[8px] uppercase text-slate-455">Strength weight</span>
+                            <select
+                              value={newEv.strength}
+                              onChange={e => setNewEv({ ...newEv, strength: e.target.value })}
+                              className={`w-full border rounded-lg px-1.5 py-1.5 text-[10.5px] outline-none font-bold ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-slate-205'}`}
+                            >
+                              <option value="Strong">Strong</option>
+                              <option value="Medium">Medium</option>
+                              <option value="Weak">Weak</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[8px] uppercase text-slate-400">Credibility</span>
+                            <select
+                              value={newEv.credibility}
+                              onChange={e => setNewEv({ ...newEv, credibility: e.target.value })}
+                              className={`w-full border rounded-lg px-1.5 py-1.5 text-[10.5px] outline-none font-bold ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-slate-205'}`}
+                            >
+                              <option value="High">High</option>
+                              <option value="Medium">Medium</option>
+                              <option value="Low">Low</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[8px] uppercase text-slate-400">Procedural Risk</span>
+                            <select
+                              value={newEv.risk}
+                              onChange={e => setNewEv({ ...newEv, risk: e.target.value })}
+                              className={`w-full border rounded-lg px-1.5 py-1.5 text-[10.5px] outline-none font-bold ${isDark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-slate-205'}`}
+                            >
+                              <option value="Low">Low</option>
+                              <option value="Medium">Medium</option>
+                              <option value="High">High</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end pt-1">
+                          <button
+                            onClick={handleAddEvidence}
+                            className="px-4 py-1.5 bg-indigo-650 hover:bg-indigo-705 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                          >
+                            Add to Dossier
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
-              )}
 
-              {/* Show Advanced parameters toggle */}
-              <div className="pt-2 text-center">
-                <button
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className={`flex items-center gap-1.5 px-4 py-2 border rounded-xl text-[10px] font-black uppercase tracking-wider mx-auto transition-all ${
-                    showAdvanced
-                      ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-650'
-                      : (isDark ? 'bg-[#131c31] border-zinc-800 text-slate-400 hover:text-white' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100')
-                  }`}
-                >
-                  <span>{showAdvanced ? 'Hide Advanced Parameters' : 'Show Advanced Parameters'}</span>
-                  {showAdvanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                </button>
-              </div>
-
-              {/* Advanced Collapsible Accordions Container */}
-              {showAdvanced && (
-                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-zinc-800/50">
-                  
-                  {/* Timeline Accordion */}
-                  <div className={`border rounded-2xl overflow-hidden transition-all duration-300 ${
-                    activeAccordion === 'timeline' ? 'border-indigo-500/30 ring-1 ring-indigo-500/10 shadow-md' : (isDark ? 'border-zinc-800' : 'border-slate-200')
-                  }`}>
-                    <div 
-                      onClick={() => toggleAccordion('timeline')}
-                      className={`px-4 py-3 flex items-center justify-between cursor-pointer ${
-                        activeAccordion === 'timeline' ? (isDark ? 'bg-indigo-550/10' : 'bg-indigo-500/5') : (isDark ? 'bg-black/10' : 'bg-slate-50')
-                      }`}
+                {/* Witness Pool (Only shown if witnesses detected) */}
+                {witnessList.length > 0 && (
+                  <div className={`rounded-2xl overflow-hidden transition-all duration-300 ${activeAccordion === 'witnesses'
+                      ? 'border-2 border-indigo-500 shadow-lg dark:border-indigo-400'
+                      : 'border border-slate-200 dark:border-zinc-800'
+                    }`}>
+                    <div
+                      onClick={() => toggleAccordion('witnesses')}
+                      className={`px-4 py-3 flex items-center justify-between cursor-pointer ${activeAccordion === 'witnesses'
+                          ? (isDark ? 'bg-indigo-500/10' : 'bg-indigo-50/50')
+                          : (isDark ? 'bg-black/10' : 'bg-slate-50')
+                        }`}
                     >
                       <div className="flex items-center gap-2">
-                        <Clock size={14} className="text-indigo-500" />
-                        <span className="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-wider">Visual Courtroom Timeline</span>
+                        <UserCheck size={14} className={activeAccordion === 'witnesses' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'} />
+                        <span className={`text-[10px] font-black uppercase tracking-wider ${activeAccordion === 'witnesses' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-805 dark:text-white'}`}>Witness Pool</span>
                       </div>
-                      {activeAccordion === 'timeline' ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                      {activeAccordion === 'witnesses' ? <ChevronUp size={14} className="text-indigo-600 dark:text-indigo-400" /> : <ChevronDown size={14} className="text-slate-400" />}
                     </div>
-                    {activeAccordion === 'timeline' && (
-                      <div className={`p-4 space-y-4 ${isDark ? 'bg-[#0B1020]/20' : 'bg-white'}`}>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[8px] font-black text-slate-405 uppercase">Chronological Milestones Chain</span>
-                          <button 
-                            onClick={() => runAIFieldExtraction('timeline')}
-                            className="flex items-center gap-1 px-2.5 py-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-650 rounded-lg text-[8px] font-black uppercase transition-all"
-                          >
-                            <Sparkles size={10} />
-                            <span>Generate Timeline from Uploaded Docs / Facts</span>
-                          </button>
-                        </div>
-
-                        {timelineList.length > 0 ? (
-                          <div className="relative border-l-2 border-indigo-500/20 ml-2.5 pl-5 space-y-4">
-                            {timelineList.map(t => (
-                              <div key={t.id} className="relative group">
-                                <span className="absolute -left-[27px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-indigo-500 bg-white dark:bg-zinc-900 shrink-0" />
-                                <div className="flex justify-between items-start p-3 border rounded-xl bg-slate-500/5">
-                                  <div>
-                                    <span className="text-[8px] font-black text-indigo-500 bg-indigo-500/10 px-1.5 py-0.5 rounded">{t.date}</span>
-                                    <h4 className="text-xs font-black text-slate-805 dark:text-white mt-1">{t.title}</h4>
-                                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{t.description}</p>
-                                  </div>
-                                  <button onClick={() => handleRemoveTimeline(t.id)} className="p-1 hover:bg-red-50 text-red-500 rounded"><Trash2 size={12} /></button>
+                    {activeAccordion === 'witnesses' && (
+                      <div className={`p-4 space-y-3 ${isDark ? 'bg-[#0B1020]/20' : 'bg-white'}`}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          {witnessList.map(w => (
+                            <div key={w.id} className="p-3 border rounded-xl bg-slate-500/3 flex flex-col justify-between space-y-2">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h4 className="text-xs font-black text-slate-850 dark:text-white">{w.name}</h4>
+                                  <span className="text-[8px] font-bold text-slate-404">{w.role}</span>
                                 </div>
+                                <button
+                                  onClick={() => handleRemoveWitness(w.id)}
+                                  className="p-1 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded shrink-0 font-semibold"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
                               </div>
-                            ))}
+
+                              <div className="flex flex-wrap gap-1 items-center pt-2 border-t border-slate-100 dark:border-white/5">
+                                <span className={`px-2 py-0.5 text-[7px] font-black uppercase rounded ${w.supports === 'Plaintiff' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
+                                  }`}>Supports: {w.supports}</span>
+                                <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-550 rounded text-[7px] font-black uppercase">Credibility: {w.credibilityScore}%</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Show Advanced parameters toggle */}
+                <div className="pt-2 text-center">
+                  <button
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className={`flex items-center gap-1.5 px-4 py-2 border rounded-xl text-[10px] font-black uppercase tracking-wider mx-auto transition-all ${showAdvanced
+                        ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-650'
+                        : (isDark ? 'bg-[#131c31] border-zinc-800 text-slate-404 hover:text-white' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100')
+                      }`}
+                  >
+                    <span>{showAdvanced ? 'Hide Advanced Parameters' : 'Show Advanced Parameters'}</span>
+                    {showAdvanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  </button>
+                </div>
+
+                {/* Advanced Collapsible Accordions Container */}
+                {showAdvanced && (
+                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-zinc-800/50">
+
+                    {/* Timeline Accordion */}
+                    <div className={`rounded-2xl overflow-hidden transition-all duration-300 ${activeAccordion === 'timeline'
+                        ? 'border-2 border-indigo-500 shadow-lg dark:border-indigo-400'
+                        : 'border border-slate-200 dark:border-zinc-800'
+                      }`}>
+                      <div
+                        onClick={() => toggleAccordion('timeline')}
+                        className={`px-4 py-3 flex items-center justify-between cursor-pointer ${activeAccordion === 'timeline'
+                            ? (isDark ? 'bg-indigo-500/10' : 'bg-indigo-50/50')
+                            : (isDark ? 'bg-black/10' : 'bg-slate-50')
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Clock size={14} className={activeAccordion === 'timeline' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'} />
+                          <span className={`text-[10px] font-black uppercase tracking-wider ${activeAccordion === 'timeline' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-white'}`}>Milestones Chronology</span>
+                        </div>
+                        {activeAccordion === 'timeline' ? <ChevronUp size={14} className="text-indigo-600 dark:text-indigo-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                      </div>
+                      {activeAccordion === 'timeline' && (
+                        <div className={`p-4 space-y-4 ${isDark ? 'bg-[#0B1020]/20' : 'bg-white'}`}>
+                          <div className="flex justify-between items-center">
+                            <span className="text-[8px] font-black text-slate-405 uppercase">Chronological Milestones Chain</span>
+                            <button
+                              onClick={() => runAIFieldExtraction('timeline')}
+                              className="flex items-center gap-1 px-2.5 py-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-655 rounded-lg text-[8px] font-black uppercase transition-all"
+                            >
+                              <Sparkles size={9} />
+                              <span>AI Chronology Sync</span>
+                            </button>
                           </div>
-                        ) : (
-                          <div className="text-center py-6 text-xs text-slate-400 font-semibold bg-slate-500/5 rounded-xl border border-dashed">
-                            No timeline milestones generated. Click the button above to extract chronologically from documents or facts.
+
+                          {timelineList.length > 0 ? (
+                            <div className="relative border-l border-indigo-500/20 pl-4 ml-2 space-y-3">
+                              {timelineList.map(t => (
+                                <div key={t.id} className="relative">
+                                  <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border border-indigo-500 bg-white dark:bg-zinc-900" />
+                                  <div className="text-xs">
+                                    <div className="flex justify-between items-baseline gap-2">
+                                      <span className="font-black text-indigo-500 text-[10px]">{t.date}</span>
+                                      <button onClick={() => handleRemoveTimeline(t.id)} className="text-red-500 hover:text-red-650 shrink-0">✕</button>
+                                    </div>
+                                    <h4 className="font-extrabold text-slate-800 dark:text-slate-200 mt-0.5">{t.title}</h4>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-3 border rounded-xl bg-slate-500/5 text-center text-slate-400 font-bold">
+                              No timeline milestones parsed yet.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                               {/* Manual Witness Mapping (only shown in advanced if list is empty) */}
+                    {witnessList.length === 0 && (
+                      <div className={`rounded-2xl overflow-hidden transition-all duration-300 ${activeAccordion === 'witnesses'
+                          ? 'border-2 border-indigo-500 shadow-lg dark:border-indigo-400'
+                          : 'border border-slate-200 dark:border-zinc-800'
+                        }`}>
+                        <div
+                          onClick={() => toggleAccordion('witnesses')}
+                          className={`px-4 py-3 flex items-center justify-between cursor-pointer ${activeAccordion === 'witnesses'
+                              ? (isDark ? 'bg-indigo-500/10' : 'bg-indigo-50/50')
+                              : (isDark ? 'bg-black/10' : 'bg-slate-50')
+                            }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <UserCheck size={14} className={activeAccordion === 'witnesses' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'} />
+                            <span className={`text-[10px] font-black uppercase tracking-wider ${activeAccordion === 'witnesses' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-white'}`}>Witness Registry (Add manually)</span>
+                          </div>
+                          {activeAccordion === 'witnesses' ? <ChevronUp size={14} className="text-indigo-600 dark:text-indigo-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                        </div>
+                        {activeAccordion === 'witnesses' && (
+                          <div className={`p-4 space-y-3.5 ${isDark ? 'bg-black/5' : 'bg-white'}`}>
+                            {/* Form */}
                           </div>
                         )}
                       </div>
                     )}
-                  </div>
 
-                  {/* Manual Witness Mapping (only shown in advanced if list is empty) */}
-                  {witnessList.length === 0 && (
-                    <div className={`border rounded-2xl overflow-hidden transition-all duration-300 ${
-                      activeAccordion === 'witnesses' ? 'border-indigo-500/30' : (isDark ? 'border-zinc-800' : 'border-slate-200')
-                    }`}>
-                      <div 
-                        onClick={() => toggleAccordion('witnesses')}
-                        className={`px-4 py-3 flex items-center justify-between cursor-pointer ${
-                          activeAccordion === 'witnesses' ? (isDark ? 'bg-indigo-550/10' : 'bg-indigo-500/5') : (isDark ? 'bg-black/10' : 'bg-slate-50')
-                        }`}
+                    {/* Relief sought and previous orders */}
+                    <div className={`rounded-2xl overflow-hidden transition-all duration-300 ${activeAccordion === 'relief'
+                        ? 'border-2 border-indigo-500 shadow-lg dark:border-indigo-400'
+                        : 'border border-slate-200 dark:border-zinc-800'
+                      }`}>
+                      <div
+                        onClick={() => toggleAccordion('relief')}
+                        className={`px-4 py-3 flex items-center justify-between cursor-pointer ${activeAccordion === 'relief'
+                            ? (isDark ? 'bg-indigo-500/10' : 'bg-indigo-50/50')
+                            : (isDark ? 'bg-black/10' : 'bg-slate-50')
+                          }`}
                       >
                         <div className="flex items-center gap-2">
-                          <UserCheck size={14} className="text-indigo-500" />
-                          <span className="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-wider">Witness Pool Mapping</span>
+                          <Scale size={14} className={activeAccordion === 'relief' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'} />
+                          <span className={`text-[10px] font-black uppercase tracking-wider ${activeAccordion === 'relief' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-white'}`}>Relief & Previous Orders</span>
                         </div>
-                        {activeAccordion === 'witnesses' ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                        {activeAccordion === 'relief' ? <ChevronUp size={14} className="text-indigo-600 dark:text-indigo-400" /> : <ChevronDown size={14} className="text-slate-400" />}
                       </div>
-                      {activeAccordion === 'witnesses' && (
-                        <div className={`p-4 space-y-4 ${isDark ? 'bg-[#0B1020]/20' : 'bg-white'}`}>
-                          <div className="text-center py-4 text-xs text-slate-405 font-bold bg-slate-500/5 rounded-xl border border-dashed">
-                            Witnesses are identified by AI during strategy generation. You can also manually add a witness card in the sidebar template fields.
+                      {activeAccordion === 'relief' && (
+                        <div className={`p-4 space-y-3.5 ${isDark ? 'bg-black/5' : 'bg-white'}`}>
+                          {/* Relief */}
+                          <div className="space-y-1.5">
+                            <span className="text-[8px] font-black text-slate-404 uppercase">Relief Category preset</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {['Compensation damages', 'Specific performance', 'Permanent Injunction', 'Declaration decree', 'Declaration nullity', 'Stay execution order'].map(chip => {
+                                const active = scenarioRelief.includes(chip);
+                                return (
+                                  <button
+                                    key={chip}
+                                    onClick={() => handleToggleReliefChip(chip)}
+                                    type="button"
+                                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
+                                      active
+                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                                        : 'bg-white dark:bg-zinc-900 border-slate-250 dark:border-zinc-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-800/50'
+                                    }`}
+                                  >
+                                    {chip}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1 text-xs">
+                            <span className="text-[8px] font-black text-slate-400 uppercase">Relief Sought Details (AI suggested / editable)</span>
+                            <input
+                              type="text"
+                              placeholder="AI will suggest relief details, or you can edit..."
+                              value={scenarioRelief}
+                              onChange={e => setScenarioRelief(e.target.value)}
+                              className={`w-full border rounded-xl px-3 py-2 outline-none font-bold ${isDark ? 'bg-black/25 border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-808'}`}
+                            />
+                          </div>
+
+                          {/* Previous Court Orders */}
+                          <div className="space-y-1 text-xs pt-2 border-t border-slate-100 dark:border-white/5">
+                            <span className="text-[8px] font-black text-slate-400 uppercase">Previous Court Orders (if any)</span>
+                            <textarea
+                              rows={3}
+                              value={scenarioOrders}
+                              onChange={e => setScenarioOrders(e.target.value)}
+                              placeholder="Enter previous stays, notices, or caveat decrees details..."
+                              className={`w-full border rounded-xl px-3 py-2 outline-none resize-none font-bold ${isDark ? 'bg-black/25 border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                            />
                           </div>
                         </div>
                       )}
                     </div>
-                  )}
-
-                  {/* Relief sought and previous orders */}
-                  <div className={`border rounded-2xl overflow-hidden transition-all duration-300 ${
-                    activeAccordion === 'relief' ? 'border-indigo-500/30' : (isDark ? 'border-zinc-800' : 'border-slate-200')
-                  }`}>
-                    <div 
-                      onClick={() => toggleAccordion('relief')}
-                      className={`px-4 py-3 flex items-center justify-between cursor-pointer ${
-                        activeAccordion === 'relief' ? (isDark ? 'bg-indigo-550/10' : 'bg-indigo-500/5') : (isDark ? 'bg-black/10' : 'bg-slate-50')
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Scale size={14} className="text-indigo-500" />
-                        <span className="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-wider">Relief Sought & Previous Orders</span>
-                      </div>
-                      {activeAccordion === 'relief' ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
-                    </div>
-                    {activeAccordion === 'relief' && (
-                      <div className={`p-4 space-y-4 ${isDark ? 'bg-[#0B1020]/20' : 'bg-white'}`}>
-                        {/* Relief */}
-                        <div className="space-y-2">
-                          <span className="text-[8px] font-black text-slate-400 uppercase">Select Structured Relief Chips</span>
-                          <div className="flex flex-wrap gap-2">
-                            {reliefChips.map(chip => {
-                              const active = scenarioRelief.split(', ').filter(Boolean).includes(chip);
-                              return (
-                                <button
-                                  key={chip}
-                                  onClick={() => handleToggleReliefChip(chip)}
-                                  className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
-                                    active ? 'bg-indigo-650 text-white border-indigo-650' : 'bg-slate-100 dark:bg-zinc-800 border-transparent text-slate-550 dark:text-slate-405 hover:bg-slate-200'
-                                  }`}
-                                >
-                                  {chip}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        <div className="space-y-1 text-xs">
-                          <span className="text-[8px] font-black text-slate-400 uppercase">Relief Sought Details (AI suggested / editable)</span>
-                          <input 
-                            type="text"
-                            placeholder="AI will suggest relief details, or you can edit..."
-                            value={scenarioRelief}
-                            onChange={e => setScenarioRelief(e.target.value)}
-                            className={`w-full border rounded-xl px-3 py-2 outline-none font-bold ${isDark ? 'bg-black/25 border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
-                          />
-                        </div>
-
-                        {/* Previous Court Orders */}
-                        <div className="space-y-1 text-xs pt-2 border-t border-slate-100 dark:border-white/5">
-                          <span className="text-[8px] font-black text-slate-400 uppercase">Previous Court Orders (if any)</span>
-                          <textarea 
-                            rows={3}
-                            value={scenarioOrders}
-                            onChange={e => setScenarioOrders(e.target.value)}
-                            placeholder="Enter previous stays, notices, or caveat decrees details..."
-                            className={`w-full border rounded-xl px-3 py-2 outline-none resize-none font-bold ${isDark ? 'bg-black/25 border-zinc-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
-                          />
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
-          </div>
 
-            {/* AI Simulation run loading steps */}
+            {/* REDESIGNED Strategy Readiness Metrics Card */}
+            <div className={`border rounded-3xl p-5 shadow-sm space-y-4 ${isDark ? 'bg-[#131c31]/30 border-slate-800' : 'bg-white border-slate-200'
+              }`}>
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800/80">
+                <div className="flex items-center gap-2">
+                  <Shield size={16} className="text-indigo-505 font-extrabold" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">Strategy Readiness</h3>
+                </div>
+                <span className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase ${
+                  strategyReadinessCalculated.overall === 100
+                    ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-450'
+                    : (strategyReadinessCalculated.overall > 0
+                      ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                      : 'bg-red-500/10 text-red-500')
+                  }`}>
+                  {strategyReadinessCalculated.overall}% Ready
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full bg-slate-200 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden shrink-0">
+                <div className={`h-full transition-all duration-500 ${
+                  strategyReadinessCalculated.overall === 100
+                    ? 'bg-emerald-500'
+                    : (strategyReadinessCalculated.overall > 0
+                      ? 'bg-indigo-600 dark:bg-indigo-500'
+                      : 'bg-red-500')
+                  }`} style={{ width: `${strategyReadinessCalculated.overall}%` }} />
+              </div>
+
+              {/* Dynamic missing items checklist display */}
+              {strategySource === 'MANUAL_SCENARIO' ? (
+                <div className="text-[10px] font-black text-indigo-500 uppercase tracking-wider">
+                  {caseFacts.trim().length > 15 ? '✓ Strategy description ready for analysis' : '• Enter description of the legal issue below'}
+                </div>
+              ) : missingItems.length > 0 ? (
+                <div className="text-[10px] font-extrabold text-slate-404 uppercase tracking-wide flex items-center gap-2 flex-wrap">
+                  <span>Missing Parameters:</span>
+                  {missingItems.map(item => (
+                    <span key={item} className="px-2 py-0.5 bg-red-500/10 text-red-500 rounded border border-red-500/10 font-bold lowercase tracking-wider">
+                      • {item}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-[10px] font-black text-emerald-505 uppercase tracking-wider">
+                  ✓ Case profile fully populated and ready for strategy simulation!
+                </div>
+              )}
+            </div>
+
+            {/* STICKY BOTTOM GENERATE CTA CONTAINER */}
+            <div className="sticky bottom-0 z-55 p-4 bg-slate-50/80 dark:bg-[#0c1224]/80 backdrop-blur-md border rounded-3xl dark:border-slate-800/50 flex flex-col items-center gap-1.5 w-full">
+              <button
+                disabled={isAuditing}
+                onClick={() => runLitigationSimulation('FULL_SIMULATION')}
+                className={`px-12 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-indigo-500/20 w-full max-w-lg flex items-center justify-center gap-2 ${isAuditing ? 'opacity-65 cursor-not-allowed' : ''
+                  }`}
+              >
+                {isAuditing ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
+                    <span>Generating AI Strategy...</span>
+                  </>
+                ) : (
+                  <>
+                    <Cpu size={14} />
+                    <span>Generate AI Strategy</span>
+                  </>
+                )}
+              </button>
+              <p className="text-[8.5px] font-black uppercase text-slate-400 tracking-wider">Estimated Processing Time: 12 Sec</p>
+            </div>
+
+            {/* AI Simulation run loading steps (directly below the button) */}
             {isAuditing && (
-              <div className="text-center py-6">
-                <div className={`p-5 border rounded-3xl shadow-lg text-left max-w-md mx-auto space-y-3.5 transition-all duration-300 ${
-                  isDark ? 'bg-[#131c31] border-zinc-800' : 'bg-white border-slate-200'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest animate-pulse">Running Litigation Audit Simulation...</span>
+              <div ref={loadingRef} className="text-center py-6 animate-fadeIn">
+                <div className={`w-full max-w-md mx-auto p-4 sm:p-6 border rounded-3xl shadow-xl text-left space-y-4 transition-all duration-300 ${isDark ? 'bg-[#131c31] border-zinc-800' : 'bg-white border-slate-200'
+                  }`}>
+                  <div className="flex items-center gap-3 border-b pb-3 border-slate-100 dark:border-zinc-800/80 min-w-0">
+                    <span className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin shrink-0" />
+                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest animate-pulse break-words">Running Litigation Audit Simulation...</span>
                   </div>
 
-                  <div className="space-y-1 text-[10px] font-bold">
+                  <div className="space-y-2 text-[11px] font-bold">
                     {[
-                      { step: 0, text: 'Parsing Facts & Statements' },
-                      { step: 1, text: 'Evaluating Admissibility of Evidence' },
-                      { step: 2, text: 'Running precedent searches in database' },
-                      { step: 3, text: 'Calculating opponent exposure probability' },
-                      { step: 4, text: 'Assessing Judge behavior patterns' },
-                      { step: 5, text: 'Drafting Courtroom strategy arguments' },
-                      { step: 6, text: 'Formatting final intelligence brief' }
+                      { step: 0, text: 'Reading case facts...' },
+                      { step: 1, text: 'Evaluating evidence...' },
+                      { step: 2, text: 'Searching precedents...' },
+                      { step: 3, text: 'Predicting litigation outcome...' },
+                      { step: 4, text: 'Building courtroom strategy...' },
+                      { step: 5, text: 'Generating final report...' }
                     ].map((item, idx) => {
                       const isDone = activeSimulationStep > item.step;
                       const isCurrent = activeSimulationStep === item.step;
                       return (
-                        <div key={idx} className="flex items-center gap-2">
+                        <div key={idx} className="flex items-center gap-2.5">
                           {isDone ? (
-                            <span className="text-emerald-500 font-bold">✓</span>
+                            <span className="text-emerald-500 font-extrabold text-sm">✓</span>
                           ) : isCurrent ? (
-                            <span className="text-indigo-500 animate-pulse">●</span>
+                            <span className="text-indigo-500 animate-pulse text-sm">●</span>
                           ) : (
-                            <span className="text-slate-300 dark:text-zinc-700">○</span>
+                            <span className="text-slate-300 dark:text-zinc-700 text-sm">○</span>
                           )}
-                          <span className={isDone ? 'text-emerald-600 dark:text-emerald-500/80 line-through' : isCurrent ? 'text-indigo-650' : 'text-slate-400'}>
+                          <span className={isDone ? 'text-slate-400 dark:text-zinc-500 line-through font-semibold' : isCurrent ? 'text-indigo-650 dark:text-indigo-400 font-black' : 'text-slate-400 font-semibold'}>
                             {item.text}
                           </span>
                         </div>
@@ -2772,445 +3693,443 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
               </div>
             )}
 
-            {/* REDESIGNED Strategy Readiness Metrics Card */}
-            {!strategyResult && !isAuditing && (
-              <div className={`border rounded-3xl p-5 shadow-sm space-y-4 ${
-                isDark ? 'bg-[#131c31]/30 border-slate-800' : 'bg-white border-slate-200'
-              }`}>
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800/80">
-                  <div className="flex items-center gap-2">
-                    <Shield size={16} className="text-indigo-500 font-extrabold" />
-                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">Strategy Readiness</h3>
-                  </div>
-                  <span className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase ${
-                    strategyReadinessCalculated.overall > 75 ? 'bg-emerald-500/10 text-emerald-500' :
-                    strategyReadinessCalculated.overall > 40 ? 'bg-amber-500/10 text-amber-505' : 'bg-red-500/10 text-red-500'
-                  }`}>
-                    {strategyReadinessCalculated.overall}% Ready
-                  </span>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full bg-slate-200 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden shrink-0">
-                  <div className={`h-full transition-all duration-500 ${
-                    strategyReadinessCalculated.overall > 75 ? 'bg-emerald-500' :
-                    strategyReadinessCalculated.overall > 40 ? 'bg-amber-500' : 'bg-red-500'
-                  }`} style={{ width: `${strategyReadinessCalculated.overall}%` }} />
-                </div>
-
-                {/* Dynamic missing items checklist display */}
-                {missingItems.length > 0 ? (
-                  <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide flex items-center gap-2 flex-wrap">
-                    <span>Missing Parameters:</span>
-                    {missingItems.map(item => (
-                      <span key={item} className="px-2 py-0.5 bg-red-500/10 text-red-500 rounded border border-red-500/10 font-bold lowercase tracking-wider">
-                        • {item}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-[10px] font-black text-emerald-505 uppercase tracking-wider">
-                    ✓ Case profile fully populated and ready for strategy simulation!
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* STICKY BOTTOM GENERATE CTA CONTAINER */}
-            {!strategyResult && !isAuditing && (
-              <div className="sticky bottom-0 z-50 p-4 bg-slate-50/80 dark:bg-[#0c1224]/80 backdrop-blur-md border-t dark:border-slate-800/50 flex flex-col items-center gap-1.5 w-full">
-                <button
-                  onClick={() => runLitigationSimulation('FULL_SIMULATION')}
-                  className="px-12 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-indigo-500/20 w-full max-w-lg flex items-center justify-center gap-2"
-                >
-                  <Cpu size={14} />
-                  <span>Generate AI Strategy</span>
-                </button>
-                <p className="text-[8.5px] font-black uppercase text-slate-400 tracking-wider">Estimated Processing Time: 12 Sec</p>
-              </div>
-            )}
-
-            {/* RESULTS VIEW AREA (Immediately below simulation button) */}
+            {/* AI STRATEGY REPORT (PREMIUM PROFESSIONAL LEGAL CARD IN SAME LOCATION) */}
             {strategyResult && (
-              <div className="space-y-5 animate-fadeIn">
-                
-                {/* Horizontal Quick Actions bar for quick audits inside the report */}
-                <div className={`p-4 border rounded-3xl space-y-2.5 ${
-                  isDark ? 'bg-[#131c31]/30 border-slate-800' : 'bg-white border-slate-200'
-                }`}>
-                  <span className="text-[9px] font-black uppercase text-indigo-505 tracking-widest">Quick Strategy Audits</span>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    {[
-                      { name: 'Simulate Strategy', action: 'FULL_SIMULATION', icon: <Cpu size={12} /> },
-                      { name: 'Risk Assessment', action: 'RISK_ASSESSMENT', icon: <AlertTriangle size={12} /> },
-                      { name: 'Evidence Review', action: 'EVIDENCE_REVIEW', icon: <FileText size={12} /> },
-                      { name: 'Opponent Forecast', action: 'OPPONENT_PREDICTION', icon: <Eye size={12} /> },
-                      { name: 'Settlement Terms', action: 'SETTLEMENT_ANALYSIS', icon: <DollarSign size={12} /> }
-                    ].map(a => (
-                      <button
-                        key={a.name}
-                        onClick={() => handleQuickActionTrigger(a.action)}
-                        className={`flex items-center justify-center gap-1.5 py-2 px-2.5 border rounded-xl text-[9px] font-black uppercase tracking-wider transition-all hover:border-indigo-500/40 hover:bg-indigo-500/5 ${
-                          isDark ? 'bg-[#1A2540] border-zinc-800 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
-                        }`}
-                      >
-                        <span className="text-indigo-500 shrink-0">{a.icon}</span>
-                        <span className="truncate">{a.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <div ref={reportRef} className="space-y-6 pt-4 report-animate-fadeIn">
+                <div className={`p-8 sm:p-12 border-t-8 border-indigo-600 rounded-[32px] shadow-2xl space-y-8 select-text ${isDark ? 'bg-[#131c31] border-zinc-800' : 'bg-white border-slate-205'
+                  } transition-all duration-500 ease-in-out`}>
 
-                {/* Export panel buttons bar */}
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800/80 pb-3 pt-2">
-                  <span className="text-[9px] font-black uppercase text-indigo-500 tracking-widest">AI Command Center Intelligence Briefs</span>
-                  <div className="flex items-center gap-1.5">
-                    <button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(JSON.stringify(strategyResult, null, 2));
-                        toast.success("JSON copied to clipboard!");
-                      }}
-                      className={`p-2 rounded-lg text-slate-500 hover:text-indigo-600 transition-colors ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-slate-100'}`}
-                      title="Copy JSON Report"
-                    >
-                      <Copy size={13} />
-                    </button>
-                    <button 
-                      onClick={handleSpeechSummary}
-                      className={`p-2 rounded-lg transition-colors ${isSpeaking ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20' : 'text-slate-500'} ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-slate-100'}`}
-                      title="Read Brief Aloud"
-                    >
-                      <Mic size={13} />
-                    </button>
-                    <button 
-                      onClick={handlePrintPDF}
-                      className={`p-2 rounded-lg text-indigo-650 hover:text-indigo-700 transition-colors ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-slate-100'}`}
-                      title="Export PDF Report"
-                    >
-                      <Printer size={13} />
-                    </button>
-                    <button 
-                      onClick={handleExportDoc}
-                      className={`p-2 rounded-lg text-emerald-600 hover:text-emerald-700 transition-colors ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-slate-100'}`}
-                      title="Export Word Document Brief"
-                    >
-                      <FileDown size={13} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* AI STRATEGIC RECOMMENDATION (Placed above dashboard) */}
-                {(() => {
-                  const prob = Number(stats.winningProbability) || 50;
-                  const risk = Number(stats.litigationRisk) || 50;
-                  let recommendation = "Proceed with Trial";
-                  let colorClass = "border-indigo-500 bg-indigo-500/5 text-indigo-500";
-                  let bgBadge = "bg-indigo-500/10 text-indigo-500";
-                  
-                  if (prob < 40) {
-                    recommendation = "Settlement Recommended";
-                    colorClass = "border-amber-500 bg-amber-500/5 text-amber-500";
-                    bgBadge = "bg-amber-500/10 text-amber-500";
-                  } else if (risk > 70) {
-                    recommendation = "High Litigation Risk";
-                    colorClass = "border-red-500 bg-red-500/5 text-red-500";
-                    bgBadge = "bg-red-500/10 text-red-500";
-                  } else if (stats.missingEvidenceCount > 3) {
-                    recommendation = "Collect Additional Evidence";
-                    colorClass = "border-violet-500 bg-violet-500/5 text-violet-500";
-                    bgBadge = "bg-violet-500/10 text-violet-500";
-                  }
-
-                  return (
-                    <div className={`border-l-4 rounded-3xl p-5 shadow-sm space-y-3.5 ${colorClass}`}>
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <Scale size={16} />
-                          <h3 className="text-xs font-black uppercase tracking-wider">AI Litigation Recommendation</h3>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${bgBadge}`}>
-                          {recommendation}
-                        </span>
-                      </div>
-                      
-                      <div className="text-xs space-y-2">
-                        <p className="font-extrabold text-slate-800 dark:text-slate-200">
-                          <strong>Strategic Opinion:</strong> {strategyResult.finalOpinion?.reasoning || strategyResult.strategies?.primary?.description}
-                        </p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-[10px] text-slate-455 font-semibold">
-                          <span>Confidence Level: <strong>{stats.aiConfidence}%</strong></span>
-                          <span>Opponent Exposure: <strong>{stats.opponentRiskLevel}</strong></span>
-                          <span>Appeal Probability: <strong>{stats.appealRisk}%</strong></span>
-                        </div>
-                      </div>
+                  {/* Official Legal Document Header */}
+                  <div className="text-center border-b pb-6 border-slate-200 dark:border-zinc-800/80">
+                    <div className="flex justify-center items-center gap-2 mb-2 text-indigo-600 dark:text-indigo-400">
+                      <Scale size={32} />
+                      <span className="font-extrabold text-sm uppercase tracking-[0.2em] text-slate-800 dark:text-slate-200">AI Legal™ Intelligence Command</span>
                     </div>
-                  );
-                })()}
-
-                {/* AI LITIGATION DASHBOARD: 12 Premium KPIs Grid */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-indigo-500">AI Litigation Exposure Dashboard</label>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                    {[
-                      { key: 'overallStrategyScore', label: 'Strategy Score', val: stats.overallStrategyScore, col: 'text-indigo-500', desc: 'Overall litigation approach score' },
-                      { key: 'winningProbability', label: 'Winning Prob.', val: stats.winningProbability, col: 'text-emerald-500', desc: 'Predicted outcome probability' },
-                      { key: 'litigationRisk', label: 'Litigation Risk', val: stats.litigationRisk, col: 'text-red-500', desc: 'Procedural and financial exposure' },
-                      { key: 'evidenceStrength', label: 'Evidence Strength', val: stats.evidenceStrength, col: 'text-violet-500', desc: 'Admissibility & credibility weight' },
-                      { key: 'precedentSupport', label: 'Precedent Support', val: stats.precedentSupport, col: 'text-sky-500', desc: 'Matching case law binding value' },
-                      { key: 'aiConfidence', label: 'AI Confidence', val: stats.aiConfidence, col: 'text-pink-505', desc: 'AI model assessment confidence rating' },
-                      { key: 'settlementProbability', label: 'Settlement Prob.', val: stats.settlementProbability, col: 'text-amber-500', desc: 'Mediation agreement likelihood' },
-                      { key: 'appealRisk', label: 'Appeal Risk', val: stats.appealRisk, col: 'text-orange-500', desc: 'Likelihood of challenge in higher courts' },
-                      { key: 'courtReadiness', label: 'Court Readiness', val: readinessMetrics.overall, col: 'text-teal-500', desc: 'Pleadings & document preparation status' },
-                      { key: 'judgeReadiness', label: 'Judge Readiness', val: strategyResult ? '85' : '--', col: 'text-emerald-500', desc: 'Judge opinion patterns matching' },
-                      { key: 'costEstimate', label: 'Cost Exposure', val: strategyResult ? 'Med' : '--', col: 'text-slate-500', desc: 'Projected litigation cost range' },
-                      { key: 'timelineDays', label: 'Est. Timeline', val: strategyResult ? '9 Mos' : '--', col: 'text-indigo-655', desc: 'Est. duration to judgment decree' },
-                    ].map(s => (
-                      <div 
-                        key={s.label} 
-                        className={`border rounded-2xl p-3 shadow-sm flex flex-col justify-between min-h-[108px] transition-all relative group ${
-                          isDark ? 'bg-[#131c31]/30 border-slate-800 hover:border-slate-700' : 'bg-white border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        {/* Tooltip trigger info button */}
-                        <div className="absolute top-2 right-2 text-slate-350 hover:text-slate-500 cursor-pointer group/tooltip shrink-0">
-                          <Info size={11} />
-                          <span className="hidden group-hover/tooltip:block absolute right-0 top-4 p-2 bg-slate-900 text-white rounded text-[8px] tracking-wide w-36 text-center leading-normal z-[1000] font-semibold select-none shadow-md">
-                            {s.desc}
-                          </span>
-                        </div>
-
-                        <span className="text-[8px] text-slate-400 font-extrabold uppercase tracking-wider">{s.label}</span>
-                        
-                        <div className="flex items-baseline gap-0.5 mt-2">
-                          <span className={`text-xl font-black ${s.col}`}>{s.val}</span>
-                          {s.val !== '--' && typeof s.val === 'number' && <span className="text-[10px] text-slate-400 font-extrabold">%</span>}
-                        </div>
-
-                        {/* Mini trend graph SVG */}
-                        <div className="mt-2.5 shrink-0">
-                          <svg className={`w-full h-5 ${s.col}`} viewBox="0 0 100 25" fill="none">
-                            <path 
-                              d={generatePath(s.val)} 
-                              stroke="currentColor" 
-                              strokeWidth="1.5" 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Collapsible output detail blocks */}
-                <div className="space-y-2 pt-2">
-                  
-                  {/* Accordion Detail: Argument Roadmap */}
-                  <div className={`border rounded-2xl overflow-hidden ${isDark ? 'border-zinc-800' : 'border-slate-200'}`}>
-                    <div 
-                      onClick={() => toggleAccordion('out_arguments')}
-                      className={`px-4 py-3 flex items-center justify-between cursor-pointer ${
-                        isDark ? 'bg-black/10' : 'bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Gavel size={14} className="text-indigo-500" />
-                        <span className="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-wider">Advocate Argument Roadmap</span>
-                      </div>
-                      {!collapsedBlocks.out_arguments ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                    <div className="font-mono text-[9px] uppercase tracking-widest text-slate-400 dark:text-zinc-500">
+                      Confidential Legal Report // Privileged Attorney Work Product
                     </div>
-                    {!collapsedBlocks.out_arguments && (
-                      <div className={`p-4 space-y-3.5 ${isDark ? 'bg-black/5' : 'bg-white'}`}>
-                        {[
-                          { key: 'opening', label: 'Opening Case Statements' },
-                          { key: 'arguments', label: 'Core Courtroom Arguments', isArray: true },
-                          { key: 'rebuttal', label: 'Counter Rebuttals Strategy' },
-                          { key: 'prayer', label: 'Prayer Submissions' }
-                        ].map(a => (
-                          <div key={a.key} className="p-3 border rounded-xl bg-slate-500/5 text-xs space-y-1">
-                            <span className="text-[8.5px] font-black text-indigo-500 uppercase tracking-widest">{a.label}</span>
-                            <p className="font-bold text-slate-705 dark:text-slate-300 leading-relaxed">
-                              {a.isArray 
-                                ? (strategyResult.finalArguments?.[a.key]?.join('\n') || 'N/A')
-                                : (strategyResult.finalArguments?.[a.key] || 'N/A')}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <div className="font-serif text-[18px] sm:text-[22px] font-black text-slate-800 dark:text-slate-100 tracking-wide mt-4 py-2 border-y border-dashed border-slate-200 dark:border-zinc-800/80">
+                      =================================<br />
+                      AI STRATEGY REPORT<br />
+                      =================================
+                    </div>
                   </div>
 
-                  {/* Accordion Detail: Case Law Intelligence */}
-                  <div className={`border rounded-2xl overflow-hidden ${isDark ? 'border-zinc-800' : 'border-slate-200'}`}>
-                    <div 
-                      onClick={() => toggleAccordion('out_precedents')}
-                      className={`px-4 py-3 flex items-center justify-between cursor-pointer ${
-                        isDark ? 'bg-black/10' : 'bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <BookOpen size={14} className="text-indigo-500" />
-                        <span className="text-[10px] font-black text-slate-805 dark:text-white uppercase tracking-wider">Relevant Case Law precedents</span>
-                      </div>
-                      {!collapsedBlocks.out_precedents ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                  {/* Case Metadata Section */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-50 dark:bg-black/20 p-5 rounded-2xl border dark:border-zinc-850">
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wider font-extrabold text-[8px] mb-1">Matter Title</p>
+                      <p className="font-black text-slate-800 dark:text-slate-200">{caseTitle || 'Custom Courtroom Strategy'}</p>
                     </div>
-                    {!collapsedBlocks.out_precedents && (
-                      <div className={`p-4 space-y-3 ${isDark ? 'bg-black/5' : 'bg-white'}`}>
-                        {strategyResult.precedents?.map((p, idx) => (
-                          <div key={idx} className="p-3 border border-slate-205 dark:border-zinc-800 rounded-xl bg-slate-500/5 text-xs space-y-1.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="font-black text-slate-800 dark:text-white">{p.citation}</span>
-                                <span className="text-[8px] font-bold text-slate-405 bg-slate-200/50 dark:bg-zinc-800 px-1.5 py-0.5 rounded">{p.court}</span>
-                              </div>
-                              <p className="font-semibold text-slate-500 dark:text-slate-400 text-[10.5px] mt-1 leading-normal">{p.summary}</p>
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wider font-extrabold text-[8px] mb-1">Court / Jurisdiction</p>
+                      <p className="font-black text-slate-800 dark:text-slate-200">{courtName || 'Not Specified'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wider font-extrabold text-[8px] mb-1">Client Petitioner</p>
+                      <p className="font-black text-slate-800 dark:text-slate-200">{clientName || 'Not Specified'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 uppercase tracking-wider font-extrabold text-[8px] mb-1">Opposing Party</p>
+                      <p className="font-black text-slate-800 dark:text-slate-200">{opponentName || 'Not Specified'}</p>
+                    </div>
+                  </div>
+
+                  {/* Executive Summary */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Executive Summary</h3>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">
+                      {strategyResult.finalOpinion?.reasoning || strategyResult.strategies?.primary?.description || "No summary details generated."}
+                    </p>
+                  </div>
+
+                  {/* Probability & Case Strength KPIs */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="p-5 border rounded-2xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/80 space-y-2">
+                      <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <span>Winning Probability</span>
+                        <span className="text-emerald-500 text-sm font-black">{stats.winningProbability}%</span>
+                      </div>
+                      <div className="w-full bg-slate-200 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-505 transition-all duration-505" style={{ width: `${stats.winningProbability}%` }} />
+                      </div>
+                      <p className="text-[9px] font-bold text-slate-400">Predicted outcome probability based on facts & precedents.</p>
+                    </div>
+
+                    <div className="p-5 border rounded-2xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/80 space-y-2">
+                      <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <span>Case Strength Score</span>
+                        <span className="text-indigo-500 text-sm font-black">{stats.overallStrategyScore}/100</span>
+                      </div>
+                      <div className="w-full bg-slate-200 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden">
+                        <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: `${stats.overallStrategyScore}%` }} />
+                      </div>
+                      <p className="text-[9px] font-bold text-slate-400">Calculated strength using evidence admissibility & weight.</p>
+                    </div>
+                  </div>
+
+                  {/* Strengths & Weaknesses (Grid) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Strengths */}
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Strengths</h3>
+                      <div className="space-y-2">
+                        {strategyResult.evidenceStrategy?.strong?.map((item, idx) => (
+                          <div key={idx} className="flex gap-2.5 p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-xs font-semibold text-slate-800 dark:text-slate-205">
+                            <span className="text-emerald-500 text-sm font-extrabold shrink-0">✓</span>
+                            <div>
+                              <strong className="font-extrabold text-emerald-600 dark:text-emerald-400">{item.evidence || item}</strong>
+                              {item.reason && <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">{item.reason}</p>}
                             </div>
-                            <button 
-                              onClick={() => {
-                                toast.success(`Retrieved citation sheets for: ${p.citation}`);
-                              }}
-                              className="px-3 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all shrink-0 w-fit self-end md:self-center"
-                            >
-                              One-click Open
-                            </button>
+                          </div>
+                        ))}
+                        {(!strategyResult.evidenceStrategy?.strong || strategyResult.evidenceStrategy.strong.length === 0) && (
+                          <p className="text-xs text-slate-400 italic font-semibold">No significant strengths identified.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Weaknesses */}
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Weaknesses</h3>
+                      <div className="space-y-2">
+                        {strategyResult.evidenceStrategy?.weak?.map((item, idx) => (
+                          <div key={idx} className="flex gap-2.5 p-3 rounded-2xl bg-red-500/5 border border-red-500/10 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                            <span className="text-red-500 text-sm font-extrabold shrink-0">✗</span>
+                            <div>
+                              <strong className="font-extrabold text-red-600 dark:text-red-400">{item.evidence || item}</strong>
+                              {item.reason && <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">{item.reason}</p>}
+                            </div>
+                          </div>
+                        ))}
+                        {strategyResult.judgePerspective?.weakAreas?.map((item, idx) => (
+                          <div key={idx} className="flex gap-2.5 p-3 rounded-2xl bg-red-500/5 border border-red-500/10 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                            <span className="text-red-500 text-sm font-extrabold shrink-0">✗</span>
+                            <div>
+                              <strong className="font-extrabold text-red-600 dark:text-red-400">{item}</strong>
+                            </div>
+                          </div>
+                        ))}
+                        {(!strategyResult.evidenceStrategy?.weak || strategyResult.evidenceStrategy.weak.length === 0) && (!strategyResult.judgePerspective?.weakAreas || strategyResult.judgePerspective.weakAreas.length === 0) && (
+                          <p className="text-xs text-slate-400 italic font-semibold">No significant weaknesses identified.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Key Legal Issues */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Key Legal Issues</h3>
+                    <div className="space-y-2">
+                      {strategyResult.judgePerspective?.likelyQuestions?.map((issue, idx) => (
+                        <div key={idx} className="flex gap-3 p-3.5 border rounded-2xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/80 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          <span className="w-5 h-5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 rounded-full flex items-center justify-center font-black text-[10px] shrink-0">{idx + 1}</span>
+                          <p className="leading-normal">{issue}</p>
+                        </div>
+                      ))}
+                      {(!strategyResult.judgePerspective?.likelyQuestions || strategyResult.judgePerspective.likelyQuestions.length === 0) && (
+                        <p className="text-xs text-slate-400 italic font-semibold">No key legal issues flagged.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Opponent Analysis */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-indigo-655 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Opponent Analysis</h3>
+                    <div className="p-5 border rounded-2xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/80 space-y-3 text-xs font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">
+                      <p><strong>Likely Opposition Defense:</strong> {strategyResult.opponentStrategy?.likelyDefence || 'Not Specified'}</p>
+                      {strategyResult.opponentStrategy?.likelyObjections?.length > 0 && (
+                        <div className="space-y-1.5 mt-2">
+                          <p className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Anticipated Procedural Objections</p>
+                          <ul className="list-disc pl-4 space-y-1 font-semibold text-slate-650 dark:text-slate-400">
+                            {strategyResult.opponentStrategy.likelyObjections.map((obj, i) => <li key={i}>{obj}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      {strategyResult.opponentStrategy?.delayStrategy && (
+                        <p className="mt-2 text-red-500 font-bold">⚠️ <strong>Opponent Delay Tactic:</strong> {strategyResult.opponentStrategy.delayStrategy}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Relevant Precedents */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Relevant Precedents</h3>
+                    <div className="space-y-3">
+                      {strategyResult.precedents?.map((p, idx) => (
+                        <div key={idx} className="p-4 border rounded-2xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/80">
+                          <div className="flex flex-wrap justify-between items-center gap-2">
+                            <span className="font-black text-xs text-slate-800 dark:text-white">{p.citation}</span>
+                            <span className="text-[9px] font-black bg-indigo-500/10 text-indigo-500 px-2 py-0.5 rounded">{p.court}</span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-404 mt-2 font-semibold leading-normal">{p.summary}</p>
+                          <div className="flex justify-between items-center mt-3 text-[10px] font-bold text-slate-400">
+                            <span>Similarity Score: <strong className="text-indigo-500">{p.similarityScore}%</strong></span>
+                            <span>Type: <strong>{p.type || 'Binding Precedent'}</strong></span>
+                          </div>
+                        </div>
+                      ))}
+                      {(!strategyResult.precedents || strategyResult.precedents.length === 0) && (
+                        <p className="text-xs text-slate-400 italic font-semibold">No precedent citations linked.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Evidence Evaluation */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Evidence Evaluation</h3>
+                    <div className="p-5 border rounded-2xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/80 space-y-4">
+                      {/* Admissible Evidence list */}
+                      <div className="space-y-2">
+                        <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-widest block">Admissible & Strong Proofs</span>
+                        {strategyResult.evidenceStrategy?.strong?.map((e, idx) => (
+                          <div key={idx} className="p-3 border rounded-xl bg-white dark:bg-zinc-900 dark:border-zinc-800/85 text-xs font-semibold text-slate-750 dark:text-slate-300">
+                            <strong>{e.evidence || e}</strong>: <span className="font-medium text-slate-500">{e.reason || 'Sufficient probative weight'}</span>
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
 
-                  {/* Accordion Detail: Risk Matrix Heatmap */}
-                  <div className={`border rounded-2xl overflow-hidden ${isDark ? 'border-zinc-800' : 'border-slate-200'}`}>
-                    <div 
-                      onClick={() => toggleAccordion('out_matrix')}
-                      className={`px-4 py-3 flex items-center justify-between cursor-pointer ${
-                        isDark ? 'bg-black/10' : 'bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle size={14} className="text-indigo-500" />
-                        <span className="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-wider">Litigation Risk Heatmap Matrix</span>
-                      </div>
-                      {!collapsedBlocks.out_matrix ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
-                    </div>
-                    {!collapsedBlocks.out_matrix && (
-                      <div className={`p-4 space-y-4 ${isDark ? 'bg-black/5' : 'bg-white'}`}>
-                        {/* Risk progress matrix list */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                          {[
-                            { name: 'Financial exposure Risk', val: strategyResult.risks?.financial || 40, col: 'bg-red-500' },
-                            { name: 'Legal / Pleading risk', val: strategyResult.risks?.legal || 25, col: 'bg-amber-500' },
-                            { name: 'Procedural objection risk', val: strategyResult.risks?.procedural || 15, col: 'bg-indigo-550' },
-                            { name: 'Evidence Admissibility risk', val: strategyResult.risks?.evidence || 30, col: 'bg-violet-500' },
-                            { name: 'Witness vulnerability risk', val: strategyResult.risks?.strategic || 20, col: 'bg-pink-500' },
-                            { name: 'Appeal / Appeal risk', val: strategyResult.risks?.appeal || 10, col: 'bg-emerald-500' }
-                          ].map(r => (
-                            <div key={r.name} className="p-3 border rounded-xl bg-slate-500/3 space-y-2">
-                              <div className="flex justify-between items-center">
-                                <span className="font-bold text-slate-800 dark:text-slate-200">{r.name}</span>
-                                <span className="font-black text-slate-500 dark:text-slate-405">{r.val}%</span>
-                              </div>
-                              <div className="w-full bg-slate-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                                <div className={`h-full ${r.col}`} style={{ width: `${r.val}%` }} />
-                              </div>
+                      {/* Priority Actions for missing proofs */}
+                      {strategyResult.evidenceStrategy?.missing?.length > 0 && (
+                        <div className="space-y-2 pt-2 border-t dark:border-zinc-800">
+                          <span className="text-[8.5px] font-black text-amber-500 uppercase tracking-widest block">Priority Document Gathering</span>
+                          {strategyResult.evidenceStrategy.missing.map((e, idx) => (
+                            <div key={idx} className="p-3 border border-amber-500/10 bg-amber-500/5 rounded-xl text-xs font-semibold text-slate-705 dark:text-slate-300">
+                              <strong>{e.evidence || e}</strong>: <span className="font-medium text-slate-500">{e.reason || 'Crucial for standard compliance proof'}</span>
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
 
-                  {/* Accordion Detail: Settlement Analysis */}
-                  <div className={`border rounded-2xl overflow-hidden ${isDark ? 'border-zinc-800' : 'border-slate-200'}`}>
-                    <div 
-                      onClick={() => toggleAccordion('out_settlement')}
-                      className={`px-4 py-3 flex items-center justify-between cursor-pointer ${
-                        isDark ? 'bg-black/10' : 'bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <DollarSign size={14} className="text-indigo-500" />
-                        <span className="text-[10px] font-black text-slate-805 dark:text-white uppercase tracking-wider">Settlement & Negotiation Analysis</span>
-                      </div>
-                      {!collapsedBlocks.out_settlement ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                  {/* Recommended Arguments */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Recommended Arguments</h3>
+                    <div className="space-y-3">
+                      {strategyResult.finalArguments?.arguments?.map((arg, idx) => (
+                        <div key={idx} className="flex gap-3 p-4 border border-dashed rounded-2xl bg-slate-500/3 text-xs font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">
+                          <span className="text-indigo-505 font-black text-sm shrink-0">“</span>
+                          <p>{arg}</p>
+                        </div>
+                      ))}
+                      {strategyResult.finalArguments?.prayer && (
+                        <div className="p-4 border-l-4 border-emerald-500 rounded-r-2xl bg-emerald-500/5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                          <p className="text-[8px] font-black uppercase text-emerald-500 tracking-widest mb-1">Final Submission Prayer</p>
+                          <p>“{strategyResult.finalArguments.prayer}”</p>
+                        </div>
+                      )}
                     </div>
-                    {!collapsedBlocks.out_settlement && (
-                      <div className={`p-4 space-y-3.5 text-xs ${isDark ? 'bg-black/5' : 'bg-white'}`}>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                          <div className="p-3 border rounded-xl bg-slate-500/5 space-y-1">
-                            <span className="text-[8px] font-black text-slate-400 uppercase">Mediation suitability</span>
-                            <p className="font-bold text-slate-750 dark:text-slate-250">{strategyResult.settlement?.mediationPossibility || 'High mediation capability'}</p>
-                          </div>
-                          <div className="p-3 border rounded-xl bg-slate-500/5 space-y-1">
-                            <span className="text-[8px] font-black text-slate-400 uppercase">Negotiation parameters strategy</span>
-                            <p className="font-bold text-slate-750 dark:text-slate-250">{strategyResult.settlement?.negotiationStrategy || 'Mediation recommended first'}</p>
-                          </div>
-                        </div>
-
-                        {/* Negotiation positions box */}
-                        <div className="p-4 border border-indigo-500/10 bg-indigo-500/5 rounded-2xl space-y-2">
-                          <span className="text-[8.5px] font-black text-indigo-550 uppercase tracking-widest">Target Negotiation Ranges</span>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className="space-y-1">
-                              <span className="text-[8px] font-extrabold uppercase text-slate-400">Opening Claim Offer</span>
-                              <p className="font-bold text-slate-800 dark:text-slate-200">{strategyResult.negotiationPositions?.opening || 'N/A'}</p>
-                            </div>
-                            <div className="space-y-1">
-                              <span className="text-[8px] font-extrabold uppercase text-slate-400">Realistic Target Settlement</span>
-                              <p className="font-bold text-slate-800 dark:text-slate-200">{strategyResult.negotiationPositions?.middle || 'N/A'}</p>
-                            </div>
-                            <div className="space-y-1">
-                              <span className="text-[8px] font-extrabold uppercase text-slate-400">Fallback Bottom Line</span>
-                              <p className="font-bold text-slate-800 dark:text-slate-200">{strategyResult.negotiationPositions?.final || 'N/A'}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
-                  {/* Accordion Detail: Next Best Actions */}
-                  <div className={`border rounded-2xl overflow-hidden ${isDark ? 'border-zinc-800' : 'border-slate-200'}`}>
-                    <div 
-                      onClick={() => toggleAccordion('out_actions')}
-                      className={`px-4 py-3 flex items-center justify-between cursor-pointer ${
-                        isDark ? 'bg-black/10' : 'bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <CheckSquare size={14} className="text-indigo-500" />
-                        <span className="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-wider">AI Next Best Actions Checklist</span>
-                      </div>
-                      {!collapsedBlocks.out_actions ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
-                    </div>
-                    {!collapsedBlocks.out_actions && (
-                      <div className={`p-4 space-y-3.5 ${isDark ? 'bg-black/5' : 'bg-white'}`}>
-                        {/* Recommendations mapping */}
-                        <div className="space-y-2.5">
-                          <span className="text-[8px] font-black text-slate-400 uppercase">Immediate Procedural Actions</span>
-                          <div className="space-y-1.5">
-                            {strategyResult.aiRecommendations?.doFirst?.map((act, idx) => (
-                              <div key={idx} className="flex items-center gap-2.5 p-2.5 border rounded-xl bg-slate-500/5 text-xs font-bold text-slate-800 dark:text-slate-200">
-                                <span className="w-3.5 h-3.5 rounded bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-[9px] text-indigo-500 font-extrabold shrink-0">1</span>
-                                <span>{act}</span>
-                              </div>
-                            ))}
-                            {strategyResult.aiRecommendations?.doNext?.map((act, idx) => (
-                              <div key={idx} className="flex items-center gap-2.5 p-2.5 border rounded-xl bg-slate-500/5 text-xs font-bold text-slate-800 dark:text-slate-200">
-                                <span className="w-3.5 h-3.5 rounded bg-slate-500/10 border border-slate-300 flex items-center justify-center text-[9px] text-slate-505 font-extrabold shrink-0">2</span>
-                                <span>{act}</span>
-                              </div>
-                            ))}
+                  {/* Cross Examination Strategy */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Cross Examination Strategy</h3>
+                    <div className="space-y-3">
+                      {strategyResult.crossExamPlanner?.map((plan, idx) => (
+                        <div key={idx} className="p-5 border rounded-2xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/80 space-y-3 text-xs">
+                          <div className="border-b pb-2 border-slate-200 dark:border-zinc-800/80">
+                            <span className="font-black text-slate-800 dark:text-white uppercase tracking-wider">Target Witness: {plan.witness}</span>
                           </div>
+                          {plan.mainQuestions?.length > 0 && (
+                            <div className="space-y-1.5">
+                              <span className="text-[8.5px] font-black text-indigo-500 uppercase tracking-widest block">Cross-Exam Line of Questioning</span>
+                              <ul className="list-disc pl-4 space-y-1 font-semibold text-slate-600 dark:text-slate-350">
+                                {plan.mainQuestions.map((q, i) => <li key={i}>{q}</li>)}
+                              </ul>
+                            </div>
+                          )}
+                          {plan.traps?.length > 0 && (
+                            <div className="p-3 border rounded-xl bg-red-500/5 border-red-500/10 text-red-600 dark:text-red-400 font-bold">
+                              <span className="text-[8px] font-black uppercase tracking-wider block mb-1">Traps / Impeachment Targets</span>
+                              <p>{plan.traps.join(' // ')}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {(!strategyResult.crossExamPlanner || strategyResult.crossExamPlanner.length === 0) && (
+                        <p className="text-xs text-slate-400 italic font-semibold">No cross-examination planner drafted.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Risk Assessment */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Risk Assessment</h3>
+                    <div className="p-5 border rounded-2xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/80 space-y-4">
+                      {(() => {
+                        const risks = strategyResult.risks || {};
+                        const riskCategories = [
+                          { label: 'Evidence Admissibility Risk', val: risks.evidence || 30, col: 'bg-indigo-500' },
+                          { label: 'Procedural Delay Risk', val: risks.procedural || 20, col: 'bg-amber-500' },
+                          { label: 'Financial Exposure Risk', val: risks.financial || 40, col: 'bg-red-500' },
+                          { label: 'Strategic Counter Risk', val: risks.strategic || 10, col: 'bg-violet-500' }
+                        ];
+                        return (
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] font-black uppercase text-slate-400">Overall Litigation Risk Score</span>
+                              <span className="text-xs font-black text-red-500">{risks.riskPercentage || 30}% Risk Exposure</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                              {riskCategories.map(rc => (
+                                <div key={rc.label} className="space-y-1">
+                                  <div className="flex justify-between text-[9px] font-black uppercase text-slate-505">
+                                    <span>{rc.label}</span>
+                                    <span>{rc.val}%</span>
+                                  </div>
+                                  <div className="w-full bg-slate-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                                    <div className={`h-full ${rc.col}`} style={{ width: `${rc.val}%` }} />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Settlement Recommendation */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Settlement Recommendation</h3>
+                    <div className="p-5 border rounded-2xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/80 space-y-4">
+                      <div className="text-xs font-semibold leading-relaxed text-slate-650 dark:text-slate-350">
+                        <p><strong>Mediation Suitability:</strong> {strategyResult.settlement?.mediationPossibility || 'Highly suitable for Section 89 mediation'}</p>
+                        <p className="mt-1"><strong>Strategy Option:</strong> {strategyResult.settlement?.negotiationStrategy || 'Waiver of interest if settled within 30 days.'}</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                        <div className="p-3 border rounded-xl bg-white dark:bg-zinc-900 dark:border-zinc-800/80 text-center">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Opening Claim Offer</span>
+                          <p className="text-xs font-black text-indigo-500 mt-1">{strategyResult.negotiationPositions?.opening || 'Principal + Costs'}</p>
+                        </div>
+                        <div className="p-3 border rounded-xl bg-white dark:bg-zinc-900 dark:border-zinc-800/80 text-center">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Realistic Target Settlement</span>
+                          <p className="text-xs font-black text-emerald-500 mt-1">{strategyResult.negotiationPositions?.middle || 'Principal amount only'}</p>
+                        </div>
+                        <div className="p-3 border rounded-xl bg-white dark:bg-zinc-900 dark:border-zinc-800/80 text-center">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Fallback Bottom Line</span>
+                          <p className="text-xs font-black text-red-505 mt-1">{strategyResult.negotiationPositions?.final || '75% Principal recovery'}</p>
                         </div>
                       </div>
-                    )}
+                    </div>
+                  </div>
+
+                  {/* Litigation Roadmap */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Litigation Roadmap</h3>
+                    <div className="p-5 border rounded-2xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/80 space-y-4">
+                      <div className="relative border-l border-slate-200 dark:border-zinc-800 pl-4 ml-2 space-y-4">
+                        {strategyResult.winningRoadmap?.map((stage, idx) => (
+                          <div key={idx} className="relative">
+                            <div className={`absolute -left-[21px] top-0.5 w-2.5 h-2.5 rounded-full border-2 bg-white dark:bg-zinc-900 ${stage.status === 'Completed' ? 'border-emerald-500 bg-emerald-500' :
+                                stage.status === 'In Progress' ? 'border-indigo-500 bg-indigo-500 animate-pulse' :
+                                  'border-slate-300 dark:border-zinc-700'
+                              }`} />
+                            <div className="text-xs">
+                              <span className={`text-[8.5px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${stage.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-500' :
+                                  stage.status === 'In Progress' ? 'bg-indigo-500/10 text-indigo-500' :
+                                    'bg-slate-200/50 dark:bg-zinc-800 text-slate-400'
+                                }`}>{stage.status}</span>
+                              <h4 className="font-black text-slate-800 dark:text-slate-200 mt-1">{stage.stage}</h4>
+                              <p className="text-slate-500 dark:text-slate-400 font-semibold text-[10.5px] mt-0.5 leading-normal">{stage.description}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Immediate Next Steps */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black uppercase tracking-wider text-indigo-650 dark:text-indigo-400 border-b pb-1 border-slate-200 dark:border-zinc-800/80">Immediate Next Steps</h3>
+                    <div className="p-5 border rounded-2xl bg-slate-50 dark:bg-black/10 dark:border-zinc-800/80 space-y-3">
+                      {strategyResult.aiRecommendations?.doFirst?.map((act, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-3 border rounded-xl bg-white dark:bg-zinc-900 dark:border-zinc-800/85 text-xs font-semibold text-slate-805 dark:text-slate-200 shadow-sm">
+                          <CheckCircle2 className="text-indigo-500 shrink-0" size={16} />
+                          <span>{act}</span>
+                        </div>
+                      ))}
+                      {strategyResult.aiRecommendations?.doNext?.map((act, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-3 border rounded-xl bg-white dark:bg-zinc-900 dark:border-zinc-800/85 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-sm opacity-90">
+                          <CheckCircle2 className="text-slate-400 shrink-0" size={16} />
+                          <span>{act}</span>
+                        </div>
+                      ))}
+                      {(!strategyResult.aiRecommendations?.doFirst || strategyResult.aiRecommendations.doFirst.length === 0) && (!strategyResult.aiRecommendations?.doNext || strategyResult.aiRecommendations.doNext.length === 0) && (
+                        <p className="text-xs text-slate-400 italic font-semibold">No immediate next steps listed.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Report footer actions */}
+                  <div className="flex flex-wrap items-center justify-end gap-3 pt-6 border-t border-slate-200 dark:border-zinc-800/80 mt-8 w-full">
+                    {/* Brief Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setBriefMenuOpen(!briefMenuOpen)}
+                        className="h-10 px-[18px] py-[10px] bg-violet-600 hover:bg-violet-700 text-white rounded-[11px] text-xs font-bold transition-all flex items-center gap-2 shadow-md shadow-violet-500/10"
+                      >
+                        <FileText size={16} />
+                        <span>Brief</span>
+                      </button>
+                      {briefMenuOpen && (
+                        <div className="absolute bottom-12 right-0 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl p-1.5 w-40 z-50 text-xs font-bold text-slate-707 dark:text-slate-202 animate-fadeIn">
+                          <button
+                            onClick={() => {
+                              handlePrintBriefPDF();
+                              setBriefMenuOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg flex items-center gap-2"
+                          >
+                            <span>📕 Export PDF</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleExportBriefDoc();
+                              setBriefMenuOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg flex items-center gap-2"
+                          >
+                            <span>📝 Export DOCX</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={handlePrintPDF}
+                      className="h-10 px-[18px] py-[10px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-[11px] text-xs font-bold transition-all flex items-center gap-2 shadow-md shadow-indigo-500/10"
+                    >
+                      <Printer size={16} />
+                      <span>PDF</span>
+                    </button>
+                    <button
+                      onClick={handleExportDoc}
+                      className="h-10 px-[18px] py-[10px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-[11px] text-xs font-bold transition-all flex items-center gap-2 shadow-md shadow-emerald-500/10"
+                    >
+                      <FileDown size={16} />
+                      <span>DOCX</span>
+                    </button>
+                    <button
+                      onClick={handleSaveStrategy}
+                      className="h-10 px-[18px] py-[10px] bg-blue-600 hover:bg-blue-700 text-white rounded-[11px] text-xs font-bold transition-all flex items-center gap-2 shadow-md shadow-blue-500/10"
+                    >
+                      <Save size={16} />
+                      <span>Save</span>
+                    </button>
+                    <button
+                      onClick={() => runLitigationSimulation('FULL_SIMULATION')}
+                      className="h-10 px-[18px] py-[10px] border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-707 dark:text-slate-300 rounded-[11px] text-xs font-bold transition-all flex items-center gap-2"
+                    >
+                      <RotateCcw size={16} />
+                      <span>Regenerate</span>
+                    </button>
                   </div>
 
                 </div>
-
               </div>
             )}
 
@@ -3223,7 +4142,7 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
       {historyVisible && (
         <div className="fixed inset-0 z-[120000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setHistoryVisible(false)} />
-          <div className="relative bg-white dark:bg-zinc-900 border border-slate-205 dark:border-zinc-850 rounded-[32px] max-w-lg w-full max-h-[85%] flex flex-col overflow-hidden shadow-2xl p-6">
+          <div className="relative bg-white dark:bg-zinc-900 border border-slate-205 dark:border-zinc-850 rounded-[32px] w-[95vw] sm:max-w-lg max-h-[85%] flex flex-col overflow-hidden shadow-2xl p-4 sm:p-6 animate-fadeIn">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-4 shrink-0">
               <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">Simulation History Logs</h3>
               <button onClick={() => setHistoryVisible(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full">
@@ -3234,7 +4153,7 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
             {/* History Search Box */}
             <div className="flex items-center bg-slate-50 dark:bg-[#131C31] border border-slate-200 dark:border-white/5 rounded-xl px-3 py-2 mt-4 shrink-0">
               <Search size={14} className="text-slate-400 mr-2" />
-              <input 
+              <input
                 type="text"
                 placeholder="Search past simulation strategies..."
                 className="w-full bg-transparent border-none text-xs font-bold text-slate-800 dark:text-white outline-none focus:ring-0"
@@ -3244,8 +4163,8 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
             </div>
 
             <div className="flex-1 overflow-y-auto mt-4 space-y-3 custom-scrollbar">
-              {historyData.filter(h => 
-                h.title?.toLowerCase().includes(historySearch.toLowerCase()) || 
+              {historyData.filter(h =>
+                h.title?.toLowerCase().includes(historySearch.toLowerCase()) ||
                 h.caseFacts?.toLowerCase().includes(historySearch.toLowerCase())
               ).map((item, idx) => (
                 <div key={item.id || idx} className="p-4 bg-slate-50 dark:bg-[#1A2540] border border-slate-200/50 dark:border-white/5 rounded-2xl shadow-sm flex flex-col justify-between">
@@ -3255,7 +4174,7 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
                       <p className="text-[10px] text-slate-400 mt-1 line-clamp-2">{item.caseFacts}</p>
                       <span className="text-[8px] text-indigo-500 font-extrabold uppercase mt-1.5 block">{item.timestamp}</span>
                     </div>
-                    <button 
+                    <button
                       onClick={() => deleteHistoryItem(item.id)}
                       className="p-1 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg text-red-500 shrink-0"
                     >
@@ -3267,7 +4186,7 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
                     <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-550 rounded text-[9px] font-black uppercase">
                       Score: {item.stats?.overallStrategyScore}%
                     </span>
-                    <button 
+                    <button
                       onClick={() => {
                         setStrategyResult(item.activeStrategy || item);
                         setHistoryVisible(false);
@@ -3280,7 +4199,7 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
                   </div>
                 </div>
               ))}
-              
+
               {historyData.length === 0 && (
                 <div className="text-center py-10 space-y-2">
                   <Folder size={32} className="mx-auto text-slate-350 dark:text-zinc-700" />
@@ -3296,8 +4215,8 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
       {newCaseModalOpen && (
         <div className="fixed inset-0 z-[120000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setNewCaseModalOpen(false)} />
-          <div className="relative bg-white dark:bg-zinc-900 border border-slate-205 dark:border-zinc-850 rounded-[32px] max-w-md w-full max-h-[85%] flex flex-col overflow-hidden shadow-2xl p-6">
-            
+          <div className="relative bg-white dark:bg-zinc-900 border border-slate-205 dark:border-zinc-850 rounded-[32px] w-[95vw] sm:max-w-md max-h-[85%] flex flex-col overflow-hidden shadow-2xl p-4 sm:p-6 animate-fadeIn">
+
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-4 shrink-0">
               <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">New Scenario Case file</h3>
               <button onClick={() => setNewCaseModalOpen(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full">
@@ -3306,7 +4225,7 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
             </div>
 
             <div className="flex-1 overflow-y-auto mt-4 space-y-4 pr-1 custom-scrollbar text-xs font-semibold">
-              
+
               <div className="space-y-1">
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide">Client / Petitioner Name *</label>
                 <input
@@ -3329,7 +4248,7 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide">Matter Type</label>
                   <select
@@ -3387,13 +4306,13 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
             </div>
 
             <div className="border-t border-slate-100 dark:border-white/5 pt-4 mt-4 shrink-0 flex gap-2">
-              <button 
+              <button
                 onClick={() => setNewCaseModalOpen(false)}
                 className="w-1/2 py-2 border rounded-xl text-xs font-black uppercase text-slate-500"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleCreateNewCase}
                 className="w-1/2 py-2 bg-indigo-650 hover:bg-indigo-755 text-white rounded-xl text-xs font-black uppercase transition-all"
               >
@@ -3409,9 +4328,8 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
       {isNotesDrawerOpen && (
         <div className="fixed inset-0 z-[150000] flex justify-end">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsNotesDrawerOpen(false)} />
-          <div className={`relative w-[400px] h-full flex flex-col p-6 shadow-2xl transition-all duration-300 ${
-            isDark ? 'bg-[#0f172a] border-l border-slate-800 text-white' : 'bg-white border-l border-slate-200 text-slate-900'
-          }`}>
+          <div className={`relative w-full max-w-[400px] h-full flex flex-col p-5 sm:p-6 shadow-2xl transition-all duration-300 ${isDark ? 'bg-[#0f172a] border-l border-slate-800 text-white' : 'bg-white border-l border-slate-200 text-slate-900'
+            }`}>
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-zinc-800/80 shrink-0">
               <div className="flex items-center gap-2">
                 <BookOpen size={16} className="text-indigo-500" />
@@ -3432,12 +4350,11 @@ Generated by AI LEGAL™ Litigation Intelligence Suite. Confidential.
                 value={scenarioNotes}
                 onChange={e => setScenarioNotes(e.target.value)}
                 placeholder="Type private case strategy notes, checklists..."
-                className={`w-full border rounded-xl px-3 py-2 outline-none resize-none font-bold text-xs ${
-                  isDark ? 'bg-black/25 border-zinc-800 text-white' : 'bg-slate-50 border-slate-205 text-slate-808'
-                }`}
+                className={`w-full border rounded-xl px-3 py-2 outline-none resize-none font-bold text-xs ${isDark ? 'bg-black/25 border-zinc-800 text-white' : 'bg-slate-50 border-slate-205 text-slate-808'
+                  }`}
               />
             </div>
-            
+
             <div className="border-t border-slate-100 dark:border-zinc-800/80 pt-4 shrink-0">
               <button
                 onClick={async () => {

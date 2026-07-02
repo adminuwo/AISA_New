@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-// import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FileText, Shield, FileCheck, Scale, Binary,
-  Mail, PenTool, AlertTriangle, Edit3, Brain,
-  Library, Clock, CheckCircle, ArrowLeftRight, Lock, Sparkles,
-  MessageCircle, ArrowRight, X, ChevronDown, Zap, Maximize2, Minimize2, Gavel, Briefcase
+  FileCheck, Scale, Landmark, Target, Waypoints,
+  Clock, CheckCircle, Lock, Sparkles,
+  MessageCircle, ArrowRight, X, ChevronDown, Zap, Maximize2, Minimize2,
+  Gavel, FolderKanban, NotebookPen, ScanText, BookOpen
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import LegalLogo from './components/LegalLogo';
 import { useLanguage } from '../../context/LanguageContext';
 import { Globe } from 'lucide-react';
 
@@ -17,7 +15,7 @@ export const PREMIUM_TOOLS = (t) => [
   {
     id: 'legal_my_case',
     name: t('myCase'),
-    icon: Briefcase,
+    icon: FolderKanban,
     desc: t('myCaseDesc'),
     price: '₹1299',
     workflow: t('myCaseWorkflow')
@@ -25,7 +23,7 @@ export const PREMIUM_TOOLS = (t) => [
   {
     id: 'legal_precedents',
     name: t('legalPrecedents'),
-    icon: Gavel,
+    icon: Landmark,
     desc: t('legalPrecedentsDesc'),
     price: '₹999',
     workflow: t('legalPrecedentsWorkflow')
@@ -33,7 +31,7 @@ export const PREMIUM_TOOLS = (t) => [
   {
     id: 'legal_draft_maker',
     name: t('draftMaker'),
-    icon: FileText,
+    icon: NotebookPen,
     desc: t('draftMakerDesc'),
     price: '₹599',
     workflow: t('draftMakerWorkflow')
@@ -41,7 +39,7 @@ export const PREMIUM_TOOLS = (t) => [
   {
     id: 'legal_evidence_checker',
     name: t('evidenceAnalyst'),
-    icon: Binary,
+    icon: ScanText,
     desc: t('evidenceAnalystDesc'),
     price: '₹599',
     workflow: t('evidenceAnalystWorkflow')
@@ -57,7 +55,7 @@ export const PREMIUM_TOOLS = (t) => [
   {
     id: 'legal_case_predictor',
     name: t('casePredictor'),
-    icon: LegalLogo,
+    icon: Target,
     desc: t('casePredictorDesc'),
     price: '₹999',
     workflow: t('casePredictorWorkflow')
@@ -73,7 +71,7 @@ export const PREMIUM_TOOLS = (t) => [
   {
     id: 'legal_strategy_engine',
     name: t('strategyEngine'),
-    icon: Brain,
+    icon: Waypoints,
     desc: t('strategyEngineDesc'),
     price: '₹899',
     workflow: t('strategyEngineWorkflow')
@@ -81,7 +79,7 @@ export const PREMIUM_TOOLS = (t) => [
   {
     id: 'legal_research_assistant',
     name: t('researchAssistant'),
-    icon: Library,
+    icon: BookOpen,
     desc: t('researchAssistantDesc'),
     price: '₹699',
     workflow: t('researchAssistantWorkflow')
@@ -161,8 +159,16 @@ const ToolCard = ({ tool, isPrimary = false, size = 'md', onClose, onSelect, t }
       <div className="flex flex-col gap-2.5 sm:gap-4 relative z-10">
         <div className="flex items-start justify-between">
           <div className="flex flex-col items-center gap-1">
-            <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${isUnlocked ? 'bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_6_16px_rgba(99,102,241,0.35)]' : 'bg-white/80 border border-white/80 shadow-sm'}`}>
-              <Icon className={`w-4 h-4 sm:w-5.5 sm:h-5.5 ${isUnlocked ? 'text-white' : 'text-slate-400'}`} />
+            <div
+              className="w-9 h-9 sm:w-12 sm:h-12 rounded-[14px] flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_8px_24px_rgba(99,102,241,0.22)]"
+              style={{
+                backgroundColor: '#F5F4FF',
+                color: '#5B5FEF',
+                border: '1px solid rgba(99,102,241,0.14)',
+                boxShadow: '0 4px 12px rgba(99,102,241,0.10)'
+              }}
+            >
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={1.8} />
             </div>
             {tool.id === 'legal_case_predictor' && (
               <span className={`text-[6px] font-black uppercase tracking-[0.1em] transition-colors ${isUnlocked ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`}>सत्यमेव जयते</span>
@@ -302,12 +308,13 @@ const LegalToolkitCard = ({ isOpen, onClose, onSelect, unlockedTools = [], isAdm
               >
                 <div className="flex items-center gap-2 sm:gap-3.5">
                   <div className="flex flex-col items-center gap-1.5">
-                    <motion.div
-                      whileHover={{ rotate: 180, scale: 1.08 }}
-                      className="w-[42px] h-[42px] rounded-[14px] bg-gradient-to-br from-indigo-500 via-[#4F46E5] to-[#3B82F6] flex items-center justify-center shadow-[0_6px_15px_rgba(99,102,241,0.35)] border border-white/30"
-                    >
-                      <LegalLogo size={24} color="white" showText={true} />
-                    </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.08 }}
+                    className="w-[42px] h-[42px] rounded-[14px] flex items-center justify-center shadow-[0_6px_15px_rgba(99,102,241,0.30)] border border-white/20"
+                    style={{ background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)' }}
+                  >
+                    <Scale size={20} strokeWidth={1.8} className="text-white" />
+                  </motion.div>
                   </div>
                   <div>
                     <h1 className="text-[17px] font-black text-slate-900 dark:text-white leading-tight tracking-tight">{tLegal('legalToolkitTitle')}</h1>

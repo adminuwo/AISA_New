@@ -583,8 +583,8 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -2352,6 +2352,21 @@ body.modal-open-hide-navbar {
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+@keyframes report-fade-expand {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.report-animate-fadeIn {
+  animation: report-fade-expand 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 

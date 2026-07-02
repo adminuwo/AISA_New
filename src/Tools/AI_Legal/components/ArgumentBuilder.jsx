@@ -7,7 +7,7 @@ import {
   Calendar, ChevronDown, ChevronUp, Trash2, Edit2, Eye, Download, Upload, Check, Paperclip,
   Pin, PinOff, Cloud, FileCode, CheckCircle2, AlertCircle, Sparkles, Printer, Play,
   Building2, Landmark, Filter, CheckSquare, Bookmark, PanelLeftClose, PanelLeftOpen,
-  PanelRightClose, PanelRightOpen, RefreshCw, Undo2, Redo2, FileUp
+  PanelRightClose, PanelRightOpen, RefreshCw, Undo2, Redo2, FileUp, Clipboard
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -190,6 +190,86 @@ const REASONING_DATA = {
     evidence: "Staged index of documents.",
     precedent: "Uday Shankar Triyar v. Ram Kalewar Prasad Singh (2006) SC.",
     confidence: 99
+  },
+  materialFacts: {
+    reason: "Details chronological key facts that establish the cause of action and legal claim grounds.",
+    law: "Order VI CPC Pleading Standards, fact pleading rules.",
+    facts: "Unconditional performance requirements and dates of breach.",
+    evidence: "Document transaction logs, bank statements, default receipts.",
+    precedent: "Uday Shankar Triyar v. Ram Kalewar Prasad (2006) SC.",
+    confidence: 96
+  },
+  chronologyOfEvents: {
+    reason: "Establishes a step-by-step undisputed chronology to help the bench track timeline milestones.",
+    law: "Pleading timeline formats under High Court rules.",
+    facts: "Transaction timelines, defaults, notices, failure of mediation.",
+    evidence: "Stamped courier receipts, e-ledger records.",
+    precedent: "Rajesh Sharma v. Amit Verma (2024) Del HC 922.",
+    confidence: 97
+  },
+  relevantRules: {
+    reason: "Specifies procedural court rules governing maintainability, summons, and document filings.",
+    law: "Civil Procedure Code Order VII, Order VIII, High Court Original Side Rules.",
+    facts: "Compliance with local High Court rules on document staging and presentation.",
+    evidence: "Affidavits of service, certified ledger transcripts.",
+    precedent: "Patil Automation Pvt. Ltd. v. Rakheja Engineers (2022) SC.",
+    confidence: 94
+  },
+  relevantRegulations: {
+    reason: "Identifies administrative or sector-specific guidelines that establish liability standards.",
+    law: "SEBI / RBI regulations, trade body guidelines, local municipal bylaws.",
+    facts: "Breach of mandatory regulatory compliance by the respondent.",
+    evidence: "Regulatory certificates, breach notices.",
+    precedent: "Ambalal Sarabhai Enterprises v. KS Infraspace (2020) SC.",
+    confidence: 93
+  },
+  persuasiveAuthorities: {
+    reason: "Cites judgments from other jurisdictions or authoritative legal treatises for novel issues.",
+    law: "Persuasive case laws from other High Courts, foreign jurisdictions, or legal standard commentaries.",
+    facts: "Interpretation of complex indemnity or force majeure clauses.",
+    evidence: "Standard trade practices records.",
+    precedent: "State of Maharashtra v. Mayer Hans George (1965) AIR 722.",
+    confidence: 90
+  },
+  interimRelief: {
+    reason: "Demands immediate temporary protection (injunctions, attachments) to prevent asset dissipation.",
+    law: "Order XXXIX Rules 1 & 2 CPC, Section 9 Arbitration Act.",
+    facts: "Respondent is actively trying to wind up operations or dispose of contested security assets.",
+    evidence: "Property listing links, public filings of liquidation notices.",
+    precedent: "Morgan Stanley Mutual Fund v. Kartick Das (1994) SC.",
+    confidence: 95
+  },
+  alternativeArguments: {
+    reason: "Maintains backup legal bases in case the primary argument on contract breach is rejected.",
+    law: "Principles of quantum meruit, unjust enrichment, restitution.",
+    facts: "Work was completed and accepted; even if contract is void, compensation remains due.",
+    evidence: "Service completion reports, accepted delivery receipts.",
+    precedent: "State of West Bengal v. B.K. Mondal & Sons (1962) SC.",
+    confidence: 92
+  },
+  settlementPossibilities: {
+    reason: "Assesses ADR feasibility or compromise bounds to resolve the dispute efficiently.",
+    law: "Section 89 CPC (Court-referred mediation/arbitration).",
+    facts: "Pre-institution mediation failure details or party settlement offers.",
+    evidence: "Mediation reports, marked 'without prejudice' correspondence.",
+    precedent: "Afcons Infrastructure v. Cherian Varkey (2010) SC.",
+    confidence: 91
+  },
+  litigationRisks: {
+    reason: "Examines potential procedural defenses, limitation challenges, or counter-claims.",
+    law: "Limitation Act, 1963; specific performance bars.",
+    facts: "Minor delays in invoicing, jurisdictional challenge claims.",
+    evidence: "Staging communication records.",
+    precedent: "Satyabrata Ghose v. Mugneeram Bangur (1954) SC.",
+    confidence: 89
+  },
+  winningProbability: {
+    reason: "Calculates overall lawsuit winning prospects based on evidence weights and precedents strength.",
+    law: "Standard of proof in civil claims (preponderance of probabilities).",
+    facts: "Strong documentary evidence vs oral assertions by the respondent.",
+    evidence: "Signed contract copy, bank entries, undisputed emails.",
+    precedent: "Kalyan Singh v. Chhoti (1990) SC.",
+    confidence: 94
   }
 };
 
@@ -259,6 +339,27 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
   const [manualOpponentClaims, setManualOpponentClaims] = useState('');
   const [manualNotes, setManualNotes] = useState('');
 
+  // Redesigned Manual Facts Outline workspace states
+  const [litigationGoal, setLitigationGoal] = useState('');
+  const [practiceArea, setPracticeArea] = useState('');
+  const [reliefRequired, setReliefRequired] = useState('');
+  const [caseFacts, setCaseFacts] = useState('');
+  
+  // Advanced options (collapsed by default)
+  const [advancedJurisdiction, setAdvancedJurisdiction] = useState('High Court');
+  const [advancedLanguage, setAdvancedLanguage] = useState('English');
+  const [advancedWritingStyle, setAdvancedWritingStyle] = useState('Senior Counsel');
+  const [advancedApplicableSections, setAdvancedApplicableSections] = useState('');
+  const [advancedJudgments, setAdvancedJudgments] = useState('');
+  const [advancedEvidence, setAdvancedEvidence] = useState('');
+  const [advancedWitnessInfo, setAdvancedWitnessInfo] = useState('');
+  const [advancedSpecialInstructions, setAdvancedSpecialInstructions] = useState('');
+  const [isAdvancedOptionsOpen, setIsAdvancedOptionsOpen] = useState(false);
+
+  // AI Refinements live tracking states
+  const [refinementHistory, setRefinementHistory] = useState({});
+  const [refiningSectionId, setRefiningSectionId] = useState(null);
+
   // Preferences states
   const [preferences, setPreferences] = useState({
     draftType: 'Written Submission',
@@ -286,6 +387,12 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
   });
 
   const [isLoadingDraft, setIsLoadingDraft] = useState(false);
+  const [historyVisible, setHistoryVisible] = useState(false);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historySortBy, setHistorySortBy] = useState('newest');
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const moreMenuRef = useRef(null);
+
   const activeCaseContext = useActiveCase();
   const triggerAutoRun = activeCaseContext?.triggerAutoRun;
 
@@ -309,6 +416,17 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
     window.addEventListener('resize', handleResize);
     handleResize(); // Initial run
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close more menu when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setIsMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
   // Keyboard Shortcuts Setup
@@ -465,17 +583,17 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
       return uploadedFiles.length > 0;
     }
     if (argumentSource === 'MANUAL_FACTS') {
-      return !!manualCaseTitle.trim() && !!manualFacts.trim();
+      return !!litigationGoal && !!practiceArea && !!caseFacts.trim();
     }
     return false;
-  }, [argumentSource, linkedCaseId, uploadedFiles, manualCaseTitle, manualFacts]);
+  }, [argumentSource, linkedCaseId, uploadedFiles, litigationGoal, practiceArea, caseFacts]);
 
   // Dynamic back navigation that overrides standard window pop state
   const handleCustomBack = () => {
     if (workspaceStage === 'RESULTS') {
-      // From Draft Workspace -> go back to generation loading step
+      // From Draft Workspace -> go back directly to input configurations (Step 1)
       setWorkspaceStage('INPUT');
-      setWizardStep(2);
+      setWizardStep(1);
     } else if (wizardStep === 2) {
       // From AI Analysis step -> go back to input configurations selection
       setWizardStep(1);
@@ -562,6 +680,7 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
     let defendantVal = 'Respondent';
     let courtVal = 'High Court';
     let typeVal = 'Civil';
+    const derivedTitle = manualCaseTitle.trim() || (argumentSource === 'MANUAL_FACTS' ? `Pleading: ${litigationGoal} (${practiceArea})` : '');
 
     if (argumentSource === 'EXISTING_CASE') {
       const proj = allProjects.find(p => p._id === linkedCaseId) || currentCase;
@@ -580,17 +699,21 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
         `;
       }
     } else if (argumentSource === 'MANUAL_FACTS') {
-      plaintiffVal = manualPlaintiff || 'Plaintiff';
-      defendantVal = manualDefendant || 'Defendant';
+      plaintiffVal = 'Petitioner';
+      defendantVal = 'Respondent';
       contextText = `
-        Case Title: ${manualCaseTitle}
-        Plaintiff: ${manualPlaintiff}
-        Defendant: ${manualDefendant}
-        Case Facts: ${manualFacts}
-        Issues: ${manualIssues}
-        Relief Required: ${manualRelief}
-        Opponent Claims: ${manualOpponentClaims}
-        Additional Notes: ${manualNotes}
+        Litigation Goal: ${litigationGoal}
+        Practice Area: ${practiceArea}
+        Relief Required: ${reliefRequired || 'Damages/Recovery'}
+        Legal Issue & Case Facts: ${caseFacts}
+        Jurisdiction: ${advancedJurisdiction}
+        Language Preference: ${advancedLanguage}
+        Writing Tone & Style: ${advancedWritingStyle}
+        Known Applicable Sections: ${advancedApplicableSections || 'Auto detect'}
+        Known Judgments/Precedents: ${advancedJudgments || 'Auto detect'}
+        Known Evidence Items: ${advancedEvidence || 'Auto detect'}
+        Witness Information: ${advancedWitnessInfo || 'Auto detect'}
+        Special Instructions to AI: ${advancedSpecialInstructions || 'None'}
       `;
     } else {
       // Document Upload
@@ -610,22 +733,30 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
       {
         "executiveSummary": "brief overview of case",
         "caseOverview": "longer case synopses",
-        "factsMatrix": ["factual statement 1", "factual statement 2", "factual statement 3"],
+        "materialFacts": ["factual statement 1", "factual statement 2", "factual statement 3"],
+        "chronologyOfEvents": [{"date": "date string", "event": "description", "evidenceLink": "linked evidence or document"}],
         "issuesForDetermination": ["issue 1", "issue 2"],
         "applicableActs": ["statute act 1", "statute act 2"],
         "applicableSections": ["section 1 details", "section 2 details"],
-        "supremeCourtPrecedents": [{"citation": "Supreme Court Citation", "ratio": "core settled legal principle"}],
-        "highCourtJudgments": [{"citation": "High Court Citation", "ratio": "core settled legal principle"}],
-        "plaintiffArguments": ["argument points for plaintiff"],
-        "defendantArguments": ["argument points for defendant"],
-        "counterArguments": ["predicted opponent counter arguments"],
-        "rebuttalStrategy": ["our rebuttal counter-defense arguments"],
-        "evidenceMapping": [{"evidence": "evidence item name", "proves": "what this proves in case"}],
+        "relevantRules": ["procedural rules", "filing guidelines"],
+        "relevantRegulations": ["regulatory standard 1", "regulatory standard 2"],
+        "supremeCourtPrecedents": [{"citation": "Supreme Court Citation", "court": "Supreme Court", "year": 2024, "whyRelevant": "why it applies", "legalPrinciple": "principle", "ratioDecidendi": "ratio", "bindingValue": "description of binding authority under Art 141", "howToCite": "How to cite script"}],
+        "highCourtJudgments": [{"citation": "High Court Citation", "court": "High Court", "year": 2024, "whyRelevant": "why it applies", "legalPrinciple": "principle", "ratioDecidendi": "ratio", "bindingValue": "description of binding authority", "howToCite": "How to cite script"}],
+        "persuasiveAuthorities": [{"citation": "Authority Citation", "court": "Court", "year": 2024, "whyRelevant": "why relevant", "legalPrinciple": "principle", "ratioDecidendi": "ratio", "bindingValue": "binding value", "howToCite": "How to cite script"}],
+        "plaintiffArguments": [{"title": "Argument Title", "legalReasoning": "detailed reasoning", "supportingFacts": "supporting facts", "supportingEvidence": "evidence links", "applicableSections": "sections", "applicableJudgments": "judgments", "expectedDefence": "defense prediction", "counterResponse": "our response", "riskLevel": "Low/Medium/High", "argumentStrength": "Strong/Persuasive/Backup", "evidenceConfidence": "Percentage", "suggestedCourtSubmission": "ready-to-submit paragraph"}],
+        "defendantArguments": [{"legalBasis": "basis description", "strength": "High/Medium/Low", "weakness": "weakness description", "probability": "High/Medium/Low", "counterStrategy": "how to defeat it"}],
+        "counterArguments": [{"legalBasis": "basis description", "strength": "High/Medium/Low", "weakness": "weakness description", "probability": "High/Medium/Low", "counterStrategy": "how to defeat it"}],
+        "rebuttalStrategy": [{"rebuttal": "rebuttal explanation", "applicableLaw": "governing provisions", "applicableEvidence": "linked proof", "supportingJudgment": "judgment citation", "suggestedCourtSubmission": "advocate text"}],
+        "evidenceMapping": [{"evidence": "exhibit name", "evidenceType": "Primary/Secondary/Oral/Certified/Electronic", "evidenceWeight": "Primary/Secondary", "admissibility": "Admissibility analysis", "evidenceConfidence": "Confidence score", "missingEvidence": "checklist of missing links"}],
         "witnessReferences": ["witness reference strategy 1", "witness reference strategy 2"],
-        "crossExamQuestions": ["questions to ask hostile witnesses"],
-        "objections": ["probable courtroom objections by opponent"],
-        "reliefClaimed": "relief description",
+        "crossExamQuestions": [{"witness": "PW1/DW1/etc", "primaryQuestions": "questions", "leadingQuestions": "leading", "trapQuestions": "trap", "contradictionQuestions": "contradictions", "admissionQuestions": "admissions", "followUpQuestions": "followups"}],
+        "objections": [{"category": "Limitation/Hearsay/etc", "description": "objection details", "legalBasis": "statute/rule basis"}],
+        "interimRelief": "relief description",
         "prayerClause": "formal prayer clause text",
+        "alternativeArguments": ["alternative argument 1", "alternative argument 2"],
+        "settlementPossibilities": "settlement description",
+        "litigationRisks": "risks description",
+        "winningProbability": "probability description",
         "courtReadyDraft": "A complete court ready pleading draft formatted in beautiful Markdown (using #, ##, ### headers, bullet points). Make it professional and ready for print."
       }`;
 
@@ -657,71 +788,182 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
         parsed = {
           executiveSummary: `Litigation dispute summary between Petitioner (${plaintiffVal}) and Respondent (${defendantVal}) concerning matter claims. Core focus lies in enforcing performance covenants.`,
           caseOverview: `This case brief represents a contested litigation dispute between Petitioner (${plaintiffVal}) and Respondent (${defendantVal}). The dispute centers around commercial obligations or breach of civil agreement under applicable rules.`,
-          factsMatrix: [
-            `1. The parties initiated business relationship / agreements on the timeline.`,
-            `2. Disputes arose between Petitioner (${plaintiffVal}) and Respondent (${defendantVal}) concerning execution of obligations.`,
-            `3. Petitioner sent formal demand notice to resolve the breach.`,
-            `4. Respondent failed to satisfy notice demands, resulting in cause of action.`
+          materialFacts: [
+            `The Petitioner (${plaintiffVal}) and Respondent (${defendantVal}) executed a binding service level transaction agreement on the timeline.`,
+            `The Petitioner successfully completed all milestone delivery requirements and raised corresponding tax invoices.`,
+            `The Respondent failed to release payments without any lawful justification, committing direct material breach.`,
+            `The Petitioner served a statutory cure notice; the Respondent failed to cure the breach, giving rise to the cause of action.`
+          ],
+          chronologyOfEvents: [
+            { date: "12-Jan-2024", event: "Execution of binding transaction agreement between Petitioner and Respondent.", evidenceLink: "Signed Contract Exhibit A" },
+            { date: "15-May-2024", event: "Completion of Milestone 1 delivery by Petitioner and submission of corresponding invoice.", evidenceLink: "Delivery Certificate Exhibit B, Invoice 101" },
+            { date: "30-Jun-2024", event: "Payment due date expired; Respondent failed to release standard milestone payment.", evidenceLink: "Bank Account Ledger Exhibit C" },
+            { date: "05-Jul-2024", event: "Service of formal demand notice by Petitioner to cure default within 15 days.", evidenceLink: "Notice Receipt Exhibit D" }
           ],
           issuesForDetermination: [
-            `1. Whether the Respondent (${defendantVal}) committed breach of transaction obligations?`,
-            `2. Whether the suit is maintainable under current jurisdiction and statutes?`,
-            `3. Whether the Petitioner (${plaintiffVal}) is entitled to reliefs and stay orders?`
+            `1. Whether the Respondent (${defendantVal}) committed a material breach of contractual obligations by withholding payments?`,
+            `2. Whether the suit is maintainable in terms of pecuniary and territorial jurisdiction before this court?`,
+            `3. Whether the Petitioner (${plaintiffVal}) is entitled to claim damages, interest, and interim injunction reliefs?`
           ],
           applicableActs: [
             `Indian Contract Act, 1872`,
             `Code of Civil Procedure, 1908`,
-            `Commercial Courts Act, 2015`
+            `Commercial Courts Act, 2015`,
+            `Specific Relief Act, 1963`
           ],
           applicableSections: [
-            `Section 73 of Indian Contract Act (Damages for breach)`,
-            `Section 37 & 38 of Specific Relief Act (Injunction relief)`,
-            `Order XXXIX Rules 1 & 2 of CPC (Temporary stay protection)`
+            `Section 73 of the Indian Contract Act, 1872 (Compensation for loss or damage caused by breach of contract)`,
+            `Section 37 & 38 of the Specific Relief Act, 1963 (Perpetual and mandatory injunctions)`,
+            `Order XXXIX Rules 1 & 2 of CPC (Temporary injunction reliefs)`
+          ],
+          relevantRules: [
+            `Order VII Rule 11 of CPC (Rejection of plaint parameters)`,
+            `Order VIII Rule 1 of CPC (Written statement timelines)`,
+            `Delhi High Court Original Side Rules, 2018 (Filing standards and document indexes)`
+          ],
+          relevantRegulations: [
+            `Insolvency and Bankruptcy Board Guidelines, 2016 (Debt default parameters)`,
+            `Reserve Bank of India Master Directions on Interest Rates, 2021 (Default interest calculations)`
           ],
           supremeCourtPrecedents: [
-            { citation: "Aditya & Co. v. State Trading Corp (2022) SC 881", ratio: "Binding precedent stating written contract obligations override oral assertions." },
-            { citation: "Sanjay Kumar v. Union of India (2023) SC 404", ratio: "Admissibility of electronic records requires certificate compliance." }
+            { 
+              citation: "Aditya & Co. v. State Trading Corp (2022) SC 881", 
+              court: "Supreme Court of India",
+              year: 2022,
+              whyRelevant: "Directly governs written transaction overrides over oral understandings.", 
+              legalPrinciple: "Parol Evidence Exclusion",
+              ratioDecidendi: "Binding precedent stating written contract obligations override oral assertions in commercial agreements.",
+              bindingValue: "Binding under Article 141 of the Constitution of India.",
+              howToCite: "Aditya & Co. v. State Trading Corp, (2022) SC 881 at Para 14"
+            },
+            { 
+              citation: "Sanjay Kumar v. Union of India (2023) SC 404", 
+              court: "Supreme Court of India",
+              year: 2023,
+              whyRelevant: "Governs admissibility of electronic emails and server records.",
+              legalPrinciple: "Admissibility of Electronic Records",
+              ratioDecidendi: "Admissibility of electronic records requires certificate compliance under Section 65B of Evidence Act / Section 63 BSA.",
+              bindingValue: "Binding on all subordinate civil courts.",
+              howToCite: "Sanjay Kumar v. Union of India, (2023) SC 404 at Para 8"
+            }
           ],
           highCourtJudgments: [
-            { citation: "Rajesh Sharma v. Amit Verma (2024) Del HC 922", ratio: "Mandatory pre-institution litigation guidelines for commercial suits." }
+            { 
+              citation: "Rajesh Sharma v. Amit Verma (2024) Del HC 922", 
+              court: "Delhi High Court",
+              year: 2024,
+              whyRelevant: "Governs commercial suit pre-mediation protocols.",
+              legalPrinciple: "Pre-Institution Mediation Protocol",
+              ratioDecidendi: "Mandatory pre-institution litigation guidelines for commercial suits must be strictly complied with under Section 12A of the Commercial Courts Act.",
+              bindingValue: "Binding within Delhi jurisdiction, highly persuasive elsewhere.",
+              howToCite: "Rajesh Sharma v. Amit Verma, (2024) Del HC 922 at Para 22"
+            }
+          ],
+          persuasiveAuthorities: [
+            {
+              citation: "Indian Express Corp v. Union of India (1985) 1 SCC 641",
+              court: "Supreme Court of India",
+              year: 1985,
+              whyRelevant: "Provides principles of administrative review on executive decisions.",
+              legalPrinciple: "Administrative Action Proportionality",
+              ratioDecidendi: "Freedom of press and constitutional review of administrative actions regarding public advertisements.",
+              bindingValue: "Highly persuasive precedent regarding proportionality standards.",
+              howToCite: "Indian Express Corp v. Union of India, (1985) 1 SCC 641 at Para 45"
+            }
           ],
           plaintiffArguments: [
-            `Respondent failed to perform specific covenants in contract.`,
-            `Loss and injury sustained by Petitioner is direct consequence of breach.`,
-            `Adequate evidence is staged on record to prove claim.`
+            {
+              title: "Material Default on Milestone 1 Payments",
+              legalReasoning: "Under Section 37 of the Contract Act, the Respondent has an absolute statutory obligation to perform their contractual promise.",
+              supportingFacts: "Respondent accepted all deliveries without raise of quality dispute notes.",
+              supportingEvidence: "Invoice Receipt 101, Bank Ledger Exhibit C.",
+              applicableSections: "Section 37, Indian Contract Act, 1872.",
+              applicableJudgments: "Aditya & Co. v. State Trading Corp (2022) SC 881.",
+              expectedDefence: "Respondent will claim third-party contractor delays.",
+              counterResponse: "Contract terms do not contain third-party dependency clauses.",
+              riskLevel: "Low",
+              argumentStrength: "Strong",
+              evidenceConfidence: "98%",
+              suggestedCourtSubmission: "The Respondent has accepted all deliverables under the contract without demur, yet failed to discharge their payment liability under Section 37 of the Indian Contract Act."
+            }
           ],
           defendantArguments: [
-            `Claim is premature and lacks cause of action.`,
-            `Petitioner failed to perform counter-obligations.`,
-            `Claims are exaggerated and barred under limitation.`
+            {
+              legalBasis: "Alleged delays in project completion by Petitioner.",
+              strength: "Medium",
+              weakness: "Respondent did not raise any written delays warning or issue breach notice during project execution.",
+              probability: "Medium",
+              counterStrategy: "Produce emails showing Respondent actively requesting extensions and accepting work deliveries."
+            }
           ],
           counterArguments: [
-            `Respondent will assert waiver of timelines by parties.`,
-            `Respondent will challenge admissibility of document bundle.`
+            {
+              legalBasis: "Objection regarding Territorial Jurisdiction of this Court.",
+              strength: "Low",
+              weakness: "The contract was executed within the territorial limits of this court, and payments were due here.",
+              probability: "Low",
+              counterStrategy: "Point out the specific jurisdiction clause in Section 15 of the agreement."
+            }
           ],
           rebuttalStrategy: [
-            `Cite Section 92 of Indian Evidence Act to exclude oral agreement variations.`,
-            `Affirm performance timeline compliance through staged correspondence.`
+            {
+              rebuttal: "Exclude oral assertions of extension agreements.",
+              applicableLaw: "Section 92 of the Indian Evidence Act, 1872.",
+              applicableEvidence: "Executed transaction agreement.",
+              supportingJudgment: "Aditya & Co. v. State Trading Corp (2022) SC 881.",
+              suggestedCourtSubmission: "No oral agreement can be admitted to vary, subtract, or contradict the clear written terms of the signed contract under Section 92."
+            }
           ],
           evidenceMapping: [
-            { evidence: "Staged Agreement / Plaint Details", proves: "Establishes legal relationship and binding liability." },
-            { evidence: "Correspondence / Notice receipts", proves: "Establishes notice demand service and timeline cause." }
+            {
+              evidence: "Signed Contract Exhibit A",
+              evidenceType: "Documentary",
+              evidenceWeight: "Primary",
+              admissibility: "Fully admissible, original stamped document.",
+              evidenceConfidence: "High (100%)",
+              missingEvidence: "None. Original signature verified."
+            },
+            {
+              evidence: "Milestone completion emails from Respondent's domain",
+              evidenceType: "Electronic",
+              evidenceWeight: "Secondary",
+              admissibility: "Admissible subject to Section 65B Certificate.",
+              evidenceConfidence: "Medium (85%)",
+              missingEvidence: "Certified server logs and Section 65B compliance certificate."
+            }
           ],
           witnessReferences: [
-            `Accounts Lead to verify financial claims and breach statements.`,
-            `Field Coordinator to verify transaction activities.`
+            `Accounts Manager (PW1) to verify accounts ledgers, outstanding invoices, and default cure receipts.`,
+            `Technical Lead (PW2) to verify delivery milestones and completion certificates.`
           ],
           crossExamQuestions: [
-            `Do you confirm the execution of transaction agreement in timelines?`,
-            `Can you show proof of performance covenants delivery?`
+            {
+              witness: "DW1 (Respondent Accounts Officer)",
+              primaryQuestions: "Was payment due on 30-Jun-2024?",
+              leadingQuestions: "Is it not true that the invoices were received on your official portal on 15-May-2024?",
+              trapQuestions: "If there were delays, why did you not issue any default warnings to the Petitioner?",
+              contradictionQuestions: "You state that work was incomplete, but does your ledger not show entry of the completed service items?",
+              admissionQuestions: "Do you admit that the Respondent company has not paid invoice 101 to date?",
+              followUpQuestions: "What official reason did your company record for this payment default?"
+            }
           ],
           objections: [
-            `Objection to oral assertions contradicting contract text.`,
-            `Objection to non-staged electronic documents without certificate.`
+            {
+              category: "Admissibility of Secondary Electronic Evidence",
+              description: "Opponent might introduce email copies without producing the mandatory Section 65B certificate.",
+              legalBasis: "Section 65B of the Indian Evidence Act / Section 63 of BSA."
+            }
           ],
-          reliefClaimed: `Award of direct damages, declaration of breach, and cost of litigation suit.`,
-          prayerClause: `IN THE PREMISES, it is most respectfully prayed that this Hon'ble Court may pass a decree in favor of Petitioner and order appropriate reliefs.`,
-          courtReadyDraft: `# BEFORE THE HON'BLE HIGH COURT\n\n## IN THE MATTER OF:\n**${plaintiffVal}** ... Petitioner\n\n**Versus**\n\n**${defendantVal}** ... Respondent\n\n### COURT PLEADING BRIEF\n\n#### 1. EXECUTIVE SUMMARY\nDispute between ${plaintiffVal} and ${defendantVal} regarding contract breach.\n\n#### 2. LEGAL ARGUMENTS\n* Respondent committed breach.\n* Claims are within limitation.`
+          interimRelief: `Interim injunction restraining the Respondent from transferring, alienating, or creating any third-party interest in the assets located at the project site during the pendency of the suit.`,
+          prayerClause: `IN THE PREMISES, it is most respectfully prayed that this Hon'ble Court may be pleased to pass a decree for recovery of Rs. 45,00,000/- with interest @ 18% p.a., grant temporary injunction orders, and award cost of the suit.`,
+          alternativeArguments: [
+            `Even if the contract is held to be unenforceable, the Respondent is liable to pay for the work done under the principles of Quantum Meruit under Section 70 of the Contract Act.`,
+            `The Respondent cannot be allowed to enrich themselves unjustly at the expense of the Petitioner.`
+          ],
+          settlementPossibilities: `Feasible for settlement if the Respondent releases 80% of the principal outstanding amount immediately with a waiver of default interest.`,
+          litigationRisks: `Potential risk of minor delay claims from Respondent's sub-contractor, which might require technical expert testimony.`,
+          winningProbability: `High (approx 90% confidence), owing to solid undisputed documentary records and signed invoices in the case file.`,
+          courtReadyDraft: `# BEFORE THE HON'BLE COURT\n\n## IN THE MATTER OF:\n**${plaintiffVal}** ... Petitioner/Plaintiff\n\n**Versus**\n\n**${defendantVal}** ... Respondent/Defendant\n\n### COURT PLEADING BRIEF & DRAFT PLAINTS\n\n#### 1. EXECUTIVE SUMMARY\nDispute between ${plaintiffVal} and ${defendantVal} regarding contract breach.\n\n#### 2. MATERIAL FACTS\n* Parties entered into a contract on 12-Jan-2024.\n* Petitioner performed all milestones.\n\n#### 3. PRAYER CLAUSE\nPlaintiff prays for a decree of recovery and injunction.`
         };
       }
 
@@ -731,12 +973,12 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
 
       if (!targetCaseId) {
         const newProjPayload = {
-          name: manualCaseTitle || (uploadedFiles[0]?.name ? `Upload: ${uploadedFiles[0].name}` : `Pleading Matter`),
+          name: derivedTitle || (uploadedFiles[0]?.name ? `Upload: ${uploadedFiles[0].name}` : `Pleading Matter`),
           isLegalCase: true,
           clientName: plaintiffVal,
           opponentName: defendantVal,
-          caseType: preferences.draftType || 'Civil',
-          summary: manualDescription || manualFacts || 'Extracted document arguments'
+          caseType: argumentSource === 'MANUAL_FACTS' ? practiceArea : (preferences.draftType || 'Civil'),
+          summary: argumentSource === 'MANUAL_FACTS' ? caseFacts : (manualDescription || manualFacts || 'Extracted document arguments')
         };
         const createdProj = await apiService.createProject(newProjPayload);
         targetCaseId = createdProj._id;
@@ -766,30 +1008,35 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
       // Save to recent drafts
       const newDraft = {
         id: `draft_${Date.now()}`,
-        title: argumentSource === 'EXISTING_CASE' 
-          ? `Case Draft: ${plaintiffVal} vs ${defendantVal}`
+        caseName: argumentSource === 'EXISTING_CASE' 
+          ? (selectedCaseObject?.title || `${plaintiffVal} vs ${defendantVal}`)
           : argumentSource === 'MANUAL_FACTS' 
-            ? `Manual Draft: ${manualCaseTitle || 'Pleading'}`
-            : `OCR Docs Draft: ${uploadedFiles[0]?.name || 'Files'}`,
-        type: 'Court Pleading',
+            ? (litigationGoal === 'SUPPORT_PETITION' ? 'Petitioner Draft Outline' : 'Respondent Draft Outline')
+            : (uploadedFiles[0]?.name || 'Uploaded Document Outline'),
         date: new Date().toLocaleDateString(),
-        strength: 91,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        source: argumentSource === 'EXISTING_CASE'
+          ? 'Existing Case'
+          : argumentSource === 'MANUAL_FACTS'
+            ? 'Manual'
+            : 'Uploaded Documents',
+        version: `v${recentDrafts.length + 1}`,
+        preview: parsed.executiveSummary || parsed.caseOverview || 'No preview available',
         results: parsed,
-        extractionData: {
-          plaintiff: plaintiffVal,
-          defendant: defendantVal,
-          court: courtVal,
-          matterType: typeVal,
-          relief: parsed.reliefClaimed || '',
-          issues: parsed.issuesForDetermination || [],
-          statutes: parsed.applicableActs || [],
-          sections: parsed.applicableSections || []
-        },
-        preferences: {
-          draftType: 'Written Pleading',
-          courtLevel: 'High Court',
-          argumentStyle: 'Commercial',
-          writingTone: 'Highly Persuasive'
+        inputs: {
+          argumentSource,
+          linkedCaseId: linkedCaseId || targetCaseId,
+          uploadedFiles,
+          litigationGoal,
+          practiceArea,
+          reliefSeeked,
+          caseFacts,
+          selectedJurisdiction,
+          preferredLanguage,
+          courtWritingStyle,
+          relevantCitations,
+          witnessDetails,
+          specialInstructions,
         }
       };
 
@@ -853,21 +1100,30 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
   const OUTLINE_ITEMS = useMemo(() => [
     { id: 'executiveSummary', label: 'Executive Summary' },
     { id: 'caseOverview', label: 'Case Overview' },
-    { id: 'issuesForDetermination', label: 'Issues' },
+    { id: 'materialFacts', label: 'Material Facts' },
+    { id: 'chronologyOfEvents', label: 'Chronology of Events' },
+    { id: 'issuesForDetermination', label: 'Legal Issues' },
     { id: 'applicableActs', label: 'Applicable Acts' },
     { id: 'applicableSections', label: 'Applicable Sections' },
-    { id: 'supremeCourtPrecedents', label: 'Case Laws (Supreme Court)' },
-    { id: 'highCourtJudgments', label: 'Case Laws (High Court)' },
+    { id: 'relevantRules', label: 'Relevant Rules' },
+    { id: 'relevantRegulations', label: 'Relevant Regulations' },
+    { id: 'supremeCourtPrecedents', label: 'Binding Supreme Court Judgments' },
+    { id: 'highCourtJudgments', label: 'Relevant High Court Judgments' },
+    { id: 'persuasiveAuthorities', label: 'Persuasive Authorities' },
     { id: 'plaintiffArguments', label: 'Plaintiff Arguments' },
     { id: 'defendantArguments', label: 'Defendant Arguments' },
     { id: 'counterArguments', label: 'Counter Arguments' },
     { id: 'rebuttalStrategy', label: 'Rebuttal Strategy' },
     { id: 'evidenceMapping', label: 'Evidence Mapping' },
     { id: 'witnessReferences', label: 'Witness Strategy' },
-    { id: 'crossExamQuestions', label: 'Cross Exam' },
-    { id: 'objections', label: 'Objections' },
-    { id: 'reliefClaimed', label: 'Relief Claimed' },
+    { id: 'crossExamQuestions', label: 'Cross Examination Questions' },
+    { id: 'objections', label: 'Possible Objections' },
+    { id: 'interimRelief', label: 'Interim Relief' },
     { id: 'prayerClause', label: 'Prayer Clause' },
+    { id: 'alternativeArguments', label: 'Alternative Arguments' },
+    { id: 'settlementPossibilities', label: 'Settlement Possibilities' },
+    { id: 'litigationRisks', label: 'Litigation Risks' },
+    { id: 'winningProbability', label: 'Winning Probability' },
     { id: 'courtReadyDraft', label: 'Final Court Draft' }
   ], []);
 
@@ -918,14 +1174,16 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
   // --- AI Drafting Enhancement Actions ---
   const handleAIAction = async (actionType, promptInstruction) => {
     if (!draftResults) return;
+    const targetSection = focusedSection;
+    setRefiningSectionId(targetSection);
     const tid = toast.loading(`AI Copilot is running: ${actionType}...`);
     try {
-      const currentContent = draftResults[focusedSection] || '';
+      const currentContent = draftResults[targetSection] || '';
       
       const prompt = `You are a staff product engineer and senior legal AI platform designer.
       We are refining a specific section of a generated pleading brief.
       
-      Section Key: "${focusedSection}"
+      Section Key: "${targetSection}"
       Current Section Value: "${typeof currentContent === 'string' ? currentContent : JSON.stringify(currentContent)}"
       
       Refinement Task: "${actionType}"
@@ -957,18 +1215,20 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
 
         const nextResults = {
           ...draftResults,
-          [focusedSection]: updatedValue
+          [targetSection]: updatedValue
         };
 
         updateDraftResultsWithHistory(nextResults);
         triggerAutoSave(nextResults);
-        toast.success(`Refined section "${focusedSection}" successfully!`);
+        setRefinementHistory(prev => ({ ...prev, [targetSection]: actionType }));
+        toast.success(`Refined section "${targetSection}" successfully!`);
       }
     } catch (e) {
       console.error(e);
       toast.error(`Refinement failed for ${actionType}`);
     } finally {
       toast.dismiss(tid);
+      setRefiningSectionId(null);
     }
   };
 
@@ -1053,6 +1313,430 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
     toast.success("Raw brief JSON downloaded successfully!");
   };
 
+  const compileBriefToHtml = () => {
+    let htmlContent = '';
+    
+    // Cover Page
+    htmlContent += `
+      <div class="cover-page">
+        <div class="branding">AI LEGAL™ LITIGATION WORKSPACE</div>
+        <div class="title-container">
+          <h1 class="case-title">COURTROOM ARGUMENT BRIEF & PLEADING BRIEF</h1>
+          <p class="case-vs">${selectedCaseObject?.clientName || 'PETITIONER'} <span class="vs-text">v.</span> ${selectedCaseObject?.opponentName || 'RESPONDENT'}</p>
+        </div>
+        <div class="meta-box">
+          <p><strong>FILING COURT:</strong> ${selectedCaseObject?.courtName || 'HIGH COURT'}</p>
+          <p><strong>MATTER TYPE:</strong> ${selectedCaseObject?.caseType || 'COMMERCIAL/CIVIL MATTER'}</p>
+          <p><strong>DATE OF ANALYSIS:</strong> ${new Date().toLocaleDateString('en-IN')}</p>
+          <p><strong>INTELLECTUAL WORKSPACE:</strong> ENTERPRISE LITIGATION ENGINE</p>
+        </div>
+      </div>
+      <div class="page-break"></div>
+    `;
+
+    // Table of Contents
+    htmlContent += `
+      <div class="toc-page">
+        <h2 class="section-heading">TABLE OF CONTENTS</h2>
+        <div class="toc-divider"></div>
+        <ul class="toc-list">
+    `;
+    OUTLINE_ITEMS.forEach((item, idx) => {
+      htmlContent += `
+        <li class="toc-item">
+          <span class="toc-label">${idx + 1}. ${item.label.toUpperCase()}</span>
+          <span class="toc-dot"></span>
+          <span class="toc-page-num">${idx + 2}</span>
+        </li>
+      `;
+    });
+    htmlContent += `
+        </ul>
+      </div>
+      <div class="page-break"></div>
+    `;
+
+    // Render each section
+    OUTLINE_ITEMS.forEach((item, idx) => {
+      const content = draftResults[item.id];
+      htmlContent += `
+        <div class="document-section">
+          <h2 class="section-heading">${idx + 1}. ${item.label.toUpperCase()}</h2>
+          <div class="section-divider"></div>
+      `;
+
+      if (!content || (Array.isArray(content) && content.length === 0)) {
+        htmlContent += `<p class="empty-text">No details generated for this section.</p>`;
+      } else if (typeof content === 'string') {
+        htmlContent += `<p class="paragraph-text">${content.replace(/\n/g, '<br/>')}</p>`;
+      } else if (Array.isArray(content)) {
+        if (typeof content[0] === 'object') {
+          // Render specific complex cards for PDF printing
+          if (item.id === 'plaintiffArguments') {
+            content.forEach((arg, aidx) => {
+              htmlContent += `
+                <div class="brief-card">
+                  <div class="card-header">
+                    <span class="card-title">ARGUMENT ${aidx + 1}: ${arg.title || 'Untitled'}</span>
+                    <span class="badge badge-indigo">Strength: ${arg.argumentStrength || 'Strong'}</span>
+                  </div>
+                  <div class="card-grid">
+                    <div><strong>Legal Reasoning:</strong> ${arg.legalReasoning || ''}</div>
+                    <div><strong>Supporting Facts:</strong> ${arg.supportingFacts || ''}</div>
+                    <div><strong>Supporting Evidence:</strong> ${arg.supportingEvidence || ''}</div>
+                    <div><strong>Statutory Basis:</strong> ${arg.applicableSections || ''} | ${arg.applicableJudgments || ''}</div>
+                    <div><strong>Expected Defence:</strong> ${arg.expectedDefence || ''}</div>
+                    <div><strong>Counter Strategy:</strong> ${arg.counterResponse || ''}</div>
+                  </div>
+                  ${arg.suggestedCourtSubmission ? `<div class="court-submission-quote"><strong>Suggested Court Submission:</strong><br/>"${arg.suggestedCourtSubmission}"</div>` : ''}
+                </div>
+              `;
+            });
+          } else if (['defendantArguments', 'counterArguments'].includes(item.id)) {
+            content.forEach((arg, aidx) => {
+              htmlContent += `
+                <div class="brief-card">
+                  <div class="card-header">
+                    <span class="card-title">DEFENSE ARGUMENT ${aidx + 1}: ${arg.legalBasis || 'Untitled'}</span>
+                    <span class="badge badge-rose">Probability: ${arg.probability || 'Medium'}</span>
+                  </div>
+                  <div class="card-body">
+                    <p><strong>Strength:</strong> ${arg.strength || ''} | <strong>Weakness:</strong> ${arg.weakness || ''}</p>
+                    <p><strong>Counter-Strategy:</strong> ${arg.counterStrategy || ''}</p>
+                  </div>
+                </div>
+              `;
+            });
+          } else if (item.id === 'rebuttalStrategy') {
+            content.forEach((reb, aidx) => {
+              htmlContent += `
+                <div class="brief-card">
+                  <div class="card-header">
+                    <span class="card-title">REBUTTAL ${aidx + 1}</span>
+                    <span class="badge badge-indigo">${reb.applicableLaw || ''}</span>
+                  </div>
+                  <div class="card-body">
+                    <p><strong>Rebuttal:</strong> ${reb.rebuttal || ''}</p>
+                    <p><strong>Evidence Link:</strong> ${reb.applicableEvidence || ''} | <strong>Precedent:</strong> ${reb.supportingJudgment || ''}</p>
+                    ${reb.suggestedCourtSubmission ? `<div class="court-submission-quote"><strong>Court Submission Template:</strong><br/>"${reb.suggestedCourtSubmission}"</div>` : ''}
+                  </div>
+                </div>
+              `;
+            });
+          } else if (item.id === 'evidenceMapping') {
+            content.forEach((ev, aidx) => {
+              htmlContent += `
+                <div class="brief-card">
+                  <div class="card-header">
+                    <span class="card-title">${ev.evidence || 'Evidence'}</span>
+                    <span class="badge badge-indigo">${ev.evidenceWeight || 'Primary'} Weight</span>
+                  </div>
+                  <div class="card-body">
+                    <p><strong>Type:</strong> ${ev.evidenceType || ''} | <strong>Admissibility:</strong> ${ev.admissibility || ''}</p>
+                    <p><strong>Confidence Level:</strong> ${ev.evidenceConfidence || ''}</p>
+                    ${ev.missingEvidence ? `<p class="alert-text"><strong>Missing elements:</strong> ${ev.missingEvidence}</p>` : ''}
+                  </div>
+                </div>
+              `;
+            });
+          } else if (item.id === 'chronologyOfEvents') {
+            htmlContent += `<div class="chronology-list">`;
+            content.forEach((ev, aidx) => {
+              htmlContent += `
+                <div class="chronology-row">
+                  <div class="chrono-date"><strong>${ev.date || ''}</strong></div>
+                  <div class="chrono-event">${ev.event || ''} ${ev.evidenceLink ? `<br/><span class="chrono-ref">Ref: ${ev.evidenceLink}</span>` : ''}</div>
+                </div>
+              `;
+            });
+            htmlContent += `</div>`;
+          } else if (['supremeCourtPrecedents', 'highCourtJudgments', 'persuasiveAuthorities'].includes(item.id)) {
+            content.forEach((pre, aidx) => {
+              htmlContent += `
+                <div class="brief-card">
+                  <div class="card-header">
+                    <span class="card-title">${pre.citation || 'Case precedent'}</span>
+                    <span class="badge badge-indigo">${pre.court || ''} (${pre.year || ''})</span>
+                  </div>
+                  <div class="card-body">
+                    <p><strong>Legal Principle:</strong> ${pre.legalPrinciple || ''}</p>
+                    <p><strong>Ratio Decidendi:</strong> ${pre.ratioDecidendi || ''}</p>
+                    <p><strong>Relevance:</strong> ${pre.whyRelevant || ''}</p>
+                    ${pre.howToCite ? `<div class="citation-code"><strong>Citation Format:</strong> <code>${pre.howToCite}</code></div>` : ''}
+                  </div>
+                </div>
+              `;
+            });
+          } else if (item.id === 'crossExamQuestions') {
+            content.forEach((wit, aidx) => {
+              htmlContent += `
+                <div class="brief-card">
+                  <div class="card-header">
+                    <span class="card-title">WITNESS: ${wit.witness || 'Untitled'}</span>
+                  </div>
+                  <div class="card-body">
+                    ${wit.primaryQuestions ? `<p><strong>Direct Primary Questions:</strong><br/>${wit.primaryQuestions}</p>` : ''}
+                    ${wit.leadingQuestions ? `<p><strong>Leading Questions:</strong><br/>${wit.leadingQuestions}</p>` : ''}
+                    ${wit.trapQuestions ? `<p><strong>Trap Questions:</strong><br/>${wit.trapQuestions}</p>` : ''}
+                    ${wit.contradictionQuestions ? `<p><strong>Contradiction Questions:</strong><br/>${wit.contradictionQuestions}</p>` : ''}
+                    ${wit.admissionQuestions ? `<p><strong>Admission Questions:</strong><br/>${wit.admissionQuestions}</p>` : ''}
+                    ${wit.followUpQuestions ? `<p><strong>Follow-Up Inquiries:</strong><br/>${wit.followUpQuestions}</p>` : ''}
+                  </div>
+                </div>
+              `;
+            });
+          } else if (item.id === 'objections') {
+            content.forEach((obj, aidx) => {
+              htmlContent += `
+                <div class="brief-card">
+                  <div class="card-header">
+                    <span class="card-title">Objection: ${obj.category || 'General'}</span>
+                  </div>
+                  <div class="card-body">
+                    <p><strong>Objection Details:</strong> ${obj.description || ''}</p>
+                    <p><strong>Legal/Statutory Rule:</strong> ${obj.legalBasis || ''}</p>
+                  </div>
+                </div>
+              `;
+            });
+          } else {
+            content.forEach(li => {
+              htmlContent += `<p class="list-item-text">• ${JSON.stringify(li)}</p>`;
+            });
+          }
+        } else {
+          content.forEach(li => {
+            htmlContent += `<p class="list-item-text">• ${li}</p>`;
+          });
+        }
+      }
+      htmlContent += `
+        </div>
+      `;
+    });
+
+    return htmlContent;
+  };
+
+  const compileBriefToDocText = () => {
+    let docContent = '';
+    docContent += `=========================================================\n`;
+    docContent += `               AI LEGAL™ LITIGATION BRIEF\n`;
+    docContent += `=========================================================\n\n`;
+    docContent += `PETITIONER/PLAINTIFF: ${selectedCaseObject?.clientName || 'Petitioner'}\n`;
+    docContent += `RESPONDENT/DEFENDANT: ${selectedCaseObject?.opponentName || 'Respondent'}\n`;
+    docContent += `FILING COURT: ${selectedCaseObject?.courtName || 'High Court'}\n`;
+    docContent += `CASE TYPE: ${selectedCaseObject?.caseType || 'Civil/Commercial'}\n`;
+    docContent += `DATE OF ANALYSIS: ${new Date().toLocaleDateString('en-IN')}\n\n`;
+    
+    docContent += `---------------------------------------------------------\n`;
+    docContent += `                    TABLE OF CONTENTS\n`;
+    docContent += `---------------------------------------------------------\n`;
+    OUTLINE_ITEMS.forEach((item, idx) => {
+      docContent += `${idx + 1}. ${item.label.toUpperCase()}\n`;
+    });
+    docContent += `\n\n`;
+
+    OUTLINE_ITEMS.forEach((item, idx) => {
+      const content = draftResults[item.id];
+      docContent += `=========================================================\n`;
+      docContent += `${idx + 1}. ${item.label.toUpperCase()}\n`;
+      docContent += `=========================================================\n\n`;
+
+      if (!content || (Array.isArray(content) && content.length === 0)) {
+        docContent += `No details generated for this section.\n\n`;
+      } else if (typeof content === 'string') {
+        docContent += `${content}\n\n`;
+      } else if (Array.isArray(content)) {
+        if (typeof content[0] === 'object') {
+          if (item.id === 'plaintiffArguments') {
+            content.forEach((arg, aidx) => {
+              docContent += `Argument ${aidx + 1}: ${arg.title || 'Untitled'}\n`;
+              docContent += ` - Legal Reasoning: ${arg.legalReasoning || ''}\n`;
+              docContent += ` - Supporting Facts: ${arg.supportingFacts || ''}\n`;
+              docContent += ` - Supporting Evidence: ${arg.supportingEvidence || ''}\n`;
+              docContent += ` - Statutory Basis: ${arg.applicableSections || ''} | ${arg.applicableJudgments || ''}\n`;
+              docContent += ` - Expected Defence: ${arg.expectedDefence || ''}\n`;
+              docContent += ` - Counter Response: ${arg.counterResponse || ''}\n`;
+              docContent += ` - Strength: ${arg.argumentStrength || 'Strong'} | Risk: ${arg.riskLevel || 'Low'}\n`;
+              if (arg.suggestedCourtSubmission) {
+                docContent += ` - Court Submission:\n   "${arg.suggestedCourtSubmission}"\n`;
+              }
+              docContent += `\n`;
+            });
+          } else if (['defendantArguments', 'counterArguments'].includes(item.id)) {
+            content.forEach((arg, aidx) => {
+              docContent += `Defense Basis ${aidx + 1}: ${arg.legalBasis || 'Untitled'}\n`;
+              docContent += ` - Strength: ${arg.strength || ''} | Weakness: ${arg.weakness || ''}\n`;
+              docContent += ` - Probability: ${arg.probability || 'Medium'}\n`;
+              docContent += ` - Our Counter-Strategy: ${arg.counterStrategy || ''}\n\n`;
+            });
+          } else if (item.id === 'rebuttalStrategy') {
+            content.forEach((reb, aidx) => {
+              docContent += `Rebuttal Argument ${aidx + 1}: ${reb.rebuttal || ''}\n`;
+              docContent += ` - Governing Provisions: ${reb.applicableLaw || ''}\n`;
+              docContent += ` - Linked Proof: ${reb.applicableEvidence || ''}\n`;
+              docContent += ` - Supporting Judgment: ${reb.supportingJudgment || ''}\n`;
+              if (reb.suggestedCourtSubmission) {
+                docContent += ` - Court Submission:\n   "${reb.suggestedCourtSubmission}"\n`;
+              }
+              docContent += `\n`;
+            });
+          } else if (item.id === 'evidenceMapping') {
+            content.forEach((ev, aidx) => {
+              docContent += `Evidence: ${ev.evidence || ''}\n`;
+              docContent += ` - Type: ${ev.evidenceType || ''} | Weight: ${ev.evidenceWeight || 'Primary'}\n`;
+              docContent += ` - Admissibility: ${ev.admissibility || ''}\n`;
+              docContent += ` - Confidence Level: ${ev.evidenceConfidence || ''}\n`;
+              if (ev.missingEvidence) {
+                docContent += ` - Missing Elements Checklist: ${ev.missingEvidence}\n`;
+              }
+              docContent += `\n`;
+            });
+          } else if (item.id === 'chronologyOfEvents') {
+            content.forEach((ev, aidx) => {
+              docContent += `Date/Milestone: ${ev.date || ''}\n`;
+              docContent += `Event: ${ev.event || ''}\n`;
+              if (ev.evidenceLink) {
+                docContent += `Linked Reference: ${ev.evidenceLink}\n`;
+              }
+              docContent += `\n`;
+            });
+          } else if (['supremeCourtPrecedents', 'highCourtJudgments', 'persuasiveAuthorities'].includes(item.id)) {
+            content.forEach((pre, aidx) => {
+              docContent += `Citation: ${pre.citation || ''}\n`;
+              docContent += ` - Court: ${pre.court || ''} | Year: ${pre.year || ''}\n`;
+              docContent += ` - Legal Principle: ${pre.legalPrinciple || ''}\n`;
+              docContent += ` - Ratio Decidendi: ${pre.ratioDecidendi || ''}\n`;
+              docContent += ` - Why Relevant: ${pre.whyRelevant || ''} | Authority: ${pre.bindingValue || ''}\n`;
+              if (pre.howToCite) {
+                docContent += ` - How to cite script: ${pre.howToCite}\n`;
+              }
+              docContent += `\n`;
+            });
+          } else if (item.id === 'crossExamQuestions') {
+            content.forEach((wit, aidx) => {
+              docContent += `Target Witness: ${wit.witness || ''}\n`;
+              if (wit.primaryQuestions) docContent += ` - Primary direct: ${wit.primaryQuestions}\n`;
+              if (wit.leadingQuestions) docContent += ` - Leading questions: ${wit.leadingQuestions}\n`;
+              if (wit.trapQuestions) docContent += ` - Trap questions: ${wit.trapQuestions}\n`;
+              if (wit.contradictionQuestions) docContent += ` - Contradictions: ${wit.contradictionQuestions}\n`;
+              if (wit.admissionQuestions) docContent += ` - Admissions: ${wit.admissionQuestions}\n`;
+              if (wit.followUpQuestions) docContent += ` - Follow-ups: ${wit.followUpQuestions}\n`;
+              docContent += `\n`;
+            });
+          } else if (item.id === 'objections') {
+            content.forEach((obj, aidx) => {
+              docContent += `Objection Category: ${obj.category || ''}\n`;
+              docContent += ` - Description: ${obj.description || ''}\n`;
+              docContent += ` - Statutory Rule Basis: ${obj.legalBasis || ''}\n\n`;
+            });
+          } else {
+            content.forEach(li => {
+              docContent += `• ${JSON.stringify(li)}\n`;
+            });
+            docContent += `\n`;
+          }
+        } else {
+          content.forEach(li => {
+            docContent += `• ${li}\n`;
+          });
+          docContent += `\n`;
+        }
+      }
+    });
+
+    return docContent;
+  };
+
+  // Helper functions for formatting drafting history robustly
+  const getHistoryItemCaseName = (item) => {
+    if (item.caseName) return item.caseName;
+    if (item.title && item.title.includes(':')) {
+      return item.title.split(':')[1].trim();
+    }
+    if (item.extractionData?.plaintiff && item.extractionData?.defendant) {
+      return `${item.extractionData.plaintiff} vs ${item.extractionData.defendant}`;
+    }
+    return item.title || 'Untitled Case Pleading';
+  };
+
+  const getHistoryItemSource = (item) => {
+    if (item.source) {
+      if (item.source === 'Existing Case' || item.source === 'EXISTING_CASE') return 'Existing Case Workspace';
+      if (item.source === 'Manual' || item.source === 'MANUAL_FACTS') return 'Manual Facts';
+      if (item.source === 'Uploaded Documents' || item.source === 'UPLOAD_DOCS') return 'Uploaded Documents';
+      return item.source;
+    }
+    const t = (item.title || '').toLowerCase();
+    if (t.includes('case')) return 'Existing Case Workspace';
+    if (t.includes('manual')) return 'Manual Facts';
+    if (t.includes('ocr') || t.includes('docs')) return 'Uploaded Documents';
+    return 'Existing Case Workspace';
+  };
+
+  const getHistoryItemPreview = (item) => {
+    const p = item.preview || item.results?.executiveSummary || item.results?.caseOverview || '';
+    if (!p) return 'No preview summary generated for this court pleading draft.';
+    return p.substring(0, 180) + (p.length > 180 ? '...' : '');
+  };
+
+  const getHistoryItemStats = (item) => {
+    const text = item.results?.courtReadyDraft || item.results?.executiveSummary || '';
+    const words = text ? text.trim().split(/\s+/).filter(Boolean).length : 1204;
+    const citations = (item.results?.applicableActs?.length || 0) + (item.results?.applicableSections?.length || 0) || 20;
+    const evidence = item.results?.evidenceLinked?.length || 10;
+    const readTime = Math.max(1, Math.round(words / 200)) || 6;
+    return { words, citations, evidence, readTime };
+  };
+
+  const handleDuplicateHistoryItem = (item) => {
+    const newItem = {
+      ...item,
+      id: `draft_${Date.now()}`,
+      version: `v${recentDrafts.length + 1}`,
+      date: new Date().toLocaleDateString(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    const updated = [newItem, ...recentDrafts];
+    setRecentDrafts(updated);
+    localStorage.setItem('aisa_recent_arguments_drafts', JSON.stringify(updated));
+    toast.success("Draft duplicated in history!");
+  };
+
+  const sortedAndFilteredHistory = useMemo(() => {
+    let list = recentDrafts.filter(h => {
+      const caseName = getHistoryItemCaseName(h).toLowerCase();
+      const source = getHistoryItemSource(h).toLowerCase();
+      const date = (h.date || '').toLowerCase();
+      const preview = getHistoryItemPreview(h).toLowerCase();
+      const q = historySearch.toLowerCase();
+      return caseName.includes(q) || source.includes(q) || date.includes(q) || preview.includes(q);
+    });
+
+    if (historySortBy === 'newest') {
+      list.sort((a, b) => {
+        const idA = parseInt(a.id?.split('_')[1] || '0');
+        const idB = parseInt(b.id?.split('_')[1] || '0');
+        return idB - idA;
+      });
+    } else if (historySortBy === 'oldest') {
+      list.sort((a, b) => {
+        const idA = parseInt(a.id?.split('_')[1] || '0');
+        const idB = parseInt(b.id?.split('_')[1] || '0');
+        return idA - idB;
+      });
+    } else if (historySortBy === 'name') {
+      list.sort((a, b) => {
+        const nameA = getHistoryItemCaseName(a).toLowerCase();
+        const nameB = getHistoryItemCaseName(b).toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+    }
+
+    return list;
+  }, [recentDrafts, historySearch, historySortBy]);
+
   const handlePrintPDF = () => {
     if (!draftResults) return;
     const printWindow = window.open('', '_blank');
@@ -1061,30 +1745,57 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
       return;
     }
 
+    const compiledHtml = compileBriefToHtml();
+
     const html = `
       <html>
       <head>
         <title>AI LEGAL™ - Legal Draft - ${selectedCaseObject?.clientName || 'Petitioner'} vs ${selectedCaseObject?.opponentName || 'Respondent'}</title>
         <style>
-          body { font-family: 'Segoe UI', system-ui, sans-serif; padding: 50px; line-height: 1.7; color: #1e293b; }
-          .header { border-bottom: 2px solid #4f46e5; padding-bottom: 12px; margin-bottom: 25px; }
-          .draft-title { font-size: 20pt; font-weight: 800; color: #1e1b4b; margin: 0; }
-          .meta-row { display: flex; justify-content: space-between; font-size: 9pt; color: #64748b; margin-top: 10px; text-transform: uppercase; font-weight: 700; }
-          .content { font-size: 11pt; color: #0f172a; white-space: pre-wrap; }
-          h1, h2, h3 { font-family: 'Outfit', sans-serif; color: #1e1b4b; margin-top: 20px; }
-          h1 { border-bottom: 1.5px solid #e2e8f0; padding-bottom: 6px; }
+          body { font-family: 'Georgia', serif; padding: 40px; line-height: 1.6; color: #0f172a; background-color: #ffffff; }
+          .cover-page { height: 95vh; display: flex; flex-direction: column; justify-content: space-between; border: 3px double #1e293b; padding: 40px; margin-bottom: 50px; box-sizing: border-box; }
+          .branding { font-family: 'Segoe UI', sans-serif; font-size: 10pt; font-weight: 800; color: #4f46e5; letter-spacing: 2px; }
+          .title-container { text-align: center; margin-top: 15%; }
+          .case-title { font-size: 24pt; font-weight: 800; color: #1e1b4b; margin: 0; font-family: 'Segoe UI', sans-serif; text-transform: uppercase; }
+          .case-vs { font-size: 18pt; font-weight: 600; color: #475569; margin-top: 20px; }
+          .vs-text { font-style: italic; color: #94a3b8; }
+          .meta-box { border-top: 1px solid #e2e8f0; padding-top: 20px; font-family: 'Segoe UI', sans-serif; font-size: 10pt; color: #334155; line-height: 1.8; }
+          .page-break { page-break-after: always; }
+          
+          .toc-page { padding: 40px 0; }
+          .toc-list { list-style: none; padding: 0; margin-top: 30px; }
+          .toc-item { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px; font-size: 11pt; font-weight: 700; color: #1e293b; font-family: 'Segoe UI', sans-serif; }
+          .toc-label { width: fit-content; white-space: nowrap; }
+          .toc-dot { flex-grow: 1; border-bottom: 1px dotted #cbd5e1; margin: 0 10px; position: relative; top: -4px; }
+          .toc-page-num { width: fit-content; font-variant-numeric: tabular-nums; }
+          
+          .document-section { padding: 20px 0; page-break-after: always; }
+          .section-heading { font-family: 'Segoe UI', sans-serif; font-size: 14pt; font-weight: 800; color: #1e1b4b; margin-top: 30px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+          .section-divider { height: 2px; background: #4f46e5; margin-bottom: 20px; }
+          .paragraph-text { font-size: 11pt; color: #334155; text-align: justify; margin-bottom: 15px; }
+          .list-item-text { font-size: 11pt; color: #334155; margin-left: 20px; margin-bottom: 8px; }
+          
+          .brief-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px; background-color: #f8fafc; page-break-inside: avoid; }
+          .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px; }
+          .card-title { font-size: 11pt; font-weight: 800; color: #1e1b4b; }
+          .badge { font-size: 8pt; font-weight: 800; text-transform: uppercase; padding: 3px 8px; border-radius: 9999px; }
+          .badge-indigo { background-color: #e0e7ff; color: #4338ca; }
+          .badge-rose { background-color: #ffe4e6; color: #9f1239; }
+          .card-grid { display: grid; grid-template-cols: 1fr 1fr; gap: 12px; font-size: 10pt; color: #475569; }
+          .card-body { font-size: 10pt; color: #475569; line-height: 1.6; }
+          .court-submission-quote { font-style: italic; border-left: 3px solid #4f46e5; padding-left: 12px; margin-top: 12px; color: #334155; font-size: 10pt; background: #f1f5f9; padding: 10px 15px; border-radius: 4px; }
+          .citation-code { font-family: monospace; font-size: 9pt; background-color: #f1f5f9; padding: 6px 12px; border-radius: 4px; margin-top: 10px; border: 1px solid #e2e8f0; color: #0f172a; }
+          
+          .chronology-list { border-left: 2px solid #e2e8f0; padding-left: 20px; margin-top: 15px; }
+          .chronology-row { margin-bottom: 15px; position: relative; }
+          .chrono-date { font-size: 10pt; font-weight: 800; color: #4f46e5; text-transform: uppercase; }
+          .chrono-event { font-size: 11pt; color: #334155; margin-top: 4px; }
+          .chrono-ref { font-size: 9pt; color: #64748b; font-weight: 600; }
+          .empty-text { font-style: italic; color: #94a3b8; font-size: 10pt; }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="draft-title">AI LEGAL™ Court Pleading Brief</div>
-          <div class="meta-row">
-            <span>Petitioner: ${selectedCaseObject?.clientName || 'Petitioner'}</span>
-            <span>Respondent: ${selectedCaseObject?.opponentName || 'Respondent'}</span>
-            <span>Type: Court Pleading</span>
-          </div>
-        </div>
-        <div class="content">${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}</div>
+        ${compiledHtml}
       </body>
       </html>
     `;
@@ -1098,28 +1809,17 @@ const ArgumentBuilder = ({ currentCase, onBack, theme, allProjects = [], onUpdat
 
   const handleDownloadDoc = () => {
     if (!draftResults) return;
-    const docContent = `
-AI LEGAL™ COURT BRIEF
-====================
-
-Petitioner: ${selectedCaseObject?.clientName || 'Petitioner'}
-Respondent: ${selectedCaseObject?.opponentName || 'Respondent'}
-Filing Court: ${selectedCaseObject?.courtName || 'High Court'}
-
-DRAFT PLEADING ARGUMENTS:
-------------------------
-${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
-`;
+    const docContent = compileBriefToDocText();
     const blob = new Blob([docContent], { type: 'application/msword' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${selectedCaseObject?.clientName || 'Petitioner'}_vs_${selectedCaseObject?.opponentName || 'Respondent'}_Draft.doc`;
+    link.download = `${selectedCaseObject?.clientName || 'Petitioner'}_vs_${selectedCaseObject?.opponentName || 'Respondent'}_Brief.doc`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast.success("Word document downloaded successfully!");
+    toast.success("Word document brief downloaded successfully!");
   };
 
   // Documents drag and drop handlers
@@ -1180,29 +1880,42 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
     switch(activeCopilotTab) {
       case 'Language':
         return [
-          { name: 'Improve Draft', desc: 'Perform legal spelling/grammar cleanup.', action: 'Improve Draft', prompt: 'Perform legal spelling, grammar, citation format checks and style cleanup.' },
-          { name: 'Improve Legal Language', desc: 'Strengthen courtroom tone.', action: 'Improve Legal Language', prompt: 'Rewrite with a highly professional senior advocate voice suitable for high court filings.' },
-          { name: 'Shorten Argument', desc: 'Make it brief & concise.', action: 'Shorten Argument', prompt: 'Condense this section into a brief, high-impact summary suitable for fast oral presentation.' }
+          { name: 'Formal', desc: 'Strict professional legal tone standard.', action: 'Formal', prompt: 'Rewrite this section in a strictly formal, professional legal tone.' },
+          { name: 'Courtroom', desc: 'Standard courtroom advocacy vocabulary.', action: 'Courtroom', prompt: 'Rewrite this section using standard courtroom advocacy vocabulary and phrasing.' },
+          { name: 'Aggressive', desc: 'Assertive pressure litigation stance.', action: 'Aggressive', prompt: 'Rewrite this section with an assertive, aggressive litigation tone to put maximum pressure on the opponent.' },
+          { name: 'Neutral', desc: 'Objective analytical voice.', action: 'Neutral', prompt: 'Rewrite this section in a balanced, neutral, objective analytical tone.' },
+          { name: 'Judge Friendly', desc: 'Clear, concise presentation style.', action: 'Judge Friendly', prompt: 'Rewrite this section to be extremely clear, concise, and easy for a judge to scan and absorb quickly.' },
+          { name: 'Senior Counsel Style', desc: 'Elegant authoritative advocacy.', action: 'Senior Counsel Style', prompt: 'Rewrite this section in the elegant, authoritative, and persuasive style of a senior advocate / senior counsel.' }
         ];
       case 'Logic':
         return [
-          { name: 'Regenerate Section', desc: 'Redraft section content.', action: 'Regenerate Section', prompt: 'Completely redraft this section with a more formal litigation argument structure.' },
-          { name: 'Expand Argument', desc: 'Include details & reasoning.', action: 'Expand Argument', prompt: 'Substantially expand this argument with detailed logical reasoning and deeper legal context.' },
-          { name: 'Strengthen Reasoning', desc: 'Improve logical flow.', action: 'Strengthen Reasoning', prompt: 'Re-align reasoning logically to form a solid chain of deductions based on dispute facts.' }
+          { name: 'Increase Reasoning', desc: 'Deepen step-by-step logic chains.', action: 'Increase Reasoning', prompt: 'Substantially expand the logical depth, analysis, and step-by-step reasoning of this section.' },
+          { name: 'Increase Citations', desc: 'Add relevant provisions / acts.', action: 'Increase Citations', prompt: 'Integrate additional statutory citations and references to relevant acts/provisions.' },
+          { name: 'Strengthen Arguments', desc: 'Highlight liabilities & breaches.', action: 'Strengthen Arguments', prompt: 'Strengthen the core arguments in this section by highlighting absolute liabilities and clear breaches.' },
+          { name: 'Reduce Assumptions', desc: 'Keep grounded in strict facts.', action: 'Reduce Assumptions', prompt: 'Refine this section to reduce speculative assumptions, keeping it strictly grounded in direct facts and evidence.' },
+          { name: 'Improve Burden of Proof', desc: 'Refine proof standards checks.', action: 'Improve Burden of Proof', prompt: 'Explicitly highlight who bears the burden of proof for this section and assert that the opponent has failed to meet it.' }
         ];
       case 'Precedents':
         return [
-          { name: 'Add Citations', desc: 'Append legal section rules.', action: 'Add Citations', prompt: 'Append relevant CPC/CrPC/BNS statutory citations and correct referencing syntax.' },
-          { name: 'Add More Case Laws', desc: 'Find binding precedents.', action: 'Add Case Laws', prompt: 'Integrate 2-3 additional recent high-court or supreme court binding precedents matching the core issue.' }
+          { name: 'Binding Only', desc: 'Rely strictly on Article 141.', action: 'Binding Only', prompt: 'Refine the case laws mentioned in this section to rely strictly on binding precedents under Article 141.' },
+          { name: 'Supreme Court', desc: 'Prioritize apex court judgments.', action: 'Supreme Court', prompt: 'Add or prioritize authoritative Supreme Court of India precedents matching the legal issues.' },
+          { name: 'High Court', desc: 'Prioritize relevant jurisdiction.', action: 'High Court', prompt: 'Add or prioritize relevant jurisdiction High Court precedents to support the arguments.' },
+          { name: 'Recent', desc: 'Cite recent 2023-2026 rulings.', action: 'Recent', prompt: 'Incorporate recent precedents (preferably 2023-2026) to reflect current judicial developments.' },
+          { name: 'Constitution Bench', desc: 'Incorporate larger bench rulings.', action: 'Constitution Bench', prompt: 'Cite authoritative larger/Constitution Bench judgments to establish fundamental legal principles.' }
         ];
       case 'Rebuttal':
         return [
-          { name: 'Generate Counter Argument', desc: 'Predict opposition defense.', action: 'Generate Counter Argument', prompt: 'Formulate a strong counter-defense argument anticipating opponent objections.' },
-          { name: 'Generate Rebuttal', desc: 'Draft clean rebuttals.', action: 'Generate Rebuttal', prompt: 'Formulate a persuasive rebuttal countering hostile opposition claims.' }
+          { name: 'Stronger Counter Arguments', desc: 'Anticipate & defeat defenses.', action: 'Stronger Counter Arguments', prompt: 'Generate aggressive counter-arguments to defeat the opponent\'s anticipated defense positions.' },
+          { name: 'Attack Weak Evidence', desc: 'Expose opponent evidence flaws.', action: 'Attack Weak Evidence', prompt: 'Analyze and aggressively challenge the credibility, weight, or admissibility of the opponent\'s evidence.' },
+          { name: 'Alternative Interpretation', desc: 'Compelling factual reinterpretations.', action: 'Alternative Interpretation', prompt: 'Propose a compelling alternative legal interpretation of the disputed events to counter the defense.' },
+          { name: 'Contradictions', desc: 'Highlight records inconsistencies.', action: 'Contradictions', prompt: 'Highlight contradictions or inconsistencies between the opponent\'s claims and their documentary records.' }
         ];
       case 'Evidence':
         return [
-          { name: 'Link Key Evidence', desc: 'Establish links to document exhibits.', action: 'Link Evidence', prompt: 'Align this paragraph arguments precisely with evidence and documents already staged on the case record.' }
+          { name: 'Primary Only', desc: 'Rely strictly on direct files.', action: 'Primary Only', prompt: 'Align arguments in this section strictly with primary evidence on record, ignoring auxiliary files.' },
+          { name: 'Certified Only', desc: 'Certified copies focus & weights.', action: 'Certified Only', prompt: 'Prioritize certified copies of documents and emphasize their authenticity and admissibility in this section.' },
+          { name: 'Increase Weight', desc: 'Cumulative evidentiary force.', action: 'Increase Weight', prompt: 'Group and present evidence items to maximize their cumulative evidentiary weight and force.' },
+          { name: 'Ignore Weak Evidence', desc: 'Prune circumstantial links.', action: 'Ignore Weak Evidence', prompt: 'Prune weak or circumstantial evidentiary links from this section\'s arguments.' }
         ];
       default:
         return [];
@@ -1211,92 +1924,226 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
 
   return (
     <div className="flex-1 flex flex-col w-full h-full min-h-0 bg-slate-50 dark:bg-transparent overflow-hidden relative">
-      
       {/* HEADER BAR */}
-      <div className={`flex items-center justify-between px-4 sm:px-6 py-4 border-b shrink-0 ${isDark ? 'border-slate-800 bg-[#0B1020]/95' : 'border-slate-200 bg-white'} backdrop-blur-xl z-20`}>
-        <div className="flex items-center gap-3 min-w-0">
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3.5 border-b shrink-0 gap-3.5 ${isDark ? 'border-slate-800 bg-[#0B1020]/95' : 'border-slate-200 bg-white'} backdrop-blur-xl z-20`}>
+        <div className="flex flex-row items-center gap-3 min-w-0 flex-wrap sm:flex-nowrap">
           <button 
             onClick={handleCustomBack} 
-            className={`w-[68px] h-8 flex items-center justify-center gap-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors shrink-0 ${
-              isDark ? 'bg-[#1A2540] border-slate-800 text-slate-300 hover:bg-[#202E50]' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+            className={`flex items-center gap-1 text-[11px] font-black uppercase tracking-wider transition-colors shrink-0 ${
+              isDark ? 'text-slate-350 hover:text-white' : 'text-slate-700 hover:text-slate-900'
             }`}
-            style={{ minHeight: '32px' }}
+            style={{ minHeight: '44px' }}
           >
-            <ChevronLeft size={11} />
+            <ChevronLeft size={14} />
             <span>Back</span>
           </button>
           
+          <div className="hidden sm:block h-4 w-px bg-slate-300 dark:bg-slate-800 mx-1 shrink-0" />
+
           <div className="flex flex-col min-w-0">
-            <h1 className={`text-[16px] sm:text-[18px] font-black leading-none tracking-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Argument Builder
-            </h1>
-            <p className={`text-[9px] sm:text-[10px] font-medium mt-1 leading-none truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h1 className={`text-[15px] sm:text-[18px] font-black leading-none tracking-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                Argument Builder
+              </h1>
+              {workspaceStage === 'RESULTS' && (
+                <button
+                  onClick={() => setMobileOutlineDrawer(true)}
+                  className="md:hidden px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 text-indigo-650 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-850 rounded text-[9px] font-black uppercase"
+                  style={{ minHeight: '44px' }}
+                >
+                  Outline
+                </button>
+              )}
+            </div>
+            <p className={`text-[10px] font-medium mt-1 leading-normal ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
               AI enterprise pleading generator, defense planner, and legal brief drafting workspace.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap shrink-0">
           {workspaceStage === 'RESULTS' && (
-            <button
-              onClick={() => {
-                setWorkspaceStage('INPUT');
-                setWizardStep(1);
-              }}
-              className={`px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors whitespace-nowrap ${
-                isDark ? 'bg-[#1A2540] border-slate-800 text-slate-300 hover:bg-[#202E50]' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              Adjust Inputs
-            </button>
+            <>
+              {/* History Button */}
+              <button
+                onClick={() => setHistoryVisible(true)}
+                className={`px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                  isDark ? 'bg-[#1A2540] border-slate-800 text-slate-300 hover:bg-[#202E50]' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+                style={{ height: '34px' }}
+              >
+                <History size={13} />
+                <span className="hidden sm:inline">History</span>
+              </button>
+
+              {/* Adjust Inputs Button */}
+              <button
+                onClick={() => {
+                  setWorkspaceStage('INPUT');
+                  setWizardStep(1);
+                }}
+                className={`px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                  isDark ? 'bg-[#1A2540] border-slate-800 text-slate-300 hover:bg-[#202E50]' : 'bg-slate-50 border-slate-200 text-slate-707 hover:bg-slate-100'
+                }`}
+                style={{ height: '34px' }}
+              >
+                <Edit2 size={13} />
+                <span className="hidden sm:inline">Adjust Inputs</span>
+                <span className="sm:hidden">Adjust</span>
+              </button>
+
+              {/* Desktop/Tablet Document Actions */}
+              <div className="hidden md:flex items-center gap-1.5">
+                <button
+                  onClick={handlePrintPDF}
+                  className={`px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                    isDark ? 'bg-[#1A2540] border-slate-800 text-slate-300 hover:bg-[#202E50]' : 'bg-slate-50 border-slate-200 text-slate-707 hover:bg-slate-100'
+                  }`}
+                  style={{ height: '34px' }}
+                >
+                  <Printer size={13} />
+                  <span>PDF</span>
+                </button>
+
+                <button
+                  onClick={handleDownloadDoc}
+                  className={`px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                    isDark ? 'bg-[#1A2540] border-slate-800 text-slate-300 hover:bg-[#202E50]' : 'bg-slate-50 border-slate-200 text-slate-707 hover:bg-slate-100'
+                  }`}
+                  style={{ height: '34px' }}
+                >
+                  <FileDown size={13} />
+                  <span>DOCX</span>
+                </button>
+
+                <button
+                  onClick={handleCopyDraft}
+                  className={`px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                    isDark ? 'bg-[#1A2540] border-slate-800 text-slate-300 hover:bg-[#202E50]' : 'bg-slate-50 border-slate-200 text-slate-707 hover:bg-slate-100'
+                  }`}
+                  style={{ height: '34px' }}
+                >
+                  <Copy size={13} />
+                  <span>Copy</span>
+                </button>
+              </div>
+
+              {/* Mobile "More" Actions Dropdown */}
+              <div className="md:hidden relative" ref={moreMenuRef}>
+                <button
+                  onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                  className={`px-3 py-1.5 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors whitespace-nowrap flex items-center gap-1 ${
+                    isDark ? 'bg-[#1A2540] border-slate-800 text-slate-300 hover:bg-[#202E50]' : 'bg-slate-50 border-slate-200 text-slate-707 hover:bg-slate-100'
+                  }`}
+                  style={{ height: '34px' }}
+                >
+                  <span>More</span>
+                  <ChevronDown size={12} />
+                </button>
+                {isMoreMenuOpen && (
+                  <div className={`absolute right-0 mt-1.5 w-32 border rounded-xl shadow-xl z-50 flex flex-col overflow-hidden py-1 ${
+                    isDark ? 'bg-[#131c31] border-slate-800' : 'bg-white border-slate-200'
+                  }`}>
+                    <button
+                      onClick={() => {
+                        setIsMoreMenuOpen(false);
+                        handlePrintPDF();
+                      }}
+                      className="w-full text-left px-3 py-2 text-[10px] font-black uppercase text-slate-400 hover:text-white hover:bg-indigo-600 flex items-center gap-2"
+                    >
+                      <Printer size={12} /> PDF
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsMoreMenuOpen(false);
+                        handleDownloadDoc();
+                      }}
+                      className="w-full text-left px-3 py-2 text-[10px] font-black uppercase text-slate-400 hover:text-white hover:bg-indigo-600 flex items-center gap-2"
+                    >
+                      <FileDown size={12} /> DOCX
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsMoreMenuOpen(false);
+                        handleCopyDraft();
+                      }}
+                      className="w-full text-left px-3 py-2 text-[10px] font-black uppercase text-slate-400 hover:text-white hover:bg-indigo-600 flex items-center gap-2"
+                    >
+                      <Copy size={12} /> Copy
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
 
       {/* STEP PROGRESS INDICATOR */}
-      <div className={`p-4 border-b shrink-0 ${isDark ? 'bg-[#0E1528] border-slate-850' : 'bg-slate-55/40 border-slate-100'}`}>
-        <div className="max-w-5xl mx-auto">
-          {/* Desktop/Tablet Horizontal Indicator */}
-          <div className="hidden sm:flex items-center justify-between w-full relative">
-            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-200 dark:bg-slate-800 -translate-y-1/2 z-0" />
-            
-            {[
-              { step: 1, label: 'Choose Source', active: (workspaceStage === 'INPUT' && wizardStep === 1) },
-              { step: 2, label: 'AI Analysis', active: (workspaceStage === 'INPUT' && wizardStep === 2) },
-              { step: 3, label: 'Court Draft', active: (workspaceStage === 'RESULTS') }
-            ].map((s, idx) => {
-              const completed = (idx === 0 && (wizardStep === 2 || workspaceStage === 'RESULTS')) || (idx === 1 && workspaceStage === 'RESULTS');
-              return (
-                <div key={s.step} className="flex flex-col items-center relative z-10">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${
-                    s.active ? 'bg-indigo-600 text-white shadow-lg ring-4 ring-indigo-500/20' :
-                    completed ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
-                  }`}>
-                    {completed ? '✓' : s.step}
+      {workspaceStage !== 'RESULTS' && (
+        <div className={`p-4 border-b shrink-0 ${isDark ? 'bg-[#0E1528] border-slate-850' : 'bg-slate-55/40 border-slate-100'}`}>
+          <div className="max-w-5xl mx-auto">
+            {/* Desktop/Tablet Horizontal Indicator */}
+            <div className="hidden sm:flex items-center justify-between w-full relative">
+              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-200 dark:bg-slate-800 -translate-y-1/2 z-0" />
+              
+              {[
+                { step: 1, label: 'Choose Source', active: (workspaceStage === 'INPUT' && wizardStep === 1) },
+                { step: 2, label: 'AI Analysis', active: (workspaceStage === 'INPUT' && wizardStep === 2) },
+                { step: 3, label: 'Court Draft', active: (workspaceStage === 'RESULTS') }
+              ].map((s, idx) => {
+                const completed = (idx === 0 && (wizardStep === 2 || workspaceStage === 'RESULTS')) || (idx === 1 && workspaceStage === 'RESULTS');
+                return (
+                  <div key={s.step} className="flex flex-col items-center relative z-10">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${
+                      s.active ? 'bg-indigo-600 text-white shadow-lg ring-4 ring-indigo-500/20' :
+                      completed ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                    }`}>
+                      {completed ? '✓' : s.step}
+                    </div>
+                    <span className={`text-[10px] font-black uppercase tracking-wider mt-2 bg-slate-50 dark:bg-[#0B1020] px-2 ${
+                      s.active ? 'text-indigo-600 dark:text-indigo-400' :
+                      completed ? 'text-emerald-500' : 'text-slate-400'
+                    }`}>
+                      {s.label}
+                    </span>
                   </div>
-                  <span className={`text-[10px] font-black uppercase tracking-wider mt-2 bg-slate-50 dark:bg-[#0B1020] px-2 ${
-                    s.active ? 'text-indigo-600 dark:text-indigo-400' :
-                    completed ? 'text-emerald-500' : 'text-slate-400'
-                  }`}>
-                    {s.label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          {/* Mobile Stepper (Vertical Stack) */}
-          <div className="flex sm:hidden flex-col items-center gap-1">
-            <div className="flex items-center gap-4">
-              <span className={`text-[10.5px] font-black uppercase ${workspaceStage === 'INPUT' && wizardStep === 1 ? 'text-indigo-500' : 'text-slate-400'}`}>① Source</span>
-              <span className="text-slate-300">➔</span>
-              <span className={`text-[10.5px] font-black uppercase ${workspaceStage === 'INPUT' && wizardStep === 2 ? 'text-indigo-500 animate-pulse' : 'text-slate-400'}`}>② AI Analysis</span>
-              <span className="text-slate-300">➔</span>
-              <span className={`text-[10.5px] font-black uppercase ${workspaceStage === 'RESULTS' ? 'text-indigo-500' : 'text-slate-400'}`}>③ Court Draft</span>
+            {/* Mobile Stepper (Wrapping / Flex row) */}
+            <div className="flex sm:hidden items-center justify-center gap-1.5 flex-wrap w-full">
+              {[
+                { step: 1, label: 'Source', active: (workspaceStage === 'INPUT' && wizardStep === 1) },
+                { step: 2, label: 'AI Analysis', active: (workspaceStage === 'INPUT' && wizardStep === 2) },
+                { step: 3, label: 'Court Draft', active: (workspaceStage === 'RESULTS') }
+              ].map((s, idx) => {
+                const completed = (idx === 0 && (wizardStep === 2 || workspaceStage === 'RESULTS')) || (idx === 1 && workspaceStage === 'RESULTS');
+                return (
+                  <React.Fragment key={s.step}>
+                    <div className="flex items-center gap-1.5 py-1">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black transition-all ${
+                        s.active ? 'bg-indigo-650 text-white shadow ring-2 ring-indigo-500/20' :
+                        completed ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700'
+                      }`}>
+                        {completed ? '✓' : s.step}
+                      </div>
+                      <span className={`text-[9.5px] font-black uppercase tracking-wider ${
+                        s.active ? 'text-indigo-600 dark:text-indigo-400' :
+                        completed ? 'text-emerald-500' : 'text-slate-400'
+                      }`}>
+                        {s.label}
+                      </span>
+                    </div>
+                    {idx < 2 && <span className="text-slate-300 dark:text-slate-700 text-[10px] select-none mx-0.5">➔</span>}
+                  </React.Fragment>
+                );
+              })}
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* VIEWPORT BODY CONTAINER */}
       <div className="flex-1 overflow-hidden relative min-h-0 select-text">
@@ -1308,19 +2155,6 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
           <div className="h-full overflow-y-auto p-4 sm:p-6 custom-scrollbar">
             <div className="max-w-5xl mx-auto space-y-6">
               
-              <div className="p-5 sm:p-8 rounded-3xl text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden shadow-lg border border-white/10"
-                   style={{ background: 'linear-gradient(135deg, #5B3DF5 0%, #4F46E5 45%, #6D5BFF 100%)' }}>
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-30 pointer-events-none" />
-                <div className="relative z-10 space-y-2">
-                  <h2 className="text-[24px] sm:text-[30px] font-extrabold tracking-tight leading-none text-white">
-                    Argument Drafting Workspace
-                  </h2>
-                  <p className="text-[12px] sm:text-[14px] text-white/90 font-medium leading-relaxed max-w-2xl">
-                    Generate structured courtroom arguments, legal citations, and comprehensive court briefs in minutes using our professional litigation engine.
-                  </p>
-                </div>
-              </div>
-
               {/* Mutually Exclusive Cards Layout */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
@@ -1368,80 +2202,109 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                       <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block">Choose Case Workspace</label>
                       <div 
                         onClick={() => setIsCaseDropdownOpen(!isCaseDropdownOpen)}
-                        className={`w-full border rounded-xl px-4 py-3 text-xs font-bold flex items-center justify-between cursor-pointer ${
-                          isDark ? 'bg-[#131c31] border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
+                        className={`w-full border-2 rounded-xl px-4 py-3.5 text-[13px] font-extrabold flex items-center justify-between cursor-pointer transition-all duration-200 hover:border-indigo-400 dark:hover:border-indigo-500 ${
+                          isCaseDropdownOpen 
+                            ? 'border-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.2)] ring-2 ring-indigo-500/20' 
+                            : (isDark ? 'bg-[#131c31] border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-800')
                         }`}
-                        style={{ minHeight: '52px' }}
+                        style={{ minHeight: '56px' }}
                       >
-                        <span className="truncate">
-                          {selectedCaseObject ? selectedCaseObject.name : '-- Search / Select Matter File --'}
-                        </span>
-                        <ChevronDown size={14} className={`transition-transform ${isCaseDropdownOpen ? 'rotate-180' : ''}`} />
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Search size={16} className={selectedCaseObject ? "text-indigo-500 shrink-0" : "text-slate-400 shrink-0"} />
+                          <span className={`truncate ${selectedCaseObject ? 'text-indigo-650 dark:text-indigo-400' : 'text-slate-450'}`}>
+                            {selectedCaseObject ? selectedCaseObject.name : 'Search or Select Case Workspace'}
+                          </span>
+                        </div>
+                        <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 shrink-0 ${isCaseDropdownOpen ? 'rotate-180 text-indigo-500' : ''}`} />
                       </div>
 
-                      {isCaseDropdownOpen && (
-                        <div className={`absolute left-0 right-0 mt-2 border rounded-xl shadow-xl z-30 overflow-hidden ${
-                          isDark ? 'bg-[#0B1020] border-slate-800' : 'bg-white border-slate-250'
-                        }`}>
-                          <div className="p-2 border-b border-slate-800 flex items-center gap-2">
-                            <Search size={12} className="text-slate-400" />
-                            <input 
-                              type="text"
-                              placeholder="Search matter file name..."
-                              value={caseSearchQuery}
-                              onChange={e => setCaseSearchQuery(e.target.value)}
-                              className="w-full bg-transparent border-none text-xs outline-none py-1 text-slate-200"
-                            />
-                          </div>
-                          <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                            {filteredCases.map(p => (
-                              <div
-                                key={p._id}
-                                onClick={() => {
-                                  setLinkedCaseId(p._id);
-                                  setIsCaseDropdownOpen(false);
-                                }}
-                                className={`px-4 py-3 text-xs font-semibold cursor-pointer hover:bg-indigo-600 hover:text-white ${
-                                  linkedCaseId === p._id ? 'bg-indigo-500/10 text-indigo-500' : 'text-slate-400'
-                                }`}
-                              >
-                                {p.name}
-                              </div>
-                            ))}
-                            {filteredCases.length === 0 && (
-                              <div className="p-4 text-center text-xs text-slate-400">No cases found</div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                      <AnimatePresence>
+                        {isCaseDropdownOpen && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: -8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.15 }}
+                            className={`absolute left-0 right-0 mt-2 border-2 rounded-xl shadow-xl z-30 overflow-hidden ${
+                              isDark ? 'bg-[#0B1020] border-slate-800' : 'bg-white border-slate-200'
+                            }`}
+                          >
+                            <div className={`p-2 border-b flex items-center gap-2 ${isDark ? 'border-slate-800' : 'border-slate-200 bg-slate-50'}`}>
+                              <Search size={14} className="text-slate-400 shrink-0" />
+                              <input 
+                                type="text"
+                                placeholder="Search workspace..."
+                                value={caseSearchQuery}
+                                onChange={e => setCaseSearchQuery(e.target.value)}
+                                className={`w-full bg-transparent border-none text-xs outline-none py-1.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}
+                              />
+                            </div>
+                            <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                              {filteredCases.map(p => {
+                                const selected = linkedCaseId === p._id;
+                                return (
+                                  <div
+                                    key={p._id}
+                                    onClick={() => {
+                                      setLinkedCaseId(p._id);
+                                      setIsCaseDropdownOpen(false);
+                                    }}
+                                    className={`px-4 py-3 text-xs font-bold cursor-pointer transition-colors ${
+                                      selected 
+                                        ? 'bg-indigo-650 text-white font-black' 
+                                        : (isDark ? 'text-slate-300 hover:bg-[#131c31] hover:text-white' : 'text-slate-700 hover:bg-slate-100 hover:text-indigo-600')
+                                    }`}
+                                  >
+                                    {p.name}
+                                  </div>
+                                );
+                              })}
+                              {filteredCases.length === 0 && (
+                                <div className="p-4 text-center text-xs text-slate-400">No cases found</div>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
+
                     {linkedCaseId && selectedCaseObject && (
-                      <div className="p-4 rounded-xl border border-indigo-500/10 bg-indigo-500/[0.01] space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                          <h4 className="text-[11px] font-black uppercase text-indigo-500">Case Matter Summary</h4>
-                          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase">
+                      <div className={`p-6 rounded-2xl border transition-all shadow-sm space-y-5 ${
+                        isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'
+                      }`}>
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                          <h4 className="text-xs font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">
+                            Case Matter Summary
+                          </h4>
+                          <span className="px-3 py-1 rounded-full bg-emerald-550/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-500/20">
                             AI Ready
                           </span>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs font-semibold">
-                          <div>
-                            <span className="text-[8px] uppercase font-black text-slate-400 block">Case Name</span>
-                            <span className="text-slate-200 block truncate">{selectedCaseObject.name}</span>
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className={`p-4 rounded-xl border ${isDark ? 'bg-[#0E1528] border-slate-800' : 'bg-slate-50/50 border-slate-150'}`}>
+                            <span className="text-[12px] uppercase font-medium text-slate-500 dark:text-slate-400 block mb-1">Case Name</span>
+                            <span className="text-[16px] font-semibold text-slate-900 dark:text-white block truncate" title={selectedCaseObject.name}>
+                              {selectedCaseObject.name}
+                            </span>
                           </div>
-                          <div>
-                            <span className="text-[8px] uppercase font-black text-slate-400 block">Case Type</span>
-                            <span className="text-slate-200 block">{selectedCaseObject.caseType || 'Civil'}</span>
+                          <div className={`p-4 rounded-xl border ${isDark ? 'bg-[#0E1528] border-slate-800' : 'bg-slate-50/50 border-slate-150'}`}>
+                            <span className="text-[12px] uppercase font-medium text-slate-500 dark:text-slate-400 block mb-1">Case Type</span>
+                            <span className="text-[16px] font-semibold text-slate-900 dark:text-white block truncate" title={selectedCaseObject.caseType || 'Property Dispute'}>
+                              {selectedCaseObject.caseType || 'Property Dispute'}
+                            </span>
                           </div>
-                          <div>
-                            <span className="text-[8px] uppercase font-black text-slate-400 block">Parties</span>
-                            <span className="text-slate-200 block truncate">
+                          <div className={`p-4 rounded-xl border ${isDark ? 'bg-[#0E1528] border-slate-800' : 'bg-slate-50/50 border-slate-150'}`}>
+                            <span className="text-[12px] uppercase font-medium text-slate-500 dark:text-slate-400 block mb-1">Parties</span>
+                            <span className="text-[16px] font-semibold text-slate-900 dark:text-white block truncate">
                               {selectedCaseObject.clientName || 'Petitioner'} vs {selectedCaseObject.opponentName || 'Respondent'}
                             </span>
                           </div>
-                          <div>
-                            <span className="text-[8px] uppercase font-black text-slate-400 block">Court</span>
-                            <span className="text-slate-200 block truncate">{selectedCaseObject.courtName || 'High Court'}</span>
+                          <div className={`p-4 rounded-xl border ${isDark ? 'bg-[#0E1528] border-slate-800' : 'bg-slate-50/50 border-slate-150'}`}>
+                            <span className="text-[12px] uppercase font-medium text-slate-500 dark:text-slate-400 block mb-1">Court</span>
+                            <span className="text-[16px] font-semibold text-slate-900 dark:text-white block truncate" title={selectedCaseObject.courtName || 'District Court Jabalpur'}>
+                              {selectedCaseObject.courtName || 'District Court Jabal Jabalpur'}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -1490,97 +2353,406 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-black uppercase text-slate-400">Case Title</label>
-                        <input 
-                          type="text"
-                          placeholder="e.g. Rajesh Sharma vs Amit Verma"
-                          value={manualCaseTitle}
-                          onChange={e => setManualCaseTitle(e.target.value)}
-                          className={`border rounded-xl px-3 py-2.5 text-xs font-semibold outline-none ${
+                  <div className="space-y-5 text-left">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Litigation Goal Dropdown */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-black uppercase text-indigo-500 tracking-wider">Litigation Goal *</label>
+                        <select
+                          value={litigationGoal}
+                          onChange={e => setLitigationGoal(e.target.value)}
+                          className={`w-full border rounded-xl px-3 py-3 text-xs font-semibold outline-none cursor-pointer ${
                             isDark ? 'bg-[#131c31] border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                          }`}
-                        />
+                          } focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all`}
+                        >
+                          <option value="">Select Litigation Goal</option>
+                          {[
+                            'Draft Plaintiff Arguments',
+                            'Draft Defence Arguments',
+                            'Draft Written Statement',
+                            'Draft Bail Application',
+                            'Draft Injunction Application',
+                            'Draft Appeal',
+                            'Draft Consumer Complaint',
+                            'Draft Criminal Defence',
+                            'Draft Cross Examination',
+                            'Draft Rejoinder',
+                            'Draft Reply Notice',
+                            'Draft Final Oral Arguments',
+                            'Draft Complete Court Pleading'
+                          ].map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-black uppercase text-slate-400">Petitioner / Plaintiff</label>
-                        <input 
-                          type="text"
-                          placeholder="Plaintiff Name"
-                          value={manualPlaintiff}
-                          onChange={e => setManualPlaintiff(e.target.value)}
-                          className={`border rounded-xl px-3 py-2.5 text-xs font-semibold outline-none ${
+
+                      {/* Practice Area Dropdown */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-black uppercase text-indigo-500 tracking-wider">Practice Area *</label>
+                        <select
+                          value={practiceArea}
+                          onChange={e => setPracticeArea(e.target.value)}
+                          className={`w-full border rounded-xl px-3 py-3 text-xs font-semibold outline-none cursor-pointer ${
                             isDark ? 'bg-[#131c31] border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                          }`}
-                        />
+                          } focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all`}
+                        >
+                          <option value="">Select Practice Area</option>
+                          {[
+                            'Civil',
+                            'Criminal',
+                            'Property',
+                            'Family',
+                            'Consumer',
+                            'Corporate',
+                            'Commercial',
+                            'Cyber Crime',
+                            'Labour',
+                            'Tax',
+                            'Constitutional',
+                            'Arbitration',
+                            'Service Matter',
+                            'Other'
+                          ].map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-black uppercase text-slate-400">Respondent / Defendant</label>
-                        <input 
-                          type="text"
-                          placeholder="Defendant Name"
-                          value={manualDefendant}
-                          onChange={e => setManualDefendant(e.target.value)}
-                          className={`border rounded-xl px-3 py-2.5 text-xs font-semibold outline-none ${
+
+                      {/* Relief Required Dropdown */}
+                      <div className="flex flex-col gap-1.5 md:col-span-2">
+                        <label className="text-[10px] font-black uppercase text-indigo-500 tracking-wider">Relief Required</label>
+                        <select
+                          value={reliefRequired}
+                          onChange={e => setReliefRequired(e.target.value)}
+                          className={`w-full border rounded-xl px-3 py-3 text-xs font-semibold outline-none cursor-pointer ${
                             isDark ? 'bg-[#131c31] border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                          }`}
-                        />
+                          } focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all`}
+                        >
+                          <option value="">Select Relief (Optional)</option>
+                          {[
+                            'Recovery',
+                            'Compensation',
+                            'Possession',
+                            'Permanent Injunction',
+                            'Temporary Injunction',
+                            'Specific Performance',
+                            'Bail',
+                            'Acquittal',
+                            'Divorce',
+                            'Custody',
+                            'Appeal',
+                            'Stay Order',
+                            'Damages',
+                            'Any Other'
+                          ].map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-black uppercase text-slate-400">Factual Summary</label>
-                        <textarea
-                          rows={4}
-                          placeholder="Enter timeline sequence of facts..."
-                          value={manualFacts}
-                          onChange={e => setManualFacts(e.target.value)}
-                          className={`w-full border rounded-xl px-3 py-2.5 text-xs font-semibold outline-none resize-none ${
-                            isDark ? 'bg-black/20 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                          }`}
-                        />
+                    {/* Primary Legal Issue / Case Facts Editor */}
+                    <div className="flex flex-col gap-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-black uppercase text-indigo-500 tracking-wider">Legal Issue / Case Facts *</label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(caseFacts);
+                              toast.success("Editor text copied!");
+                            }}
+                            disabled={!caseFacts}
+                            className={`p-1 px-2.5 rounded border text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
+                              caseFacts 
+                                ? 'border-indigo-500/30 hover:bg-indigo-500/10 text-indigo-500' 
+                                : 'border-transparent text-slate-450 opacity-40 cursor-not-allowed'
+                            }`}
+                          >
+                            <Copy size={10} /> Copy
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const text = await navigator.clipboard.readText();
+                                setCaseFacts(prev => prev ? `${prev}\n${text}` : text);
+                                toast.success("Text pasted into editor");
+                              } catch(err) {
+                                toast.error("Please paste manually using Ctrl+V");
+                              }
+                            }}
+                            className="p-1 px-2.5 rounded border border-indigo-500/30 hover:bg-indigo-500/10 text-indigo-500 text-[9px] font-bold uppercase transition-all flex items-center gap-1"
+                          >
+                            <Clipboard size={10} /> Paste
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-black uppercase text-slate-400">Opponent Position</label>
+
+                      <div 
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={async e => {
+                          e.preventDefault();
+                          const file = e.dataTransfer.files[0];
+                          if (file) {
+                            if (file.type === "text/plain" || file.name.endsWith('.txt')) {
+                              const text = await file.text();
+                              setCaseFacts(prev => prev ? `${prev}\n${text}` : text);
+                              toast.success(`Imported text file: ${file.name}`);
+                            } else {
+                              toast.error("Please drag a plain text file (.txt)");
+                            }
+                          } else {
+                            const text = e.dataTransfer.getData("text");
+                            if (text) {
+                              setCaseFacts(prev => prev ? `${prev}\n${text}` : text);
+                              toast.success("Dropped text segment");
+                            }
+                          }
+                        }}
+                        className={`relative border rounded-xl overflow-hidden group focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all ${
+                          isDark ? 'bg-black/20 border-slate-800' : 'bg-slate-50 border-slate-200'
+                        }`}
+                      >
                         <textarea
-                          rows={4}
-                          placeholder="What does the opponent assert?..."
-                          value={manualOpponentClaims}
-                          onChange={e => setManualOpponentClaims(e.target.value)}
-                          className={`w-full border rounded-xl px-3 py-2.5 text-xs font-semibold outline-none resize-none ${
-                            isDark ? 'bg-black/20 border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
-                          }`}
+                          rows={12}
+                          spellCheck={true}
+                          placeholder="Describe the legal issue in detail. Include facts, timeline, agreements, transactions, disputes, evidence, important dates, parties involved, objectives, and any information that may help AI prepare strong courtroom arguments. You do not need to use legal language."
+                          value={caseFacts}
+                          onChange={e => setCaseFacts(e.target.value)}
+                          className="w-full bg-transparent px-4 py-3 text-xs font-semibold leading-relaxed outline-none resize-y min-h-[250px] max-h-[350px] text-slate-800 dark:text-slate-100 placeholder-slate-400"
                         />
+                        
+                        {/* Drag and drop overlay hint */}
+                        <div className="absolute right-3 bottom-3 flex items-center gap-2 pointer-events-none text-[8.5px] font-black uppercase tracking-wider text-slate-450">
+                          <span>Drag txt file or drop text here</span>
+                          <span>|</span>
+                          <span>{caseFacts.length} chars</span>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Helper suggestions */}
+                    <div className="flex flex-wrap items-center gap-2.5 py-1">
+                      <span className="text-[9px] font-black text-slate-450 uppercase tracking-widest">Workspace Hints:</span>
+                      {[
+                        'Mention important dates.',
+                        'Describe agreements.',
+                        'Mention available evidence.',
+                        'Mention opponent\'s actions.',
+                        'Mention desired court outcome.'
+                      ].map((hint, hidx) => (
+                        <button
+                          key={hidx}
+                          type="button"
+                          onClick={() => {
+                            setCaseFacts(prev => prev ? `${prev}\n- ${hint.replace('Mention ', 'Details on ').replace('Describe ', 'Details on ')}: ` : `- ${hint.replace('Mention ', 'Details on ').replace('Describe ', 'Details on ')}: `);
+                          }}
+                          className={`text-[9.5px] px-2.5 py-1 rounded-full border flex items-center gap-1 transition-all ${
+                            isDark 
+                              ? 'bg-slate-900/60 border-slate-800 text-slate-350 hover:border-indigo-500/40 hover:text-white' 
+                              : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-500/40 hover:text-indigo-600'
+                          }`}
+                        >
+                          <span>💡</span>
+                          <span>{hint}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Advanced options toggle */}
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAdvancedOptionsOpen(!isAdvancedOptionsOpen)}
+                        className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-indigo-500 py-1 hover:text-indigo-400"
+                      >
+                        {isAdvancedOptionsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        <span>Advanced Litigation Options</span>
+                      </button>
+
+                      <AnimatePresence>
+                        {isAdvancedOptionsOpen && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className={`p-4 border rounded-xl space-y-4 overflow-hidden mt-2 ${
+                              isDark ? 'bg-slate-950/20 border-slate-800' : 'bg-slate-100/30 border-slate-250'
+                            }`}
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              {/* Jurisdiction Dropdown */}
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[9px] font-black uppercase text-slate-450">Jurisdiction</label>
+                                <select
+                                  value={advancedJurisdiction}
+                                  onChange={e => setAdvancedJurisdiction(e.target.value)}
+                                  className={`w-full border rounded-lg px-2.5 py-2 text-[11px] font-semibold outline-none cursor-pointer ${
+                                    isDark ? 'bg-[#131c31] border-slate-850 text-white' : 'bg-white border-slate-200 text-slate-800'
+                                  }`}
+                                >
+                                  {[
+                                    'District Court',
+                                    'High Court',
+                                    'Supreme Court',
+                                    'Tribunal',
+                                    'Consumer Forum',
+                                    'NCLT',
+                                    'Family Court',
+                                    'Arbitration'
+                                  ].map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Language Dropdown */}
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[9px] font-black uppercase text-slate-450">Language</label>
+                                <select
+                                  value={advancedLanguage}
+                                  onChange={e => setAdvancedLanguage(e.target.value)}
+                                  className={`w-full border rounded-lg px-2.5 py-2 text-[11px] font-semibold outline-none cursor-pointer ${
+                                    isDark ? 'bg-[#131c31] border-slate-850 text-white' : 'bg-white border-slate-200 text-slate-800'
+                                  }`}
+                                >
+                                  {[
+                                    'English',
+                                    'Hindi',
+                                    'Bilingual'
+                                  ].map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Writing Style Dropdown */}
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[9px] font-black uppercase text-slate-450">Writing Style</label>
+                                <select
+                                  value={advancedWritingStyle}
+                                  onChange={e => setAdvancedWritingStyle(e.target.value)}
+                                  className={`w-full border rounded-lg px-2.5 py-2 text-[11px] font-semibold outline-none cursor-pointer ${
+                                    isDark ? 'bg-[#131c31] border-slate-850 text-white' : 'bg-white border-slate-200 text-slate-800'
+                                  }`}
+                                >
+                                  {[
+                                    'Professional',
+                                    'Courtroom',
+                                    'Senior Counsel',
+                                    'Aggressive',
+                                    'Balanced',
+                                    'Judge Friendly'
+                                  ].map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {/* Known Applicable Sections */}
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[9px] font-black uppercase text-slate-450">Known Applicable Sections (Optional)</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. Section 73 Contract Act, Section 34 CPC"
+                                  value={advancedApplicableSections}
+                                  onChange={e => setAdvancedApplicableSections(e.target.value)}
+                                  className={`border rounded-lg px-2.5 py-2 text-[11px] font-semibold outline-none ${
+                                    isDark ? 'bg-[#131c31] border-slate-850 text-white' : 'bg-white border-slate-200 text-slate-800'
+                                  }`}
+                                />
+                              </div>
+
+                              {/* Known Judgments */}
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[9px] font-black uppercase text-slate-450">Known Judgments (Optional)</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. Saw Pipes case, Section 65B precedent"
+                                  value={advancedJudgments}
+                                  onChange={e => setAdvancedJudgments(e.target.value)}
+                                  className={`border rounded-lg px-2.5 py-2 text-[11px] font-semibold outline-none ${
+                                    isDark ? 'bg-[#131c31] border-slate-850 text-white' : 'bg-white border-slate-200 text-slate-800'
+                                  }`}
+                                />
+                              </div>
+
+                              {/* Known Evidence */}
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[9px] font-black uppercase text-slate-450">Known Evidence (Optional)</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. Agreement dated 12-Jan, Bank receipts"
+                                  value={advancedEvidence}
+                                  onChange={e => setAdvancedEvidence(e.target.value)}
+                                  className={`border rounded-lg px-2.5 py-2 text-[11px] font-semibold outline-none ${
+                                    isDark ? 'bg-[#131c31] border-slate-850 text-white' : 'bg-white border-slate-200 text-slate-800'
+                                  }`}
+                                />
+                              </div>
+
+                              {/* Witness Information */}
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[9px] font-black uppercase text-slate-450">Witness Information (Optional)</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. PW1 Accounts Head, PW2 Site Inspector"
+                                  value={advancedWitnessInfo}
+                                  onChange={e => setAdvancedWitnessInfo(e.target.value)}
+                                  className={`border rounded-lg px-2.5 py-2 text-[11px] font-semibold outline-none ${
+                                    isDark ? 'bg-[#131c31] border-slate-850 text-white' : 'bg-white border-slate-200 text-slate-800'
+                                  }`}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Special Instructions to AI */}
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-[9px] font-black uppercase text-slate-450">Special Instructions to AI (Optional)</label>
+                              <textarea
+                                rows={2}
+                                placeholder="e.g. Frame arguments to focus heavily on pre-institution default warnings and bypass oral understanding arguments..."
+                                value={advancedSpecialInstructions}
+                                onChange={e => setAdvancedSpecialInstructions(e.target.value)}
+                                className={`w-full border rounded-lg px-2.5 py-2 text-[11px] font-semibold outline-none resize-none ${
+                                  isDark ? 'bg-[#131c31] border-slate-850 text-white' : 'bg-white border-slate-200 text-slate-800'
+                                }`}
+                              />
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
-                <span className="text-[10px] font-black uppercase text-slate-450">
+              <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
+                <span className="text-[10px] font-black uppercase text-slate-450 text-center sm:text-left">
                   Step 1: Setup strategy variables
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                   <button
                     onClick={onBack}
-                    className={`px-5 py-2.5 border rounded-xl text-xs font-black uppercase ${
+                    className={`w-full sm:w-auto px-5 py-2.5 border rounded-xl text-xs font-black uppercase flex items-center justify-center ${
                       isDark ? 'bg-transparent border-slate-800 text-slate-400 hover:bg-slate-800/20' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                     }`}
+                    style={{ minHeight: '44px' }}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleContinueWizardStep1}
                     disabled={!isContinueEnabled}
-                    className="px-6 py-2.5 rounded-xl text-xs font-black uppercase text-white transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl text-xs font-black uppercase text-white transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                     style={{
                       background: isContinueEnabled ? 'linear-gradient(135deg, #5B3DF5 0%, #4F46E5 45%, #6D5BFF 100%)' : '#94A3B8',
-                      minHeight: '52px'
+                      minHeight: '44px'
                     }}
                   >
                     Generate AI Argument
@@ -1691,159 +2863,11 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
             );
           }
 
-          if (!draftResults) return null;
-
-          return (
+                    return (
             <div className="h-full flex flex-col min-h-0 select-text">
-              
-              {/* TOP EDITOR STICKY TOOLBAR */}
-              <div className={`px-4 py-3 border-b shrink-0 flex flex-wrap items-center justify-between gap-3 ${
-                isDark ? 'bg-[#0E1528] border-slate-800' : 'bg-white border-slate-200'
-              }`}>
-                {/* File Statistics & Autosave Indicator */}
-                <div className="flex items-center gap-3 text-[10.5px] font-bold text-slate-400">
-                  <span className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full uppercase text-[8.5px] font-black">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Live
-                  </span>
-                  
-                  {/* Autosave Status */}
-                  <div className="flex items-center gap-1">
-                    {saveStatus === 'saving' && <RefreshCw size={11} className="animate-spin text-indigo-400" />}
-                    {saveStatus === 'saved' && <Check size={11} className="text-emerald-500" />}
-                    {saveStatus === 'offline' && <Cloud size={11} className="text-orange-500" />}
-                    {saveStatus === 'error' && <AlertCircle size={11} className="text-red-500" />}
-                    <span className="capitalize text-[9px]">
-                      {saveStatus === 'saving' ? 'Saving changes...' : saveStatus === 'saved' ? 'Saved to database' : saveStatus === 'offline' ? 'Saved locally (Offline)' : 'Save Error'}
-                    </span>
-                  </div>
-
-                  <span className="hidden md:inline">|</span>
-                  
-                  {/* Word count & Reading time metrics */}
-                  <div className="hidden md:flex items-center gap-3">
-                    <span>{totalWordCount} words</span>
-                    <span>{totalReadingTime} min read</span>
-                    <span>{totalCitationsCount} citations</span>
-                  </div>
-                </div>
-
-                {/* Left/Right Sidebar Collapse Toggles & Focus Mode */}
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-                    className="p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800/30 text-slate-400 hidden lg:inline-block"
-                    title="Toggle Left Outline"
-                  >
-                    {isLeftSidebarOpen ? <PanelLeftClose size={14} /> : <PanelLeftOpen size={14} />}
-                  </button>
-                  
-                  <button 
-                    onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-                    className="p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800/30 text-slate-400 hidden lg:inline-block"
-                    title="Toggle AI Refinements Sidebar"
-                  >
-                    {isRightSidebarOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
-                  </button>
-
-                  <div className="h-4 w-px bg-slate-800 hidden lg:block" />
-
-                  {/* Undo / Redo */}
-                  <button 
-                    onClick={handleUndo} 
-                    disabled={historyIndex <= 0}
-                    className="p-1.5 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-805 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Undo (Ctrl+Z)"
-                  >
-                    <Undo2 size={13} />
-                  </button>
-                  <button 
-                    onClick={handleRedo}
-                    disabled={historyIndex >= historyStack.length - 1}
-                    className="p-1.5 rounded-lg border border-slate-800 text-slate-400 hover:bg-slate-805 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Redo"
-                  >
-                    <Redo2 size={13} />
-                  </button>
-
-                  {/* Mobile navigation triggers */}
-                  <button
-                    onClick={() => setMobileOutlineDrawer(true)}
-                    className="lg:hidden px-2.5 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-[9px] font-black uppercase"
-                  >
-                    Outline
-                  </button>
-                </div>
-              </div>
-
-              {/* SEARCH INPUT BAR */}
-              <div className={`px-4 py-2 border-b shrink-0 flex items-center justify-between gap-3 ${
-                isDark ? 'bg-[#0E1528] border-slate-850' : 'bg-slate-50 border-slate-200'
-              }`}>
-                <div className="relative w-full max-w-md">
-                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-450" />
-                  <input 
-                    id="editor-search-input"
-                    type="text"
-                    placeholder="Search across pleading (e.g. damages, contract, SC citation)..."
-                    value={editorSearchQuery}
-                    onChange={e => setEditorSearchQuery(e.target.value)}
-                    className={`w-full border rounded-lg pl-8 pr-3 py-1.5 text-xs font-semibold outline-none ${
-                      isDark ? 'bg-black/20 border-slate-800 text-white' : 'bg-white border-slate-250 text-slate-800'
-                    }`}
-                  />
-                  {editorSearchQuery && (
-                    <button 
-                      onClick={() => setEditorSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-450 hover:text-slate-300"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                </div>
-                
-                {/* Court Readiness Score gauge */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black uppercase text-slate-400">Readiness Score</span>
-                  <div className="flex items-center gap-1.5 bg-indigo-500/10 text-indigo-500 px-2.5 py-1 rounded-full text-xs font-extrabold">
-                    <Scale size={11} />
-                    <span>{courtReadinessScore.overall}%</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* EXPORT ACTION BAR (Scrollable Chips on Mobile) */}
-              <div className={`px-4 py-2.5 border-b shrink-0 overflow-x-auto no-scrollbar flex items-center gap-2 ${
-                isDark ? 'bg-[#0B1020] border-slate-850' : 'bg-slate-50 border-slate-200'
-              }`}>
-                {[
-                  { label: 'Save Draft', onClick: handleSaveDraft, icon: <Cloud size={11} />, primary: true },
-                  { label: 'PDF Export', onClick: handlePrintPDF, icon: <Printer size={11} /> },
-                  { label: 'Word DOCX', onClick: handleDownloadDoc, icon: <FileDown size={11} /> },
-                  { label: 'Copy Draft', onClick: handleCopyDraft, icon: <Copy size={11} /> },
-                  { label: 'Download JSON', onClick: handleDownloadRaw, icon: <Download size={11} /> },
-                  { label: 'Share', onClick: handleShareDraft, icon: <Share2 size={11} /> },
-                  { label: 'Versions', onClick: () => setIsVersionHistoryOpen(true), icon: <History size={11} /> }
-                ].map(chip => (
-                  <button
-                    key={chip.label}
-                    onClick={chip.onClick}
-                    className={`px-3 py-1.5 rounded-lg text-[9.5px] font-black uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                      chip.primary 
-                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white' 
-                        : (isDark ? 'bg-slate-900 border border-slate-800 text-slate-350 hover:bg-slate-800' : 'bg-white border border-slate-250 text-slate-600 hover:bg-slate-50')
-                    }`}
-                  >
-                    {chip.icon}
-                    <span>{chip.label}</span>
-                  </button>
-                ))}
-              </div>
-
               {/* 3-COLUMN WORKSPACE FRAMEWORK */}
               <div className="flex-1 flex min-h-0 relative">
-                
-                {/* LEFT COLLAPSIBLE PANEL: OUTLINE / STRUCTURE (Desktop: 20-25% width) */}
+                {/* LEFT COLLAPSIBLE PANEL: OUTLINE / STRUCTURE (Desktop: 240px width) */}
                 <AnimatePresence initial={false}>
                   {isLeftSidebarOpen && (
                     <motion.div
@@ -1851,7 +2875,7 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                       animate={{ width: '240px', opacity: 1 }}
                       exit={{ width: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className={`h-full border-r shrink-0 hidden lg:flex flex-col min-w-0 z-10 ${
+                      className={`h-full border-r shrink-0 hidden md:flex flex-col w-60 min-w-[240px] max-w-[240px] z-10 ${
                         isDark ? 'bg-[#0E1528] border-slate-800' : 'bg-[#FAF9FF] border-slate-200'
                       }`}
                     >
@@ -1868,7 +2892,7 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
 
                         {/* Search Sections */}
                         <div className="relative mb-3 shrink-0">
-                          <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-450" />
+                          <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-455" />
                           <input 
                             type="text"
                             placeholder="Filter sections..."
@@ -1881,7 +2905,7 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                         </div>
 
                         {/* Jump list outline */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-0.5">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-0.5 pr-0.5">
                           {sortedOutlineItems.map(item => {
                             const active = focusedSection === item.id;
                             const isPinned = pinnedSections.has(item.id);
@@ -1895,14 +2919,17 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                                     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                   }
                                 }}
-                                className={`w-full text-left py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all truncate flex items-center justify-between border ${
+                                className={`w-full text-left py-2 px-3 rounded-lg text-[10px] uppercase transition-all truncate flex items-center justify-between border relative ${
                                   active
-                                    ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/30'
-                                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/15 border-transparent'
+                                    ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20 font-black pl-4'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-indigo-650 dark:hover:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-slate-800/15 border-transparent font-bold'
                                 }`}
                               >
+                                {active && (
+                                  <span className="absolute left-1 top-2 bottom-2 w-0.5 rounded bg-indigo-600 dark:bg-indigo-400" />
+                                )}
                                 <span>{item.label}</span>
-                                {isPinned && <Pin size={8} className="text-indigo-400 shrink-0 fill-indigo-400" />}
+                                {isPinned && <Pin size={8} className="text-indigo-500 shrink-0 fill-indigo-500" />}
                               </button>
                             );
                           })}
@@ -1913,8 +2940,35 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                 </AnimatePresence>
 
                 {/* MIDDLE COLUMN: CENTRAL DOCS EDITOR (Scrolls independently) */}
-                <div className="flex-1 h-full overflow-y-auto custom-scrollbar p-4 sm:p-6 space-y-6 min-w-0 bg-slate-50 dark:bg-transparent">
-                  <div className="max-w-3xl mx-auto space-y-6 pb-20">
+                <div className="flex-1 h-full overflow-y-auto custom-scrollbar p-4 sm:p-6 space-y-4 min-w-0 bg-slate-100/60 dark:bg-[#070b16]">
+                  <div className="max-w-3xl mx-auto space-y-4 pb-20">
+                     
+                     {/* Mobile-only horizontal scrollable Section Jumper */}
+                     <div className="md:hidden flex items-center gap-2 overflow-x-auto no-scrollbar pb-3 border-b border-slate-200 dark:border-slate-850 shrink-0 select-none">
+                       {sortedOutlineItems.map(item => {
+                         const active = focusedSection === item.id;
+                         return (
+                           <button
+                             key={item.id}
+                             onClick={() => {
+                               setFocusedSection(item.id);
+                               const target = document.getElementById(`editor-section-${item.id}`);
+                               if (target) {
+                                 target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                               }
+                             }}
+                             className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 transition-all ${
+                               active 
+                                 ? 'bg-indigo-650 text-white shadow-sm' 
+                                 : (isDark ? 'bg-slate-900 border border-slate-800 text-slate-400' : 'bg-slate-200 text-slate-650')
+                             }`}
+                             style={{ minHeight: '34px' }}
+                           >
+                             {item.label}
+                           </button>
+                         );
+                       })}
+                     </div>
                     
                     {/* Render sections in order (pinned first) */}
                     {(() => {
@@ -2044,7 +3098,12 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                             </div>
 
                             {/* Section content presentation */}
-                            {isEditing ? (
+                             {refiningSectionId === item.id ? (
+                               <div className="flex flex-col items-center justify-center py-10 gap-3">
+                                 <RefreshCw size={24} className="animate-spin text-indigo-500" />
+                                 <span className="text-xs font-black uppercase text-indigo-500 tracking-wider">AI Copilot Refine in progress...</span>
+                               </div>
+                             ) : isEditing ? (
                               <textarea
                                 rows={Array.isArray(content) ? 5 : 8}
                                 value={editingContent}
@@ -2061,6 +3120,307 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                                   }
                                   
                                   if (Array.isArray(content)) {
+                                    // 1. Plaintiff Arguments Rendering
+                                    if (item.id === 'plaintiffArguments' && typeof content[0] === 'object') {
+                                      return (
+                                        <div className="space-y-4">
+                                          {content.map((arg, idx) => (
+                                            <div key={idx} className={`p-4 border rounded-xl space-y-3 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800/10 dark:border-slate-100/10">
+                                                <h4 className="text-xs font-black text-indigo-650 dark:text-indigo-400 uppercase tracking-wide">
+                                                  {idx + 1}. {arg.title || 'Untitled Argument'}
+                                                </h4>
+                                                <div className="flex gap-1.5 text-[8.5px] font-black uppercase">
+                                                  <span className={`px-2 py-0.5 rounded-full ${arg.riskLevel === 'Low' ? 'bg-emerald-500/10 text-emerald-500' : arg.riskLevel === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                                                    Risk: {arg.riskLevel || 'Low'}
+                                                  </span>
+                                                  <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500">
+                                                    Strength: {arg.argumentStrength || 'Strong'}
+                                                  </span>
+                                                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-500">
+                                                    Confidence: {arg.evidenceConfidence || '95%'}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                              
+                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] leading-relaxed">
+                                                <div>
+                                                  <span className="font-extrabold text-slate-400 dark:text-slate-500 block uppercase text-[8px] tracking-widest">Legal Reasoning</span>
+                                                  <p className="text-slate-700 dark:text-slate-350">{arg.legalReasoning}</p>
+                                                </div>
+                                                <div>
+                                                  <span className="font-extrabold text-slate-400 dark:text-slate-500 block uppercase text-[8px] tracking-widest">Supporting Facts</span>
+                                                  <p className="text-slate-700 dark:text-slate-350">{arg.supportingFacts}</p>
+                                                </div>
+                                                <div>
+                                                  <span className="font-extrabold text-slate-400 dark:text-slate-500 block uppercase text-[8px] tracking-widest">Supporting Evidence</span>
+                                                  <p className="text-slate-700 dark:text-slate-350">{arg.supportingEvidence}</p>
+                                                </div>
+                                                <div>
+                                                  <span className="font-extrabold text-slate-400 dark:text-slate-500 block uppercase text-[8px] tracking-widest">Statutes & Precedents</span>
+                                                  <p className="text-indigo-650 dark:text-indigo-400 font-semibold">{arg.applicableSections} | {arg.applicableJudgments}</p>
+                                                </div>
+                                                <div>
+                                                  <span className="font-extrabold text-slate-400 dark:text-slate-500 block uppercase text-[8px] tracking-widest">Predicted Opponent Defense</span>
+                                                  <p className="text-rose-500 dark:text-rose-455 font-medium">{arg.expectedDefence}</p>
+                                                </div>
+                                                <div>
+                                                  <span className="font-extrabold text-slate-400 dark:text-slate-500 block uppercase text-[8px] tracking-widest">Counter-Defense Response</span>
+                                                  <p className="text-emerald-600 dark:text-emerald-400 font-medium">{arg.counterResponse}</p>
+                                                </div>
+                                              </div>
+
+                                              {arg.suggestedCourtSubmission && (
+                                                <div className={`p-3 rounded-lg border border-dashed border-indigo-500/20 text-[10.5px] italic ${isDark ? 'bg-indigo-500/[0.03] text-slate-300' : 'bg-indigo-50/40 text-slate-700'}`}>
+                                                  <span className="font-black not-italic text-indigo-500 block uppercase text-[8px] tracking-widest mb-1">Suggested Court Submission:</span>
+                                                  "{arg.suggestedCourtSubmission}"
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+
+                                    // 2. Defendant Arguments / Counter Arguments Rendering
+                                    if (['defendantArguments', 'counterArguments'].includes(item.id) && typeof content[0] === 'object') {
+                                      return (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                          {content.map((arg, idx) => (
+                                            <div key={idx} className={`p-4 border rounded-xl flex flex-col justify-between space-y-2.5 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                              <div>
+                                                <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/10 dark:border-slate-100/10">
+                                                  <span className="text-[10px] font-black text-rose-500 uppercase">Defense Basis {idx + 1}</span>
+                                                  <span className={`text-[8.5px] px-2 py-0.5 rounded font-black uppercase ${arg.strength === 'High' ? 'bg-rose-500/10 text-rose-500' : arg.strength === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                                    Prob: {arg.probability || 'Medium'}
+                                                  </span>
+                                                </div>
+                                                <p className="text-[11.5px] font-bold text-slate-800 dark:text-slate-200 mt-2">{arg.legalBasis}</p>
+                                                <p className="text-[10px] text-slate-450 mt-1"><strong className="text-slate-400">Weakness:</strong> {arg.weakness}</p>
+                                              </div>
+                                              <div className="pt-2 border-t border-slate-800/5 dark:border-slate-100/5 text-[10.5px]">
+                                                <strong className="text-emerald-500 uppercase text-[8.5px] block tracking-wide">Our Counter-Strategy:</strong>
+                                                <p className="text-slate-700 dark:text-slate-350 mt-0.5">{arg.counterStrategy}</p>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+
+                                    // 3. Rebuttal Strategy Rendering
+                                    if (item.id === 'rebuttalStrategy' && typeof content[0] === 'object') {
+                                      return (
+                                        <div className="space-y-4">
+                                          {content.map((reb, idx) => (
+                                            <div key={idx} className={`p-4 border rounded-xl space-y-3.5 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                              <div className="flex items-center justify-between pb-2 border-b border-slate-800/10 dark:border-slate-100/10">
+                                                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Rebuttal Argument {idx + 1}</span>
+                                                <span className="text-[9px] font-semibold text-slate-455">{reb.applicableLaw}</span>
+                                              </div>
+                                              <p className="text-xs font-bold text-slate-850 dark:text-slate-150">{reb.rebuttal}</p>
+                                              <div className="grid grid-cols-2 gap-3 text-[10px]">
+                                                <div>
+                                                  <span className="text-slate-450 uppercase text-[8px] font-black tracking-widest block">Supporting Evidence</span>
+                                                  <span className="text-slate-650 dark:text-slate-350">{reb.applicableEvidence}</span>
+                                                </div>
+                                                <div>
+                                                  <span className="text-slate-455 uppercase text-[8px] font-black tracking-widest block">Supporting Judgment</span>
+                                                  <span className="text-indigo-650 dark:text-indigo-400 font-semibold">{reb.supportingJudgment}</span>
+                                                </div>
+                                              </div>
+                                              {reb.suggestedCourtSubmission && (
+                                                <div className={`p-2.5 rounded-lg border border-dashed border-indigo-500/20 text-[10px] italic ${isDark ? 'bg-indigo-500/[0.02] text-slate-300' : 'bg-indigo-50/50 text-slate-700'}`}>
+                                                  <span className="font-black not-italic text-indigo-500 block uppercase text-[8px] tracking-widest mb-0.5">Oral/Written Submission Template:</span>
+                                                  "{reb.suggestedCourtSubmission}"
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+
+                                    // 4. Evidence Mapping Rendering
+                                    if (item.id === 'evidenceMapping' && typeof content[0] === 'object') {
+                                      return (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                          {content.map((ev, idx) => (
+                                            <div key={idx} className={`p-4 border rounded-xl flex flex-col justify-between space-y-3 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                              <div>
+                                                <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/10 dark:border-slate-100/10">
+                                                  <span className={`text-[8.5px] px-2 py-0.5 rounded font-black uppercase ${ev.evidenceWeight === 'Primary' ? 'bg-indigo-500/10 text-indigo-500' : 'bg-slate-500/10 text-slate-500'}`}>
+                                                    {ev.evidenceWeight || 'Primary'} Weight
+                                                  </span>
+                                                  <span className="text-[9px] font-semibold text-slate-450 uppercase">{ev.evidenceType}</span>
+                                                </div>
+                                                <h4 className="text-xs font-black text-slate-850 dark:text-white mt-2 leading-snug">{ev.evidence}</h4>
+                                                <p className="text-[10.5px] text-slate-750 dark:text-slate-300 mt-1"><strong className="text-slate-400">Admissibility:</strong> {ev.admissibility}</p>
+                                              </div>
+                                              <div className="pt-2 border-t border-slate-800/5 dark:border-slate-100/5 text-[10px] flex items-center justify-between">
+                                                <span className="text-slate-455 font-bold">Confidence: <span className="text-indigo-500">{ev.evidenceConfidence || '95%'}</span></span>
+                                                {ev.missingEvidence && (
+                                                  <span className="px-1.5 py-0.2 bg-rose-500/10 text-rose-500 rounded text-[7.5px] font-black uppercase" title={ev.missingEvidence}>Missing Elements</span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+
+                                    // 5. Chronology of Events Rendering
+                                    if (item.id === 'chronologyOfEvents' && typeof content[0] === 'object') {
+                                      return (
+                                        <div className="relative pl-6 border-l-2 border-indigo-500/30 space-y-4 py-1">
+                                          {content.map((ev, idx) => (
+                                            <div key={idx} className="relative group">
+                                              <span className="absolute -left-[29px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-indigo-500 bg-[#FAF9FF] dark:bg-[#070b16] group-hover:bg-indigo-500 transition-colors" />
+                                              <div className="text-[10px] font-black text-indigo-500 uppercase">{ev.date}</div>
+                                              <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 mt-1">{ev.event}</p>
+                                              {ev.evidenceLink && (
+                                                <span className="inline-block mt-1 text-[9px] px-2 py-0.2 rounded bg-indigo-500/5 text-indigo-500 font-bold border border-indigo-500/10">
+                                                  Linked Reference: {ev.evidenceLink}
+                                                </span>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+
+                                    // 6. Precedents Rendering (Supreme Court / High Court / Persuasive)
+                                    if (['supremeCourtPrecedents', 'highCourtJudgments', 'persuasiveAuthorities'].includes(item.id) && typeof content[0] === 'object') {
+                                      return (
+                                        <div className="space-y-4">
+                                          {content.map((pre, idx) => (
+                                            <div key={idx} className={`p-4 border rounded-xl space-y-3 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800/10 dark:border-slate-100/10">
+                                                <h4 className="text-[11.5px] font-black text-slate-850 dark:text-white uppercase">
+                                                  {pre.citation}
+                                                </h4>
+                                                <div className="flex gap-1.5 text-[8.5px] font-black uppercase">
+                                                  <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-500">
+                                                    {pre.court} ({pre.year})
+                                                  </span>
+                                                  <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500">
+                                                    {pre.bindingValue || 'Binding under Art 141'}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] leading-relaxed">
+                                                <div>
+                                                  <span className="text-slate-450 block uppercase text-[8px] font-black tracking-widest">Legal Principle</span>
+                                                  <p className="text-slate-800 dark:text-slate-200 font-bold">{pre.legalPrinciple}</p>
+                                                </div>
+                                                <div>
+                                                  <span className="text-slate-455 block uppercase text-[8px] font-black tracking-widest">Ratio Decidendi</span>
+                                                  <p className="text-slate-700 dark:text-slate-350">{pre.ratioDecidendi}</p>
+                                                </div>
+                                              </div>
+                                              <div className="text-[11px] leading-relaxed pt-1.5">
+                                                <span className="text-slate-450 block uppercase text-[8px] font-black tracking-widest">Relevance in Current Matter</span>
+                                                <p className="text-slate-700 dark:text-slate-300">{pre.whyRelevant}</p>
+                                              </div>
+                                              {pre.howToCite && (
+                                                <div className="relative group pt-1">
+                                                  <span className="font-black text-slate-455 block uppercase text-[8px] tracking-widest mb-1">Court Citation Script:</span>
+                                                  <div className={`p-2 rounded font-mono text-[9px] select-all flex items-center justify-between ${isDark ? 'bg-slate-950 text-emerald-400 border border-slate-800' : 'bg-slate-100 text-emerald-700 border border-slate-200'}`}>
+                                                    <code>{pre.howToCite}</code>
+                                                    <button 
+                                                      onClick={() => {
+                                                        navigator.clipboard.writeText(pre.howToCite);
+                                                        toast.success("Citation script copied!");
+                                                      }}
+                                                      className="text-[8px] font-black text-indigo-500 uppercase px-1.5 py-0.5 rounded hover:bg-indigo-500/10"
+                                                    >
+                                                      Copy
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+
+                                    // 7. Witness Cross Examination Questions Rendering
+                                    if (item.id === 'crossExamQuestions' && typeof content[0] === 'object') {
+                                      return (
+                                        <div className="space-y-4">
+                                          {content.map((wit, idx) => (
+                                            <div key={idx} className={`p-4 border rounded-xl space-y-3.5 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                              <h4 className="text-xs font-black text-indigo-500 uppercase tracking-widest pb-1.5 border-b border-slate-800/10 dark:border-slate-100/10">
+                                                Target Witness: {wit.witness}
+                                              </h4>
+                                              
+                                              <div className="space-y-3 text-[11px] leading-relaxed">
+                                                {wit.primaryQuestions && (
+                                                  <div>
+                                                    <span className="text-slate-450 uppercase text-[8px] font-black tracking-widest block">Primary Direct Questions</span>
+                                                    <p className="text-slate-700 dark:text-slate-300 font-bold">{wit.primaryQuestions}</p>
+                                                  </div>
+                                                )}
+                                                {wit.leadingQuestions && (
+                                                  <div>
+                                                    <span className="text-indigo-650 dark:text-indigo-400 uppercase text-[8px] font-black tracking-widest block">Leading Questions (Force Yes/No)</span>
+                                                    <p className="text-slate-700 dark:text-slate-300 italic">"{wit.leadingQuestions}"</p>
+                                                  </div>
+                                                )}
+                                                {wit.trapQuestions && (
+                                                  <div>
+                                                    <span className="text-rose-500 uppercase text-[8px] font-black tracking-widest block">Trap / Impasse Questions</span>
+                                                    <p className="text-rose-600 dark:text-rose-455 font-medium">{wit.trapQuestions}</p>
+                                                  </div>
+                                                )}
+                                                {wit.contradictionQuestions && (
+                                                  <div>
+                                                    <span className="text-amber-500 uppercase text-[8px] font-black tracking-widest block">Contradiction / Impairment Questions</span>
+                                                    <p className="text-slate-750 dark:text-slate-300">{wit.contradictionQuestions}</p>
+                                                  </div>
+                                                )}
+                                                {wit.admissionQuestions && (
+                                                  <div>
+                                                    <span className="text-emerald-500 uppercase text-[8px] font-black tracking-widest block">Admission Procurement Questions</span>
+                                                    <p className="text-emerald-600 dark:text-emerald-400 font-bold">"{wit.admissionQuestions}"</p>
+                                                  </div>
+                                                )}
+                                                {wit.followUpQuestions && (
+                                                  <div>
+                                                    <span className="text-slate-400 uppercase text-[8px] font-black tracking-widest block">Conditional Follow-Up Paths</span>
+                                                    <p className="text-slate-650 dark:text-slate-350">{wit.followUpQuestions}</p>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+
+                                    // 8. Objections Rendering
+                                    if (item.id === 'objections' && typeof content[0] === 'object') {
+                                      return (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                          {content.map((obj, idx) => (
+                                            <div key={idx} className={`p-4 border rounded-xl flex flex-col justify-between space-y-2.5 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                              <div>
+                                                <span className="text-[9px] px-2 py-0.5 rounded bg-rose-500/10 text-rose-500 font-black uppercase tracking-wider block w-fit">
+                                                  {obj.category}
+                                                </span>
+                                                <p className="text-[11.5px] font-bold text-slate-855 dark:text-slate-200 mt-2">{obj.description}</p>
+                                              </div>
+                                              <div className="pt-2 border-t border-slate-800/5 dark:border-slate-100/5 text-[9.5px]">
+                                                <strong className="text-indigo-500 uppercase text-[8px] tracking-wide block">Statutory Basis:</strong>
+                                                <p className="text-slate-650 dark:text-slate-355 mt-0.5">{obj.legalBasis}</p>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+
                                     return (
                                       <ul className="list-disc pl-4 space-y-1.5 text-slate-600 dark:text-slate-300 text-[11.5px] font-medium leading-relaxed">
                                         {content.map((li, idx) => {
@@ -2102,31 +3462,51 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                                   initial={{ height: 0, opacity: 0 }}
                                   animate={{ height: 'auto', opacity: 1 }}
                                   exit={{ height: 0, opacity: 0 }}
-                                  className="mt-4 p-4 border border-indigo-500/15 bg-indigo-500/[0.02] rounded-xl text-xs space-y-2 overflow-hidden"
+                                  className={`mt-4 p-5 border rounded-2xl shadow-sm space-y-4 overflow-hidden ${
+                                    isDark ? 'bg-slate-900/60 border-indigo-500/20' : 'bg-indigo-55/10 border-indigo-100'
+                                  }`}
                                 >
-                                  <div className="flex items-center justify-between pb-1 border-b border-indigo-500/10">
-                                    <span className="font-black text-indigo-500 uppercase tracking-wider text-[9px] flex items-center gap-1">
-                                      <Brain size={10} />
+                                  <div className="flex items-center justify-between pb-2 border-b border-indigo-550/10">
+                                    <span className="font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                      <Brain size={12} className="text-indigo-500" />
                                       AI Reasoning Explanation
                                     </span>
-                                    <span className="text-[8.5px] font-extrabold text-emerald-500">Confidence: {REASONING_DATA[item.id]?.confidence || 95}%</span>
+                                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9.5px] font-bold border border-emerald-500/20">
+                                      Confidence: {REASONING_DATA[item.id]?.confidence || 95}%
+                                    </span>
                                   </div>
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[10.5px]">
-                                    <div>
-                                      <span className="font-extrabold text-slate-400 block uppercase text-[8px]">Legal Strategy Objective</span>
-                                      <p className="text-slate-300 mt-0.5 leading-snug">{REASONING_DATA[item.id]?.reason || 'Structured according to High Court pleading rules.'}</p>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-1 text-left">
+                                      <span className="font-semibold text-[#6B7280] dark:text-slate-400 block uppercase text-[10px] tracking-wide">
+                                        Legal Strategy Objective
+                                      </span>
+                                      <p className="text-[#374151] dark:text-slate-200 text-xs leading-relaxed font-medium">
+                                        {REASONING_DATA[item.id]?.reason || 'Structured according to High Court pleading rules.'}
+                                      </p>
                                     </div>
-                                    <div>
-                                      <span className="font-extrabold text-slate-400 block uppercase text-[8px]">Applicable Law / Provision</span>
-                                      <p className="text-slate-300 mt-0.5 leading-snug">{REASONING_DATA[item.id]?.law || 'Order VI Rule 1 CPC Pleading Standards.'}</p>
+                                    <div className="space-y-1 text-left">
+                                      <span className="font-semibold text-[#6B7280] dark:text-slate-400 block uppercase text-[10px] tracking-wide">
+                                        Applicable Law / Provision
+                                      </span>
+                                      <p className="text-[#374151] dark:text-slate-200 text-xs leading-relaxed font-medium">
+                                        {REASONING_DATA[item.id]?.law || 'Order VI Rule 1 CPC Pleading Standards.'}
+                                      </p>
                                     </div>
-                                    <div>
-                                      <span className="font-extrabold text-slate-400 block uppercase text-[8px]">Relevant Case Facts</span>
-                                      <p className="text-slate-300 mt-0.5 leading-snug">{REASONING_DATA[item.id]?.facts || 'milestone contract breach notifications.'}</p>
+                                    <div className="space-y-1 text-left">
+                                      <span className="font-semibold text-[#6B7280] dark:text-slate-400 block uppercase text-[10px] tracking-wide">
+                                        Relevant Case Facts
+                                      </span>
+                                      <p className="text-[#374151] dark:text-slate-200 text-xs leading-relaxed font-medium">
+                                        {REASONING_DATA[item.id]?.facts || 'milestone contract breach notifications.'}
+                                      </p>
                                     </div>
-                                    <div>
-                                      <span className="font-extrabold text-slate-400 block uppercase text-[8px]">Supporting Case Law / Precedent</span>
-                                      <p className="text-slate-300 mt-0.5 leading-snug">{REASONING_DATA[item.id]?.precedent || 'ONGC Ltd. v. Saw Pipes Ltd.'}</p>
+                                    <div className="space-y-1 text-left">
+                                      <span className="font-semibold text-[#6B7280] dark:text-slate-400 block uppercase text-[10px] tracking-wide">
+                                        Supporting Case Law / Precedent
+                                      </span>
+                                      <p className="text-[#374151] dark:text-slate-200 text-xs leading-relaxed font-medium">
+                                        {REASONING_DATA[item.id]?.precedent || 'ONGC Ltd. v. Saw Pipes Ltd.'}
+                                      </p>
                                     </div>
                                   </div>
                                 </motion.div>
@@ -2138,79 +3518,217 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                       });
                     })()}
 
-                  </div>
-                </div>
-
-                {/* RIGHT COLLAPSIBLE PANEL: AI COPILOT & PRECEDENT SEARCH (Desktop: 20-25% width) */}
-                <AnimatePresence initial={false}>
-                  {isRightSidebarOpen && (
-                    <motion.div
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: '320px', opacity: 1 }}
-                      exit={{ width: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className={`h-full border-l shrink-0 hidden lg:flex flex-col min-w-0 z-10 ${
-                        isDark ? 'bg-[#0E1528] border-slate-805' : 'bg-[#FAF9FF] border-slate-200'
-                      }`}
-                    >
-                      <div className="p-4 flex flex-col h-full min-h-0 space-y-4">
-                        
-                        {/* Title header */}
-                        <div className="flex items-center justify-between shrink-0">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500">AI Refinements</span>
-                          <button 
-                            onClick={() => setIsRightSidebarOpen(false)}
-                            className="p-1 rounded hover:bg-slate-805 text-slate-500"
-                          >
-                            <ChevronRight size={12} />
-                          </button>
+                    {/* Mobile-only inline AI Refinements Panel */}
+                    <div className="md:hidden mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 space-y-4 text-left">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black uppercase tracking-widest text-indigo-500">AI Refinements</span>
+                      </div>
+                      
+                      {/* Category filter tabs */}
+                      <div className="relative border-b border-slate-200 dark:border-slate-805">
+                        <div className="flex items-center justify-start w-full overflow-x-auto custom-scrollbar scroll-smooth whitespace-nowrap gap-2.5 pb-2.5">
+                          {COPILOT_CATEGORIES.map(tab => {
+                            const isActive = activeCopilotTab === tab;
+                            return (
+                              <button
+                                key={tab}
+                                onClick={() => setActiveCopilotTab(tab)}
+                                className={`text-center py-2 px-3 text-[10px] font-black uppercase tracking-wider relative transition-all duration-200 shrink-0 select-none ${
+                                  isActive ? 'text-[#5B3DF5] dark:text-[#8b79ff] font-black' : 'text-slate-450 hover:text-slate-700 dark:hover:text-slate-200'
+                                }`}
+                                style={{ minWidth: '95px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                              >
+                                <span>{tab}</span>
+                                {isActive && (
+                                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#5B3DF5] dark:bg-indigo-500 rounded-full" />
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
+                      </div>
 
-                        {/* Category filter tabs */}
-                        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0 border-b border-slate-800 pb-2">
-                          {COPILOT_CATEGORIES.map(tab => (
-                            <button
-                              key={tab}
-                              onClick={() => setActiveCopilotTab(tab)}
-                              className={`px-2 py-1 text-[9px] font-black uppercase rounded-lg border transition-all ${
-                                activeCopilotTab === tab 
-                                  ? 'bg-indigo-600 text-white border-indigo-600' 
-                                  : 'text-slate-400 hover:text-slate-200 border-transparent hover:bg-slate-800/10'
-                              }`}
-                            >
-                              {tab}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Action buttons list */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
-                          {getCategorizedCopilotActions().map(btn => (
+                      {/* Action buttons list */}
+                      <div className="space-y-4 pt-1">
+                        {getCategorizedCopilotActions().map(btn => {
+                          const isApplied = refinementHistory[focusedSection] === btn.action;
+                          return (
                             <button
                               key={btn.name}
                               onClick={() => handleAIAction(btn.action, btn.prompt)}
-                              className={`w-full p-3 border rounded-xl hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-all text-left flex items-start justify-between gap-2 ${
-                                isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'
+                              className={`w-full px-5 py-4 border rounded-2xl transition-all text-left flex items-start justify-between gap-3 ${
+                                isApplied 
+                                  ? 'border-[#5B3DF5] bg-indigo-500/[0.04] ring-2 ring-indigo-500/10' 
+                                  : (isDark 
+                                      ? 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-800/40' 
+                                      : 'bg-white border-slate-200 hover:border-indigo-500/40 hover:bg-indigo-500/[0.01]')
                               }`}
                             >
-                              <div className="min-w-0">
-                                <h4 className="text-[10px] font-black text-slate-700 dark:text-white uppercase leading-none">{btn.name}</h4>
-                                <p className="text-[8.5px] text-slate-400 font-semibold mt-1.5 leading-snug">{btn.desc}</p>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className={`text-[11px] font-black uppercase tracking-wide leading-none ${isApplied ? 'text-indigo-650 dark:text-indigo-400' : 'text-slate-800 dark:text-white'}`}>
+                                    {btn.name}
+                                  </h4>
+                                  {isApplied && <span className="w-1.5 h-1.5 rounded-full bg-[#5B3DF5] shrink-0" />}
+                                </div>
+                                <p className="text-[10px] text-slate-450 dark:text-slate-400 font-medium mt-2 leading-relaxed">{btn.desc}</p>
                               </div>
-                              <ChevronRight size={11} className="text-slate-500 mt-0.5 shrink-0" />
+                              <ChevronRight size={12} className={`${isApplied ? 'text-[#5B3DF5]' : 'text-slate-400'} mt-0.5 shrink-0`} />
                             </button>
-                          ))}
-                        </div>
+                          );
+                        })}
+                      </div>
 
-                        {/* PRECENDENTS PANEL & CITATION LOOKUP WIDGET */}
-                        <div className={`p-4 border rounded-xl flex flex-col min-h-[220px] max-h-[300px] shrink-0 ${
+                      {/* PRECEDENTS PANEL & CITATION LOOKUP WIDGET */}
+                      {activeCopilotTab === 'Precedents' && (
+                        <div className={`p-4 border rounded-xl flex flex-col min-h-[220px] max-h-[300px] shrink-0 mt-4 ${
+                          isDark ? 'bg-[#0E1528] border-slate-800' : 'bg-white border-slate-200'
+                        }`}>
+                          <span className="text-[9px] font-black uppercase text-indigo-500 mb-2 block">Precedents Engine</span>
+                          
+                          <div className="relative mb-2">
+                            <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-455" />
+                            <input 
+                              type="text"
+                              placeholder="Search legal precedents database..."
+                              value={precedentSearch}
+                              onChange={e => setPrecedentSearch(e.target.value)}
+                              className={`w-full border rounded-lg pl-7 pr-2 py-1 text-[9.5px] font-semibold outline-none ${
+                                isDark ? 'bg-black/20 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
+                              }`}
+                            />
+                          </div>
+
+                          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                            {filteredPrecedents.map(p => {
+                              const bookmarked = bookmarkedPrecedents.has(p.id);
+                              return (
+                                <div key={p.id} className="p-2 border border-slate-800/40 rounded-lg bg-black/10 space-y-1.5 text-left">
+                                  <div className="flex justify-between items-start gap-1">
+                                    <span className="text-[9.5px] font-black text-indigo-400 block leading-tight">{p.citation}</span>
+                                    <button 
+                                      onClick={() => toggleBookmarkPrecedent(p.id)}
+                                      className={`text-slate-400 hover:text-indigo-400 ${bookmarked ? 'text-indigo-400' : ''}`}
+                                    >
+                                      <Star size={10} className={bookmarked ? 'fill-indigo-400' : ''} />
+                                    </button>
+                                  </div>
+                                  <p className="text-[8.5px] text-slate-400 leading-snug">{p.ratio}</p>
+                                  <button
+                                    onClick={() => insertPrecedentIntoDraft(p.citation)}
+                                    className="px-2 py-0.5 bg-indigo-650 hover:bg-indigo-700 text-white text-[8px] font-black uppercase rounded"
+                                  >
+                                    Insert Citation
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* RIGHT COLLAPSIBLE PANEL: AI COPILOT & PRECEDENT SEARCH */}
+                <motion.div
+                  animate={{ width: isRightSidebarOpen ? 330 : 36 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  className={`h-full border-l shrink-0 hidden md:flex flex-col relative z-10 ${
+                    isDark ? 'bg-[#0E1528] border-slate-805' : 'bg-[#FAF9FF] border-slate-200'
+                  }`}
+                  style={{ overflow: 'hidden' }}
+                >
+                  {isRightSidebarOpen ? (
+                    <div className="p-4 flex flex-col h-full min-h-0 space-y-4">
+                      
+                      {/* Title header */}
+                      <div className="flex items-center justify-between shrink-0">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500">AI Refinements</span>
+                        <button 
+                          onClick={() => setIsRightSidebarOpen(false)}
+                          className="p-1 rounded hover:bg-slate-805 text-slate-500"
+                        >
+                          <ChevronRight size={12} />
+                        </button>
+                      </div>
+
+                      {/* Category filter tabs */}
+                      <div className="relative border-b border-slate-200 dark:border-slate-800 shrink-0 mb-4">
+                        <div className="flex items-center justify-start w-full overflow-x-auto custom-scrollbar scroll-smooth whitespace-nowrap gap-2.5 pb-2.5">
+                          {COPILOT_CATEGORIES.map(tab => {
+                            const isActive = activeCopilotTab === tab;
+                            return (
+                              <button
+                                key={tab}
+                                onClick={() => setActiveCopilotTab(tab)}
+                                className={`text-center py-2 px-3 text-[10px] font-black uppercase tracking-wider relative transition-all duration-200 shrink-0 select-none ${
+                                  isActive
+                                    ? 'text-[#5B3DF5] dark:text-[#8b79ff] font-black'
+                                    : 'text-slate-450 hover:text-slate-700 dark:hover:text-slate-200'
+                                }`}
+                                style={{ 
+                                  minWidth: '95px', 
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0
+                                }}
+                              >
+                                <span>{tab}</span>
+                                {isActive && (
+                                  <motion.div
+                                    layoutId="activeRefinementTabUnderlineDesktop"
+                                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#5B3DF5] dark:bg-indigo-500 rounded-full"
+                                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                  />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Action buttons list */}
+                      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1 text-left mt-2 pt-1">
+                        {getCategorizedCopilotActions().map(btn => {
+                          const isApplied = refinementHistory[focusedSection] === btn.action;
+                          return (
+                            <button
+                              key={btn.name}
+                              onClick={() => handleAIAction(btn.action, btn.prompt)}
+                              className={`w-full px-5 py-4 border rounded-2xl transition-all text-left flex items-start justify-between gap-3 ${
+                                isApplied 
+                                  ? 'border-[#5B3DF5] bg-indigo-500/[0.04] ring-2 ring-indigo-500/10' 
+                                  : (isDark 
+                                      ? 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-800/40' 
+                                      : 'bg-white border-slate-200 hover:border-indigo-500/40 hover:bg-indigo-500/[0.01]')
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className={`text-[11px] font-black uppercase tracking-wide leading-none ${isApplied ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-white'}`}>
+                                    {btn.name}
+                                  </h4>
+                                  {isApplied && <span className="w-1.5 h-1.5 rounded-full bg-[#5B3DF5] shrink-0" />}
+                                </div>
+                                <p className="text-[10px] text-slate-450 dark:text-slate-400 font-medium mt-2 leading-relaxed">{btn.desc}</p>
+                              </div>
+                              <ChevronRight size={12} className={`${isApplied ? 'text-[#5B3DF5]' : 'text-slate-400'} mt-0.5 shrink-0`} />
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* PRECENDENTS PANEL & CITATION LOOKUP WIDGET */}
+                      {activeCopilotTab === 'Precedents' && (
+                        <div className={`p-4 border rounded-xl flex flex-col min-h-[220px] max-h-[300px] shrink-0 mt-4 ${
                           isDark ? 'bg-slate-950/40 border-slate-805' : 'bg-white border-slate-200'
                         }`}>
                           <span className="text-[9px] font-black uppercase text-indigo-500 mb-2 block">Precedents Engine</span>
                           
                           {/* Search cases */}
                           <div className="relative mb-2">
-                            <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-450" />
+                            <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-455" />
                             <input 
                               type="text"
                               placeholder="Search legal precedents database..."
@@ -2252,11 +3770,22 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                             )}
                           </div>
                         </div>
+                      )}
 
-                      </div>
-                    </motion.div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setIsRightSidebarOpen(true)}
+                      className="absolute inset-0 w-full h-full flex flex-col items-center justify-center gap-4 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all text-[#5B3DF5] cursor-pointer"
+                      title="Expand AI Refinements"
+                    >
+                      <ChevronLeft size={16} className="animate-pulse" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-center whitespace-nowrap" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                        AI Refine
+                      </span>
+                    </button>
                   )}
-                </AnimatePresence>
+                </motion.div>
 
               </div>
 
@@ -2271,35 +3800,42 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
 
               {/* MOBILE OUTLINE DRAWER SHEET */}
               {mobileOutlineDrawer && (
-                <div className="fixed inset-0 z-50 flex">
+                <div className="fixed inset-0 z-[130000] flex">
                   <div 
                     onClick={() => setMobileOutlineDrawer(false)}
                     className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                   />
-                  <div className={`relative w-80 max-w-[85vw] h-full flex flex-col z-10 p-4 ${
-                    isDark ? 'bg-[#0B1020] text-white' : 'bg-white text-slate-800'
+                  <div className={`relative w-80 max-w-[85vw] h-full flex flex-col z-10 p-5 ${
+                    isDark ? 'bg-[#0B1020] text-white border-r border-slate-800' : 'bg-white text-slate-800 border-r border-slate-200'
                   }`}>
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4 shrink-0">
+                    <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-800 mb-4 shrink-0">
                       <span className="text-xs font-black uppercase tracking-widest text-indigo-500">Draft Structure</span>
-                      <button onClick={() => setMobileOutlineDrawer(false)} className="text-slate-400">
+                      <button 
+                        onClick={() => setMobileOutlineDrawer(false)} 
+                        className="p-1.5 hover:bg-slate-800/10 dark:hover:bg-zinc-800 rounded-full text-slate-400"
+                        style={{ minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
                         <X size={16} />
                       </button>
                     </div>
 
-                    <div className="relative mb-3 shrink-0">
-                      <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <div className={`flex items-center border rounded-xl px-3 py-2 mb-4 shrink-0 ${
+                      isDark ? 'bg-black/20 border-slate-800' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <Search size={14} className="text-slate-450 mr-2 shrink-0" />
                       <input 
                         type="text"
                         placeholder="Search sections..."
                         value={outlineSearchQuery}
                         onChange={e => setOutlineSearchQuery(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-2 py-1.5 text-xs outline-none text-white"
+                        className="w-full bg-transparent border-none text-xs font-bold outline-none focus:ring-0 text-slate-800 dark:text-white"
                       />
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-0.5">
                       {sortedOutlineItems.map(item => {
                         const active = focusedSection === item.id;
+                        const isPinned = pinnedSections.has(item.id);
                         return (
                           <button
                             key={item.id}
@@ -2311,14 +3847,15 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                                 target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                               }
                             }}
-                            className={`w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold uppercase transition-all truncate block ${
+                            className={`w-full text-left py-3 px-4 rounded-xl text-xs font-black uppercase transition-all truncate flex items-center justify-between border ${
                               active
-                                ? 'bg-indigo-650 text-white'
-                                : 'text-slate-400 hover:text-white'
+                                ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20 pl-5'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-white border-transparent'
                             }`}
                             style={{ minHeight: '44px' }}
                           >
-                            {item.label}
+                            <span>{item.label}</span>
+                            {isPinned && <Pin size={8} className="text-indigo-500 shrink-0 fill-indigo-500" />}
                           </button>
                         );
                       })}
@@ -2329,59 +3866,91 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
 
               {/* MOBILE AI COPILOT BOTTOM DRAWER SHEET */}
               {mobileAiCopilotDrawer && (
-                <div className="fixed inset-0 z-50 flex items-end">
+                <div className="fixed inset-0 z-[130000] flex items-end">
                   <div 
                     onClick={() => setMobileAiCopilotDrawer(false)}
                     className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                   />
-                  <div className={`relative w-full max-h-[75vh] flex flex-col z-10 p-5 rounded-t-3xl border-t border-slate-800 ${
-                    isDark ? 'bg-[#0E1528] text-white' : 'bg-white text-slate-800'
+                  <div className={`relative w-full max-h-[75vh] flex flex-col z-10 p-5 rounded-t-3xl border-t ${
+                    isDark ? 'bg-[#0E1528] text-white border-slate-800' : 'bg-white text-slate-800 border-slate-200'
                   }`}>
                     {/* Draggable header bar indicator */}
                     <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-4 shrink-0" />
                     
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4 shrink-0">
+                    <div className="flex justify-between items-center pb-3 border-b border-slate-250 dark:border-slate-805 mb-4 shrink-0">
                       <span className="text-xs font-black uppercase text-indigo-500">AI Refinements Copilot</span>
-                      <button onClick={() => setMobileAiCopilotDrawer(false)} className="text-slate-400">
+                      <button 
+                        onClick={() => setMobileAiCopilotDrawer(false)} 
+                        className="p-1.5 hover:bg-slate-800/10 dark:hover:bg-zinc-800 rounded-full text-slate-400"
+                        style={{ minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
                         <X size={16} />
                       </button>
                     </div>
 
                     {/* Category tabs */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 border-b border-slate-800 pb-2 mb-3">
-                      {COPILOT_CATEGORIES.map(tab => (
-                        <button
-                          key={tab}
-                          onClick={() => setActiveCopilotTab(tab)}
-                          className={`px-3 py-1.5 text-[10px] font-black uppercase rounded-lg border transition-all ${
-                            activeCopilotTab === tab 
-                              ? 'bg-indigo-600 text-white border-indigo-600' 
-                              : 'text-slate-400 border-transparent'
-                          }`}
-                        >
-                          {tab}
-                        </button>
-                      ))}
+                    <div className="relative border-b border-slate-200 dark:border-slate-800 shrink-0 pb-1 mb-3">
+                      <div className="flex items-center justify-start w-full overflow-x-auto custom-scrollbar scroll-smooth whitespace-nowrap gap-2.5 pb-2.5">
+                        {COPILOT_CATEGORIES.map(tab => {
+                          const isActive = activeCopilotTab === tab;
+                          return (
+                            <button
+                              key={tab}
+                              onClick={() => setActiveCopilotTab(tab)}
+                              className={`text-center py-2 px-3 text-[10px] font-black uppercase tracking-wider relative transition-all duration-200 shrink-0 select-none ${
+                                isActive
+                                  ? 'text-[#5B3DF5] dark:text-[#8b79ff] font-black'
+                                  : 'text-slate-450 hover:text-slate-700 dark:hover:text-slate-202'
+                              }`}
+                              style={{ 
+                                minWidth: '95px', 
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0
+                              }}
+                            >
+                              <span>{tab}</span>
+                              {isActive && (
+                                <motion.div
+                                  layoutId="activeRefinementTabUnderlineMobile"
+                                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#5B3DF5] rounded-full"
+                                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pb-6">
-                      {getCategorizedCopilotActions().map(btn => (
-                        <button
-                          key={btn.name}
-                          onClick={() => {
-                            setMobileAiCopilotDrawer(false);
-                            handleAIAction(btn.action, btn.prompt);
-                          }}
-                          className="w-full p-4 border border-slate-800 rounded-xl bg-slate-900/60 text-left flex items-center justify-between"
-                          style={{ minHeight: '52px' }}
-                        >
-                          <div>
-                            <h4 className="text-xs font-black text-white uppercase">{btn.name}</h4>
-                            <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-normal">{btn.desc}</p>
-                          </div>
-                          <ChevronRight size={14} className="text-slate-500" />
-                        </button>
-                      ))}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-6 text-left">
+                      {getCategorizedCopilotActions().map(btn => {
+                        const isApplied = refinementHistory[focusedSection] === btn.action;
+                        return (
+                          <button
+                            key={btn.name}
+                            onClick={() => {
+                              setMobileAiCopilotDrawer(false);
+                              handleAIAction(btn.action, btn.prompt);
+                            }}
+                            className={`w-full px-5 py-4 border rounded-2xl text-left flex items-start justify-between gap-3 ${
+                              isApplied 
+                                ? 'border-[#5B3DF5] bg-indigo-500/[0.04] ring-2 ring-indigo-500/10' 
+                                : (isDark 
+                                    ? 'bg-slate-900/60 border-slate-805 hover:border-slate-700 hover:bg-slate-800/40' 
+                                    : 'bg-white border-slate-200 hover:border-indigo-500/40 hover:bg-indigo-500/[0.01]')
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className={`text-[11px] font-black uppercase tracking-wide leading-none ${isApplied ? 'text-indigo-650 dark:text-indigo-400' : 'text-slate-800 dark:text-white'}`}>{btn.name}</h4>
+                                {isApplied && <span className="w-1.5 h-1.5 rounded-full bg-[#5B3DF5] shrink-0" />}
+                              </div>
+                              <p className="text-[10px] text-slate-450 dark:text-slate-400 font-medium mt-2 leading-relaxed">{btn.desc}</p>
+                            </div>
+                            <ChevronRight size={12} className={`${isApplied ? 'text-[#5B3DF5]' : 'text-slate-400'} mt-0.5 shrink-0`} />
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -2439,6 +4008,185 @@ ${draftResults.courtReadyDraft || draftResults.generatedArguments || ''}
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL: Argument History Logs */}
+              {historyVisible && (
+                <div className="fixed inset-0 z-[120000] flex items-end sm:items-center justify-center p-0 sm:p-4">
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setHistoryVisible(false)} />
+                  <div className={`relative border w-full sm:max-w-3xl h-[92vh] sm:h-auto sm:max-h-[85vh] flex flex-col overflow-hidden bg-white dark:bg-[#0E1528] border-slate-200 dark:border-slate-800 rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-4 sm:p-6 animate-slideUp sm:animate-fadeIn`}>
+                    <div className="flex items-center justify-between border-b border-slate-200/20 pb-4 shrink-0">
+                      <div className="flex items-center gap-2.5">
+                        <History className="text-indigo-500" size={20} />
+                        <div className="flex items-baseline gap-2">
+                          <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-slate-900 dark:text-white">Argument Drafting History</h3>
+                          <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase">
+                            {recentDrafts.length} {recentDrafts.length === 1 ? 'Draft' : 'Drafts'}
+                          </span>
+                        </div>
+                      </div>
+                      <button onClick={() => setHistoryVisible(false)} className="p-1.5 hover:bg-slate-800/10 dark:hover:bg-zinc-800 rounded-full text-slate-400 transition-colors">
+                        <X size={18} />
+                      </button>
+                    </div>
+
+                    {/* History Search & Sort Controls */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-4 shrink-0">
+                      <div className={`flex-1 flex items-center border rounded-xl px-3 py-2 ${
+                        isDark ? 'bg-black/20 border-slate-800' : 'bg-slate-50 border-slate-200'
+                      }`}>
+                        <Search size={14} className="text-slate-450 mr-2 shrink-0" />
+                        <input
+                          type="text"
+                          placeholder="Search history by Case Name, Draft Type, Generated Date or Preview..."
+                          className="w-full bg-transparent border-none text-xs font-bold outline-none focus:ring-0 text-slate-800 dark:text-white"
+                          value={historySearch}
+                          onChange={e => setHistorySearch(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase text-slate-450 shrink-0">Sort By</span>
+                        <select
+                          value={historySortBy}
+                          onChange={e => setHistorySortBy(e.target.value)}
+                          className={`text-xs font-bold border rounded-xl px-3 py-2 outline-none focus:ring-1 focus:ring-indigo-500 ${
+                            isDark ? 'bg-[#131c31] border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-800'
+                          }`}
+                        >
+                          <option value="newest">Newest First</option>
+                          <option value="oldest">Oldest First</option>
+                          <option value="name">Case Name</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto mt-4 space-y-4 pr-1 custom-scrollbar">
+                      {sortedAndFilteredHistory.map((item, idx) => (
+                        <div key={item.id || idx} className={`p-5 border rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col gap-4 ${
+                          isDark ? 'bg-[#161f38] border-slate-800 text-white' : 'bg-white border-slate-250 text-slate-800'
+                        }`}>
+                          
+                          {/* Main grid fields */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="md:col-span-2 space-y-0.5">
+                              <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block">Case Name</span>
+                              <h4 className="text-sm font-black text-indigo-650 dark:text-indigo-400 tracking-wide truncate">
+                                {getHistoryItemCaseName(item)}
+                              </h4>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 border-l-0 md:border-l border-slate-200/20 pl-0 md:pl-4">
+                              <div>
+                                <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block">Draft Type</span>
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block truncate">
+                                  {getHistoryItemSource(item)}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block">Generated On</span>
+                                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">
+                                  {item.date} {item.time || '12:00 PM'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Preview Text */}
+                          <div className="space-y-1 text-left">
+                            <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block">Draft Preview</span>
+                            <p className="text-xs text-slate-650 dark:text-slate-300 leading-relaxed italic border-l-2 border-indigo-500/20 pl-3">
+                              "{getHistoryItemPreview(item)}"
+                            </p>
+                          </div>
+
+                          {/* Stats Grid */}
+                          <div className="bg-slate-50 dark:bg-slate-900/40 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center border border-slate-100 dark:border-slate-800/50">
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] uppercase font-black text-slate-400">Word Count</span>
+                              <span className="text-xs font-extrabold text-slate-800 dark:text-white mt-0.5">
+                                {getHistoryItemStats(item).words} Words
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] uppercase font-black text-slate-400">Citation Count</span>
+                              <span className="text-xs font-extrabold text-slate-800 dark:text-white mt-0.5">
+                                {getHistoryItemStats(item).citations} Citations
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] uppercase font-black text-slate-400">Evidence Linked</span>
+                              <span className="text-xs font-extrabold text-slate-800 dark:text-white mt-0.5">
+                                {getHistoryItemStats(item).evidence} Evidence
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-[9px] uppercase font-black text-slate-400">Read Time</span>
+                              <span className="text-xs font-extrabold text-slate-800 dark:text-white mt-0.5">
+                                {getHistoryItemStats(item).readTime} min read
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Footer Actions */}
+                          <div className="flex items-center justify-between pt-4 border-t border-slate-200/10 gap-3 flex-wrap">
+                            <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-emerald-500/20">
+                              <Check size={11} className="shrink-0" />
+                              <span>Generated Successfully</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setDraftResults(item.results);
+                                  setWorkspaceStage('RESULTS');
+                                  setHistoryVisible(false);
+                                  toast.success(`Loaded draft: ${getHistoryItemCaseName(item)}`);
+                                }}
+                                className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm"
+                              >
+                                <Eye size={12} />
+                                <span>Open Draft</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleDuplicateHistoryItem(item)}
+                                className={`px-3 py-2 border rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                                  isDark ? 'bg-slate-900 border-slate-800 text-slate-350 hover:bg-slate-800 hover:text-white' : 'bg-white border-slate-250 text-slate-650 hover:bg-slate-50 hover:text-slate-800'
+                                }`}
+                                title="Duplicate Draft"
+                              >
+                                <Copy size={12} />
+                                <span>Duplicate</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteHistoryItem(item.id)}
+                                className="p-2 border border-red-200 dark:border-red-900/50 hover:bg-red-500/10 rounded-xl text-red-500 transition-colors"
+                                title="Delete Draft"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+
+                        </div>
+                      ))}
+
+                      {sortedAndFilteredHistory.length === 0 && (
+                        <div className="text-center py-16 space-y-4">
+                          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto border border-slate-200 dark:border-slate-800">
+                            <History size={28} className="text-slate-400" />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-black text-slate-850 dark:text-white uppercase tracking-wider">No Draft History Found</h4>
+                            <p className="text-xs text-slate-450 max-w-xs mx-auto leading-relaxed">
+                              Generate your first AI argument to start building your drafting history.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -238,6 +238,17 @@ const EvidenceAnalysis = ({ currentCase, onBack, theme, allProjects = [], onUpda
 
   const [translatedForensicResult, setTranslatedForensicResult] = useState(null);
 
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1200 : false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1200);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const forensicResult = useMemo(() => {
     if (outputLang === 'en' || !translatedForensicResult) return rawForensicResult;
     return translatedForensicResult;
@@ -2948,8 +2959,1056 @@ JSON Schema:
     );
   };
 
+  const renderHeader = () => {
+    return (
+      <div className={`flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 py-3 md:py-4 border-b bg-white border-slate-200 text-slate-900 shadow-sm shrink-0 gap-3 md:gap-4`}>
+        {/* Left Side: Brand, Title, Subtitle, Status */}
+        <div className="flex items-start gap-2 md:gap-3 text-left">
+          <button 
+            onClick={onBack} 
+            className="p-2 md:p-2.5 rounded-xl transition-colors border hover:bg-slate-50 border-slate-205 mt-1 shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title="Go back"
+          >
+            <ChevronLeft size={16} className="text-slate-600" />
+          </button>
+          
+          <div className="space-y-0.5">
+            <div className="flex flex-wrap items-center gap-x-1.5 md:gap-x-2.5 gap-y-1">
+              <h1 className="text-xs md:text-sm font-black uppercase tracking-wider text-indigo-600">
+                AI LEGAL™
+              </h1>
+              <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-slate-300 hidden sm:block" />
+              <h2 className="text-[11px] md:text-sm font-extrabold text-slate-800">
+                Evidence Analysis Engine
+              </h2>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 md:px-2.5 md:py-0.5 rounded-full border bg-emerald-50 border-emerald-202 text-emerald-700 text-[7.5px] md:text-[8.5px] font-black uppercase whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                Secure Analysis Ready
+              </span>
+            </div>
+            <p className="text-[8.5px] md:text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+              Evidence Authentication • Integrity Review • Court Readiness
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side: Active Case Selector & Evidence Library button */}
+        <div className="flex items-center gap-3 sm:gap-5 w-full md:w-auto justify-between md:justify-end mt-1 md:mt-0">
+          {/* Active Case Selector */}
+          <div className="flex flex-col text-left flex-1 md:flex-none min-w-0">
+            <span className="text-[7.5px] md:text-[8.5px] font-black text-slate-455 uppercase tracking-wider block font-bold">Current Case</span>
+            {linkedCaseId ? (
+              <div className="flex items-center gap-1.5 md:gap-2 mt-1 w-full">
+                <span className="text-[10px] md:text-xs font-bold text-slate-855 truncate max-w-[100px] sm:max-w-[180px]">
+                  {(allProjects.find(p => p._id === linkedCaseId)?.name) || currentCase?.name || 'Active Case'}
+                </span>
+                <select
+                  value={linkedCaseId}
+                  onChange={e => handleCaseSelect(e.target.value)}
+                  className="border border-slate-200 bg-white rounded-lg px-1.5 py-0.5 md:px-2 md:py-0.5 text-[8px] md:text-[9px] font-black text-slate-500 uppercase tracking-wider cursor-pointer hover:border-indigo-400 outline-none max-w-full truncate flex-1 min-w-0 min-h-[32px]"
+                >
+                  <option value="">Switch</option>
+                  {allProjects.map(c => (
+                    <option key={c._id} value={c._id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 md:gap-2 mt-1 w-full">
+                <span className="text-[10px] md:text-xs font-bold text-rose-500 italic shrink-0">No Case Selected</span>
+                <select
+                  value={linkedCaseId}
+                  onChange={e => handleCaseSelect(e.target.value)}
+                  className="border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg px-2 py-1 md:px-3 md:py-1 text-[8px] md:text-[9px] font-black uppercase tracking-wider cursor-pointer outline-none transition-all w-full truncate flex-1 min-w-0 min-h-[32px]"
+                >
+                  <option value="">Select Case</option>
+                  {allProjects.map(c => (
+                    <option key={c._id} value={c._id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Evidence Library Button */}
+          <button 
+            onClick={() => setHistoryVisible(true)} 
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 md:px-4.5 md:py-2 bg-indigo-50 border border-indigo-205 text-indigo-650 hover:bg-indigo-100 rounded-xl text-[10px] md:text-xs font-bold transition-all shrink-0 whitespace-nowrap min-h-[44px]"
+          >
+            <Folder size={13} className="text-indigo-550 shrink-0" />
+            <span className="hidden sm:inline">Evidence Library ({historyData.length})</span>
+            <span className="inline sm:hidden">Library ({historyData.length})</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStagingArea = () => {
+    return (
+      <div className={`border rounded-3xl p-5 shadow-xl space-y-5 text-left ${isDark ? 'bg-[#0f162a] border-slate-800 text-slate-100' : 'bg-white border-slate-202 text-slate-800'}`}>
+        <div className={`flex items-center justify-between border-b pb-3 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+          <div className="flex items-center gap-2">
+            <Upload className="text-indigo-400" size={16} />
+            <h3 className={`text-xs font-black uppercase tracking-widest ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Staging Area & Parameters</h3>
+          </div>
+        </div>
+
+        {/* Evidence Type */}
+        <div className="flex flex-col gap-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-505'}`}>1. Evidence Type Selector</label>
+          <select
+            value={selectedEvidenceType}
+            onChange={e => setSelectedEvidenceType(e.target.value)}
+            className={`w-full border rounded-xl px-3 py-3 text-xs font-bold outline-none focus:border-indigo-500 min-h-[44px] ${isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+          >
+            {EVIDENCE_TYPES.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Court Exhibit Role */}
+        <div className="flex flex-col gap-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-505'}`}>2. Court Side</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setCaseRole('Prosecution')}
+              className={`py-3 px-4 rounded-xl border text-xs font-black uppercase tracking-wider transition-all min-h-[44px] flex items-center justify-center ${caseRole === 'Prosecution' ? 'bg-indigo-600 text-white border-indigo-500 shadow-md' : (isDark ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-300 text-slate-650')}`}
+            >
+              Prosecution / Plaintiff (P)
+            </button>
+            <button
+              type="button"
+              onClick={() => setCaseRole('Defense')}
+              className={`py-3 px-4 rounded-xl border text-xs font-black uppercase tracking-wider transition-all min-h-[44px] flex items-center justify-center ${caseRole === 'Defense' ? 'bg-rose-600 text-white border-rose-500 shadow-md' : (isDark ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-slate-55 border-slate-300 text-slate-655')}`}
+            >
+              Defense (D)
+            </button>
+          </div>
+        </div>
+
+        {/* File Dropzone */}
+        <div className="flex flex-col gap-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-505'}`}>3. Upload Evidence</label>
+          <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-6 cursor-pointer transition-all min-h-[110px] ${isDark ? 'border-slate-800 hover:border-slate-700 bg-slate-900/50 hover:bg-slate-900' : 'border-slate-202 hover:border-slate-300 bg-slate-50 hover:bg-slate-100/60'}`}>
+            <input 
+              type="file" 
+              className="hidden" 
+              onChange={handleFileUpload}
+            />
+            <Fingerprint className="text-slate-700 mb-2 group-hover:text-indigo-400" size={32} />
+            <span className={`text-[11px] font-black uppercase tracking-wider text-center ${isDark ? 'text-slate-300' : 'text-slate-750'}`}>Choose Court Exhibit File</span>
+            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1 text-center">Images, Videos, Audio, PDF, Chats (Max 15MB)</span>
+          </label>
+        </div>
+
+        {selectedFile && (
+          <div className={`flex items-center gap-3 p-3 rounded-xl border ${isDark ? 'bg-indigo-500/5 border-indigo-500/20' : 'bg-indigo-50/50 border-indigo-202'}`}>
+            <FileText size={18} className="text-indigo-400 shrink-0" />
+            <div className="flex-1 min-w-0 text-left">
+              <p className={`text-xs font-bold truncate ${isDark ? 'text-slate-200' : 'text-slate-855'}`}>{selectedFile.name}</p>
+              <p className="text-[9px] text-slate-500 uppercase font-black mt-0.5">{Math.round(selectedFile.size / 1024)} KB • {selectedFile.mimeType}</p>
+            </div>
+            <button onClick={() => setSelectedFile(null)} className="p-1 hover:bg-slate-800 rounded-full min-w-[28px] min-h-[28px] flex items-center justify-center">
+              <X size={14} className="text-slate-400" />
+            </button>
+          </div>
+        )}
+
+        {/* Evidence Name */}
+        <div className="flex flex-col gap-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-550'}`}>4. Evidence Name</label>
+          <input
+            type="text"
+            placeholder="e.g. CCTV recording from main street camera"
+            value={evidenceTitle}
+            onChange={e => setEvidenceTitle(e.target.value)}
+            className={`w-full border rounded-xl px-3 py-3 text-xs font-bold outline-none focus:border-indigo-500 min-h-[44px] ${isDark ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+          />
+        </div>
+
+        {/* Context Notes */}
+        <div className="flex flex-col gap-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-555'}`}>5. Context Notes / Custody</label>
+          <textarea
+            rows={2}
+            placeholder="Enter device make, seize context details, hash notes..."
+            value={evidenceNotes}
+            onChange={e => setEvidenceNotes(e.target.value)}
+            className={`w-full border rounded-xl px-3 py-3 text-xs outline-none resize-none focus:border-indigo-500 min-h-[60px] ${isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+          />
+        </div>
+
+        {/* Linked Case Selector */}
+        <div className="flex flex-col gap-1.5">
+          <label className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-555'}`}>6. Linked Case (optional)</label>
+          {allProjects.length > 0 ? (
+            <select
+              value={linkedCaseId}
+              onChange={e => handleCaseSelect(e.target.value)}
+              className={`w-full border rounded-xl px-3 py-3 text-xs font-bold outline-none focus:border-indigo-500 min-h-[44px] ${isDark ? 'bg-slate-900 border-slate-800 text-slate-250' : 'bg-white border-slate-300 text-slate-700'}`}
+            >
+              <option value="">No linked case</option>
+              {allProjects.map(c => (
+                <option key={c._id} value={c._id}>{c.name}</option>
+              ))}
+            </select>
+          ) : (
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wide text-left">No Cases Available to Link</p>
+          )}
+        </div>
+
+        {/* Initiate forensic Analysis button */}
+        <div className="sticky bottom-4 z-20 xl:static xl:bottom-auto xl:z-auto mt-2">
+          <button
+            type="button"
+            onClick={runForensicScanner}
+            disabled={isAuditing || (!evidenceNotes.trim() && !selectedFile)}
+            className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-[0_10px_40px_-10px_rgba(79,70,229,0.7)] disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2 min-h-[44px]"
+          >
+            <Fingerprint size={15} />
+            <span>Initiate Forensic Analysis</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderMobileExportActions = () => {
+    return (
+      <div className={`border rounded-2xl p-5 shadow-xl text-left space-y-3.5 transition-all duration-550 ${isDark ? 'bg-[#0f162a] border-slate-800' : 'bg-white border-slate-202'}`}>
+        <h4 className="text-xs font-black uppercase tracking-widest text-indigo-400 border-b pb-3 border-slate-800/40">Export & Actions</h4>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="w-full sm:w-auto min-h-[44px]">
+            <LanguageToggle lang={outputLang} onChange={handleForensicLangChange} isTranslating={isForensicTranslating} />
+          </div>
+          <button 
+            onClick={() => handleCopyText(forensicResult.ocrText)} 
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all min-h-[44px] ${isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800 text-slate-350' : 'bg-slate-50 border-slate-250 hover:bg-slate-100 text-slate-700'}`}
+          >
+            <Copy size={14} />
+            <span>Copy OCR</span>
+          </button>
+          <button 
+            onClick={() => handleSpeechSynthesis(forensicResult.summary)} 
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all min-h-[44px] ${isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800 text-slate-350' : 'bg-slate-50 border-slate-250 hover:bg-slate-100 text-slate-700'}`}
+          >
+            <Mic size={14} />
+            <span>Read Summary</span>
+          </button>
+          <button 
+            onClick={() => handleExportDOCX(forensicResult)} 
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-xs font-bold transition-all min-h-[44px] ${isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800 text-slate-350' : 'bg-slate-50 border-slate-250 hover:bg-slate-100 text-slate-700'}`}
+          >
+            <FileDown size={14} />
+            <span>Word Brief</span>
+          </button>
+          <button 
+            onClick={() => handleExportPDF(forensicResult)} 
+            className="w-full sm:w-auto flex items-center justify-center gap-2 py-3 px-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all min-h-[44px] shadow-md shadow-indigo-500/10"
+          >
+            <Printer size={14} />
+            <span>Print PDF Report</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderMobileResults = () => {
+    if (!forensicResult) {
+      return (
+        <div className={`border rounded-3xl p-12 shadow-xl flex flex-col items-center justify-center gap-4 text-center min-h-[300px] mt-4 ${isDark ? 'bg-[#0f162a]/50 border-slate-800/60 text-slate-300' : 'bg-white border-slate-202 text-slate-650'}`}>
+          <div className={`w-16 h-16 rounded-full border flex items-center justify-center ${isDark ? 'bg-slate-900 border-slate-800 text-slate-600' : 'bg-slate-50 border-slate-200'}`}>
+            <Shield size={32} />
+          </div>
+          <div>
+            <h4 className={`text-sm font-black uppercase tracking-widest ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>No Active Forensic Scan Loaded</h4>
+            <p className="text-xs text-slate-500 mt-2 max-w-sm mx-auto">
+              Upload an exhibit file or select an archive log from the Forensic Records database list to view court-ready admissibility reviews.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6 w-full mt-4">
+        {/* Executive Summary Panel at the top of results */}
+        <div className={`border rounded-2xl p-4 shadow-xl space-y-4 transition-all duration-555 ${isDark ? 'bg-[#0f162a] border-slate-800' : 'bg-white border-slate-202'}`}>
+          <h4 className="text-xs font-black uppercase tracking-widest text-indigo-400 border-b pb-3 border-slate-800/40 text-left">Executive Summary</h4>
+          <div className="grid grid-cols-2 gap-4 text-left pt-2">
+            {[
+              { label: 'Current Case', val: (allProjects.find(p => p._id === linkedCaseId)?.name) || 'No Case Selected' },
+              { label: 'Evidence Type', val: forensicResult.evidenceType || 'Photograph' },
+              { 
+                label: 'Analysis Status', 
+                val: getAnalysisStatus(forensicResult).label, 
+                badge: true,
+                styleClass: getAnalysisStatus(forensicResult).color
+              },
+              { label: 'Last Updated', val: forensicResult.timestamp },
+              { label: 'Court Readiness', val: `${forensicResult.comparativeAudit?.updatedCourtReadiness?.updatedScore || forensicResult.courtReadinessSection?.metrics?.courtReadinessScore || 75}/100`, color: 'text-indigo-600' }
+            ].map(item => (
+              <div key={item.label} className="space-y-1">
+                <span className="text-[8.5px] font-black text-slate-450 uppercase tracking-wider block">{item.label}</span>
+                {item.badge ? (
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${item.styleClass}`}>
+                    {item.val}
+                  </span>
+                ) : (
+                  <span className={`text-xs font-extrabold truncate block ${item.color || (isDark ? 'text-slate-200' : 'text-slate-800')}`}>
+                    {item.val}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 1. Preview Panel (Evidence Overview Card) */}
+        {visibleSections.includes('overview') && (
+          <div className={`border rounded-2xl p-4 shadow-md transition-all duration-700 text-left ${isDark ? 'bg-[#0f162a] border-slate-800' : 'bg-white border-slate-202'}`}
+            style={{ animation: 'fadeSlideUp 0.4s ease forwards' }}>
+            <h5 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-3 flex items-center gap-1.5">
+              <Database size={12} /> SECTION 1: Evidence Overview
+            </h5>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+              {[
+                { label: 'Evidence Name', val: forensicResult.title },
+                { label: 'Evidence Type', val: forensicResult.evidenceType },
+                { label: 'File Size', val: selectedFile ? `${Math.round(selectedFile.size / 1024)} KB` : 'Manual Input' },
+                { label: 'Upload Time', val: forensicResult.timestamp },
+                { label: 'Linked Case', val: (allProjects.find(p => p._id === linkedCaseId)?.name) || 'Not linked' },
+                { label: 'Uploaded By', val: forensicResult.caseRole === 'Prosecution' ? 'Prosecution / Plaintiff' : 'Defense Counsel' }
+              ].map(item => (
+                <div key={item.label} className={`p-3 rounded-xl border ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{item.label}</p>
+                  <p className={`text-xs font-bold mt-0.5 truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{item.val}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 2. OCR Result (Text Extraction Quality Card) */}
+        {renderV2Card('ocr', 'SECTION 4: Text Extraction Quality', <FileText size={12} />, forensicResult.ocrSection, (
+          <div className="space-y-3 mt-3">
+            <div className={`border rounded-xl p-4 font-mono text-xs max-h-60 overflow-y-auto custom-scrollbar text-left whitespace-pre-wrap leading-relaxed ${isDark ? 'bg-slate-955 border-slate-800/80 text-slate-300' : 'bg-slate-50 border-slate-202 text-slate-750'}`}>
+              {isEditingOcr ? (
+                <textarea
+                  value={ocrText}
+                  onChange={e => setOcrText(e.target.value)}
+                  className={`w-full bg-transparent border-none outline-none focus:ring-0 p-0 text-xs font-mono resize-none ${isDark ? 'text-slate-200' : 'text-slate-850'}`}
+                  rows={6}
+                />
+              ) : (
+                renderOcrHighlight()
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between flex-wrap gap-2 text-left pt-1">
+              <div className="flex items-center gap-3">
+                <div>
+                  <span className="text-[8px] font-black text-slate-500 block uppercase">Extraction Quality</span>
+                  <span className={`text-[10px] font-black ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{forensicResult.ocrSection?.confidence || '90%'}</span>
+                </div>
+                <div>
+                  <span className="text-[8px] font-black text-slate-500 block uppercase">Unreadable Portions</span>
+                  <span className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{forensicResult.ocrSection?.unreadablePortions || 'None'}</span>
+                </div>
+                <div>
+                  <span className="text-[8px] font-black text-slate-500 block uppercase">Language Detected</span>
+                  <span className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{forensicResult.ocrSection?.languageDetected || 'English'}</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-1.5">
+                {isEditingOcr ? (
+                  <>
+                    <button onClick={handleSaveOcrText} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors min-h-[44px]">
+                      Save
+                    </button>
+                    <button onClick={() => setIsEditingOcr(false)} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors min-h-[44px]">
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={() => setIsEditingOcr(true)} className={`flex items-center gap-1 px-3 py-1.5 border rounded-lg transition-colors min-h-[44px] ${isDark ? 'hover:bg-slate-800 border-slate-700/60 text-slate-300' : 'hover:bg-slate-100 border-slate-200 text-slate-700'}`}>
+                    <Edit3 size={11} />
+                    <span className="text-[9px] font-black uppercase tracking-wider">Revise OCR</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* 3. Authenticity (File Integrity & Risk Assessment Cards) */}
+        {renderV2Card('integrity', 'SECTION 5: File Integrity Verified', <ShieldCheck size={12} />, forensicResult.integritySection, (
+          <div className="mt-2.5 flex items-center justify-between border-t pt-2.5 border-slate-800/40">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-505">Validation Confidence</span>
+            <span className={`text-xs font-black ${getStatusColor(forensicResult.integritySection?.status).text}`}>
+              {forensicResult.integritySection?.confidence || '90%'}
+            </span>
+          </div>
+        ))}
+
+        {renderV2Card('risk', 'SECTION 7: Risk Assessment', <AlertTriangle size={12} />, forensicResult.riskAssessmentSection, (
+          <div className="space-y-4 mt-3 text-left">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {[
+                { label: 'Manipulation Risk', val: forensicResult.riskAssessmentSection?.scores?.manipulationRisk || 'Low' },
+                { label: 'Metadata Reliability', val: forensicResult.riskAssessmentSection?.scores?.metadataReliability || 'High' },
+                { label: 'Timeline Consistency', val: forensicResult.riskAssessmentSection?.scores?.timelineConsistency || 'Match' },
+                { label: 'Witness Match', val: forensicResult.riskAssessmentSection?.scores?.witnessMatch || 'Match' },
+                { label: 'Location Match', val: forensicResult.riskAssessmentSection?.scores?.locationMatch || 'Match' },
+                { label: 'Document Consistency', val: forensicResult.riskAssessmentSection?.scores?.documentConsistency || 'Match' }
+              ].map(item => (
+                <div key={item.label} className={`p-3 rounded-xl border text-center ${isDark ? 'bg-slate-900/40 border-slate-800/60' : 'bg-slate-55 border-slate-200'}`}>
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{item.label}</p>
+                  <p className={`text-[11px] font-black mt-1 ${
+                    item.val.toLowerCase() === 'low' || item.val.toLowerCase() === 'match' || item.val.toLowerCase() === 'consistent' || item.val.toLowerCase() === 'high' && item.label.includes('Reliability')
+                      ? 'text-emerald-500' 
+                      : item.val.toLowerCase() === 'high' || item.val.toLowerCase() === 'mismatch'
+                      ? 'text-rose-500'
+                      : 'text-amber-500'
+                  }`}>{item.val}</p>
+                </div>
+              ))}
+              <div className={`p-3 rounded-xl border col-span-1 sm:col-span-2 flex items-center justify-between ${isDark ? 'bg-indigo-950/20 border-indigo-500/20' : 'bg-indigo-50 border-indigo-200'}`}>
+                <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400">Risk Assessment Confidence Level</span>
+                <span className="text-xs font-black text-indigo-400">{forensicResult.riskAssessmentSection?.scores?.overallConfidenceLevel || '90%'}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 border-t pt-3 border-slate-800/40">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">Contradiction & Discrepancy Detections</p>
+              {forensicResult.contradictionSection?.contradictionsList && forensicResult.contradictionSection.contradictionsList.length > 0 ? (
+                forensicResult.contradictionSection.contradictionsList.map((c, idx) => (
+                  <div key={idx} className={`p-3 border rounded-xl ${isDark ? 'bg-rose-950/20 border-rose-500/20' : 'bg-rose-50 border-rose-200'}`}>
+                    <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest">
+                      Conflict in {c.where} ({c.severity} Severity)
+                    </span>
+                    <p className={`text-xs font-semibold mt-1 leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      {c.whatConflicts}
+                    </p>
+                    <p className={`text-[10px] mt-1.5 italic font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      Impact: {c.impact}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className={`flex items-center gap-2 p-3 rounded-xl border ${isDark ? 'bg-[#0b1b15]/40 border-emerald-500/20 text-emerald-300' : 'bg-emerald-50 border-emerald-202 text-emerald-700'}`}>
+                  <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                  <span className="text-[11px] font-semibold">No contradictions detected against comparative documents.</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {/* 4. Metadata (File Information & Chain of Custody Cards) */}
+        {renderV2Card('metadata', 'SECTION 3: File Information', <Cpu size={12} />, forensicResult.metadataSection, (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 text-left">
+            {[
+              { label: 'Creation Time', val: forensicResult.metadataSection?.fields?.creationTime || 'Not detected' },
+              { label: 'Modified Time', val: forensicResult.metadataSection?.fields?.modifiedTime || 'Not detected' },
+              { label: 'GPS Available', val: forensicResult.metadataSection?.fields?.gps || 'No GPS tagged' },
+              { label: 'Camera Information', val: forensicResult.metadataSection?.fields?.camera || 'Unknown model' },
+              { label: 'Device Source', val: forensicResult.metadataSection?.fields?.device || 'Unknown' },
+              { label: 'Resolution', val: forensicResult.metadataSection?.fields?.resolution || 'Standard' },
+              { label: 'File Format', val: forensicResult.metadataSection?.fields?.fileFormat || 'Unknown' },
+              { label: 'Compression', val: forensicResult.metadataSection?.fields?.compression || 'None detected' },
+              { label: 'Integrity Hash', val: forensicResult.metadataSection?.fields?.hash || 'Not generated' }
+            ].map(f => (
+              <div key={f.label} className={`p-2 border rounded-xl ${isDark ? 'bg-slate-900/40 border-slate-800/60' : 'bg-slate-50 border-slate-200'}`}>
+                <p className="text-[8px] font-black uppercase text-slate-500">{f.label}</p>
+                <p className={`text-[10px] font-bold truncate mt-0.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{f.val}</p>
+              </div>
+            ))}
+          </div>
+        ))}
+
+        {renderV2Card('custody', 'SECTION 6: Chain of Custody', <Clock size={12} />, forensicResult.custodySection, (
+          <div className="space-y-3.5 mt-3 text-left">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {[
+                { label: 'Upload Time', val: forensicResult.custodySection?.fields?.uploadTime || forensicResult.timestamp },
+                { label: 'Uploaded By', val: forensicResult.custodySection?.fields?.uploadedBy || caseRole },
+                { label: 'Evidence ID', val: forensicResult.custodySection?.fields?.evidenceId || forensicResult.exhibitNumber },
+                { label: 'Custodian Hash', val: forensicResult.custodySection?.fields?.hash || 'Not generated' },
+                { label: 'Storage Status', val: forensicResult.custodySection?.fields?.storageStatus || 'Securely Stored' },
+                { label: 'Digital Signature', val: forensicResult.custodySection?.fields?.digitalSignature || 'ECDSA-Verified ✓' }
+              ].map(item => (
+                <div key={item.label} className={`p-2.5 rounded-xl border ${isDark ? 'bg-slate-900/40 border-slate-800/60' : 'bg-slate-50 border-slate-200'}`}>
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{item.label}</p>
+                  <p className={`text-[10px] font-bold mt-0.5 truncate ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{item.val}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2 border-t pt-3 border-slate-800/40">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-550 mb-2">Custody Audit Ledger Log</p>
+              {(forensicResult.chainOfCustody || []).map((log, index) => (
+                <div key={index} className={`flex items-start gap-2.5 p-2 border rounded-xl text-xs font-semibold ${isDark ? 'bg-slate-900/40 border-slate-850' : 'bg-slate-50 border-slate-202/60'}`}>
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0 mt-1.5 animate-pulse" />
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className={`leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-750'}`}>{log.event}</p>
+                    <p className="text-[8.5px] text-slate-500 font-bold uppercase mt-0.5">
+                      {log.time} • User: {log.user || 'Advocate'} • Location: {log.location || 'Terminal Workbench'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800/40 flex-wrap">
+              <input
+                type="text"
+                placeholder="Append custom custody event..."
+                value={customEvent}
+                onChange={e => setCustomEvent(e.target.value)}
+                className={`flex-1 border rounded-xl px-2.5 py-2 text-[11px] outline-none min-h-[44px] focus:border-indigo-500 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-white border-slate-250 text-slate-700'}`}
+              />
+              <button onClick={handleAddCustodyEvent} className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap min-h-[44px]">
+                Log Event
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {/* 5. AI Analysis (Summary, Observation, Recommendation, Verdict Cards) */}
+        {renderV2Card('summary', 'SECTION 2: AI Evidence Summary', <Brain size={12} />, forensicResult.summarySection)}
+        {renderV2Card('legal_observation', 'SECTION 9: Legal Observation', <Scale size={12} />, forensicResult.legalObservationSection)}
+        {renderV2Card('recommendation', 'SECTION 10: Lawyer Recommendation', <BookOpen size={12} />, forensicResult.lawyerRecommendationSection, (
+          <div className="space-y-1.5 mt-3 text-left">
+            {(forensicResult.lawyerRecommendationSection?.recommendationsList || []).map((rec, idx) => (
+              <div key={idx} className={`flex gap-2 text-xs font-semibold items-start ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                <Check size={12} className="text-indigo-400 shrink-0" />
+                <p>{rec}</p>
+              </div>
+            ))}
+          </div>
+        ))}
+        {renderV2Card('verdict', 'SECTION 11: Final Verdict', <CheckCircle2 size={12} />, forensicResult.finalVerdictSection)}
+
+        {/* 6. Court Readiness (Admissibility Card, Comparative Audit, Collapsible Comparison) */}
+        {renderV2Card('admissibility', 'SECTION 8: Court Admissibility', <Gavel size={12} />, forensicResult.admissibilitySection)}
+        
+        {forensicResult.comparativeAudit && (
+          <div className="space-y-6 mt-6 border-t pt-6 border-slate-800/40">
+            <div className={`border rounded-3xl p-5 shadow-xl space-y-5 text-left transition-all duration-555 ${isDark ? 'bg-[#0b0f19] border-indigo-500/20' : 'bg-slate-50 border-indigo-200'}`}>
+              <div className="flex items-center gap-2 border-b pb-3 border-slate-800/20">
+                <Scale className="text-indigo-400" size={18} />
+                <h3 className={`text-sm font-black uppercase tracking-widest ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  COMPARATIVE LEGAL AUDIT
+                </h3>
+              </div>
+
+              <div className={`p-4 rounded-2xl border ${isDark ? 'bg-[#0f162a] border-slate-800' : 'bg-white border-slate-202'} shadow-sm`}>
+                <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-3 border-b pb-2 border-slate-800/20">
+                  Comparative Audit Summary
+                </h4>
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-bold text-slate-500">
+                        <CheckCircle2 size={12} className="text-emerald-500" /> FIR Consistency
+                      </span>
+                      <span className={`font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        {forensicResult.comparativeAudit.consistencyScore?.firConsistency || 'Insufficient data'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-bold text-slate-500">
+                        <CheckCircle2 size={12} className="text-emerald-500" /> Complaint Match
+                      </span>
+                      <span className={`font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        {forensicResult.comparativeAudit.consistencyScore?.complaintConsistency || 'Insufficient data'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-bold text-slate-500">
+                        <CheckCircle2 size={12} className="text-emerald-500" /> Witness Support
+                      </span>
+                      <span className={`font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        {forensicResult.comparativeAudit.witnessComparison?.supported?.length > 0 ? 'Available' : 'None'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-bold text-slate-500">
+                        <CheckCircle2 size={12} className="text-emerald-500" /> Timeline
+                      </span>
+                      <span className={`font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        {forensicResult.comparativeAudit.timelineValidation?.status || 'Insufficient data'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-bold text-slate-500">
+                        <AlertTriangle size={12} className="text-amber-500" /> Contradictions
+                      </span>
+                      <span className={`font-black uppercase tracking-wider ${
+                        forensicResult.comparativeAudit.contradictionAnalysis?.length > 0 && forensicResult.comparativeAudit.contradictionAnalysis[0].observation !== "No material contradiction detected."
+                          ? 'text-rose-500' 
+                          : 'text-emerald-500'
+                      }`}>
+                        {forensicResult.comparativeAudit.contradictionAnalysis?.length > 0 && forensicResult.comparativeAudit.contradictionAnalysis[0].observation !== "No material contradiction detected."
+                          ? `${forensicResult.comparativeAudit.contradictionAnalysis.length} Flagged`
+                          : 'None'
+                      }
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-bold text-slate-500">
+                        <CheckCircle2 size={12} className="text-emerald-500" /> Corroboration
+                      </span>
+                      <span className={`font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                        {forensicResult.comparativeAudit.witnessComparison?.supported?.length > 0 ? 'Available' : 'None'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col justify-between p-4 rounded-xl border border-dashed border-indigo-500/20 bg-indigo-500/5">
+                    <div>
+                      <p className="text-[9px] font-black uppercase text-indigo-400 tracking-wider">Updated Court Readiness</p>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-2xl font-black text-indigo-400">
+                          {forensicResult.comparativeAudit.updatedCourtReadiness?.updatedScore || forensicResult.courtReadinessSection?.metrics?.courtReadinessScore || 75}/100
+                        </span>
+                        {forensicResult.comparativeAudit.updatedCourtReadiness?.previousScore && (
+                          <span className="text-[10px] text-slate-500 font-bold uppercase">
+                            (Was {forensicResult.comparativeAudit.updatedCourtReadiness.previousScore})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <p className="text-[8px] font-black uppercase text-slate-500 tracking-wider text-left">Adjustment Recommendation</p>
+                      <p className={`text-xs font-semibold leading-relaxed mt-0.5 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                        {forensicResult.comparativeAudit.updatedCourtReadiness?.reason || 'Suitable for preliminary court filing after routine verification.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 1. Overview Paragraph */}
+              <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900/40 border-slate-850' : 'bg-slate-50 border-slate-200'}`}>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">1. Comparative Legal Audit Overview</p>
+                <p className={`text-xs leading-relaxed font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  {forensicResult.comparativeAudit.overview}
+                </p>
+              </div>
+
+              {/* FIR Comparison */}
+              <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900/40 border-slate-850' : 'bg-slate-50 border-slate-200'}`}>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">2. FIR Comparison</p>
+                <p className={`text-xs leading-relaxed font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  {forensicResult.comparativeAudit.firComparison}
+                </p>
+              </div>
+
+              {/* Complaint Comparison */}
+              <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900/40 border-slate-850' : 'bg-slate-50 border-slate-200'}`}>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">3. Complaint Comparison</p>
+                <p className={`text-xs leading-relaxed font-semibold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  {forensicResult.comparativeAudit.complaintComparison}
+                </p>
+              </div>
+
+              {/* Witness Statement Corroboration */}
+              <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900/40 border-slate-850' : 'bg-slate-55 border-slate-200'}`}>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">4. Witness Statement Corroboration</p>
+                <div className="space-y-2">
+                  <span className="text-[8px] font-black text-slate-500 uppercase block">Supported Witnesses</span>
+                  <div className="flex flex-wrap gap-1.5 font-bold">
+                    {forensicResult.comparativeAudit.witnessComparison?.supported?.map((w, idx) => (
+                      <span key={idx} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-lg border border-emerald-200">
+                        {w}
+                      </span>
+                    )) || <span className="text-[10px] italic text-slate-500 font-semibold">None</span>}
+                  </div>
+                  <span className="text-[8px] font-black text-slate-500 uppercase block mt-2">Contradicted Witnesses</span>
+                  <div className="flex flex-wrap gap-1.5 font-bold">
+                    {forensicResult.comparativeAudit.witnessComparison?.contradicted?.map((w, idx) => (
+                      <span key={idx} className="px-2 py-0.5 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-lg border border-rose-200">
+                        {w}
+                      </span>
+                    )) || <span className="text-[10px] italic text-slate-500 font-semibold">None</span>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Timeline Validation */}
+              <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900/40 border-slate-855' : 'bg-slate-50 border-slate-200'}`}>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">5. Timeline Validation Ledger</p>
+                <div className="space-y-2 text-xs font-semibold">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 font-bold">Ledger Match Status</span>
+                    <span className={`${forensicResult.comparativeAudit.timelineValidation?.status?.toLowerCase() === 'consistent' ? 'text-emerald-500' : 'text-rose-500'} font-black uppercase`}>
+                      {forensicResult.comparativeAudit.timelineValidation?.status}
+                    </span>
+                  </div>
+                  <div className="mt-1 pt-1.5 border-t border-slate-800/10">
+                    <span className="text-[8px] font-black text-slate-505 uppercase block">Timeline Narrative Summary</span>
+                    <p className={`text-xs font-semibold leading-relaxed mt-0.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      {forensicResult.comparativeAudit.timelineValidation?.summary}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 10. Updated Court Readiness */}
+              <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900/40 border-slate-855' : 'bg-slate-50 border-slate-200'}`}>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">10. Updated Court Readiness</p>
+                <div className="flex items-center gap-4 text-xs font-black">
+                  <span className="text-slate-500 font-bold uppercase tracking-wider">Previous Court Readiness</span>
+                  <span className={`${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    {forensicResult.comparativeAudit.updatedCourtReadiness?.previousScore || forensicResult.courtReadinessSection?.metrics?.courtReadinessScore || 75}
+                  </span>
+                  <span className="text-slate-400">↓</span>
+                  <span className="text-slate-500 font-bold uppercase tracking-wider">Updated Court Readiness</span>
+                  <span className="text-indigo-400 text-lg">
+                    {forensicResult.comparativeAudit.updatedCourtReadiness?.updatedScore || 88}
+                  </span>
+                </div>
+                <div className="mt-2.5 pt-2 border-t border-slate-800/10">
+                  <span className="text-[8px] font-black text-slate-500 uppercase block">Adjustment Rationale</span>
+                  <p className={`text-xs font-semibold mt-0.5 leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                    {forensicResult.comparativeAudit.updatedCourtReadiness?.reason}
+                  </p>
+                </div>
+              </div>
+
+              {/* 11. Final Comparative Opinion */}
+              <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-900/40 border-slate-850' : 'bg-slate-50 border-slate-200'}`}>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">11. Final Comparative Opinion</p>
+                <p className={`text-xs font-semibold leading-relaxed italic ${isDark ? 'text-slate-300' : 'text-slate-750'}`}>
+                  "{forensicResult.comparativeAudit.finalComparativeOpinion}"
+                </p>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* Collapsible Advanced Comparison block */}
+        <div className={`border rounded-3xl p-5 shadow-xl transition-all duration-555 ${isDark ? 'bg-[#0f162a] border-slate-800' : 'bg-white border-slate-202'}`}>
+          <button 
+            type="button"
+            onClick={() => setIsComparisonExpanded(!isComparisonExpanded)}
+            className="w-full flex items-center justify-between min-h-[44px]"
+          >
+            <div className="flex items-center gap-2">
+              <Scale className="text-indigo-400" size={16} />
+              <h3 className={`text-xs font-black uppercase tracking-widest text-left ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Advanced Comparison</h3>
+            </div>
+            <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg border tracking-wider transition-colors ${
+              isComparisonExpanded 
+                ? (isDark ? 'bg-slate-850 border-slate-750 text-slate-300' : 'bg-slate-100 border-slate-300 text-slate-700')
+                : (isDark ? 'bg-indigo-950/20 border-indigo-500/20 text-indigo-400' : 'bg-indigo-50 border-indigo-200 text-indigo-700')
+            }`}>
+              {isComparisonExpanded ? 'Hide' : 'Expand'}
+            </span>
+          </button>
+
+          {isComparisonExpanded && (
+            <div className="mt-4 pt-4 border-t border-slate-800/40 space-y-4 animate-[fadeIn_0.3s_ease]">
+              <div className="grid grid-cols-1 gap-3 text-left">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-505">Compare with FIR</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Paste FIR facts..."
+                    value={firContent}
+                    onChange={e => setFirContent(e.target.value)}
+                    className={`w-full border rounded-xl px-2.5 py-2 text-[11px] outline-none resize-none min-h-[60px] focus:border-indigo-500 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-505">Compare with Complaint</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Paste complaint..."
+                    value={complaintContent}
+                    onChange={e => setComplaintContent(e.target.value)}
+                    className={`w-full border rounded-xl px-2.5 py-2 text-[11px] outline-none resize-none min-h-[60px] focus:border-indigo-500 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 text-left">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-505">Compare with Witness Statements</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Paste statements..."
+                    value={witnessStatements}
+                    onChange={e => setWitnessStatements(e.target.value)}
+                    className={`w-full border rounded-xl px-2.5 py-2 text-[11px] outline-none resize-none min-h-[60px] focus:border-indigo-500 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-505">Compare with Previous Evidence</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Paste evidence summary..."
+                    value={previousEvidence}
+                    onChange={e => setPreviousEvidence(e.target.value)}
+                    className={`w-full border rounded-xl px-2.5 py-2 text-[11px] outline-none resize-none min-h-[60px] focus:border-indigo-500 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-505">Compare with Timeline</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Paste timeline details..."
+                    value={timelineContent}
+                    onChange={e => setTimelineContent(e.target.value)}
+                    className={`w-full border rounded-xl px-2.5 py-2 text-[11px] outline-none resize-none min-h-[60px] focus:border-indigo-500 ${isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-300 text-slate-700'}`}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-4 pt-3 border-t border-slate-800/20">
+                <p className="text-[9px] text-slate-500 font-black uppercase text-left tracking-wider w-full">
+                  * Seed case information above (FIR, Complaint, Timeline) and execute a comparative cross-referencing audit to detect hidden contradictions.
+                </p>
+                <button
+                  type="button"
+                  onClick={runComparativeAudit}
+                  disabled={isComparing || isAuditing}
+                  className={`w-full px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-wider transition-all min-h-[44px] shadow-md flex items-center justify-center gap-2 shrink-0 ${
+                    isDark 
+                      ? (isComparing || isAuditing ? 'bg-slate-800 text-slate-500' : 'bg-indigo-600 hover:bg-indigo-500 text-slate-100 active:scale-95')
+                      : (isComparing || isAuditing ? 'bg-slate-200 text-slate-400' : 'bg-indigo-600 hover:bg-indigo-700 text-white active:scale-95')
+                  }`}
+                >
+                  {isComparing ? (
+                    <>
+                      <RefreshCw size={11} className="animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Scale size={11} />
+                      Run Comparative Audit
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 7. Export Actions Card */}
+        {renderMobileExportActions()}
+      </div>
+    );
+  };
+
+  const renderLibraryDrawerModal = () => {
+    if (!historyVisible) return null;
+    return (
+      <div className="fixed inset-0 z-[120000] flex items-end sm:items-center justify-center sm:p-4">
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setHistoryVisible(false)} />
+        <div className={`relative border rounded-t-3xl sm:rounded-[32px] max-w-lg w-full h-[90%] sm:h-auto max-h-[100%] sm:max-h-[80%] flex flex-col overflow-hidden shadow-2xl p-4 sm:p-6 bg-white border-slate-205`}>
+          <div className="flex items-center justify-between border-b pb-4 shrink-0 border-slate-200">
+            <div className="text-left">
+              <h3 className="text-md font-black uppercase tracking-wider flex items-center gap-1.5 text-slate-850">
+                <Folder size={16} className="text-indigo-600" /> Evidence Library
+              </h3>
+              <p className="text-[10px] text-slate-500 mt-0.5">Stored evidence records for the active case</p>
+            </div>
+            <button onClick={() => setHistoryVisible(false)} className="p-1.5 hover:bg-slate-100 rounded-full">
+              <X size={18} className="text-slate-450" />
+            </button>
+          </div>
+
+          {/* Search filter input */}
+          <div className="flex items-center border rounded-xl px-3 py-2 mt-4 shrink-0 bg-slate-55 border-slate-250 text-slate-755">
+            <Search size={14} className="text-slate-500 mr-2" />
+            <input 
+              type="text"
+              placeholder="Search case evidence..."
+              className="w-full bg-transparent border-none text-xs font-bold outline-none focus:ring-0 focus:outline-none"
+              value={historySearch}
+              onChange={e => setHistorySearch(e.target.value)}
+            />
+          </div>
+
+          {/* List */}
+          <div className="flex-1 overflow-y-auto mt-4 space-y-2.5 custom-scrollbar">
+            {filteredHistory.map(item => {
+              const status = getAnalysisStatus(item);
+              return (
+                <div key={item.id} className="flex justify-between items-start p-4 border rounded-2xl shadow-sm hover:border-indigo-500/30 bg-slate-55 border-slate-200/80 transition-all text-left">
+                  <button
+                    onClick={() => {
+                      const cleanedItem = cleanObjectStrings(item);
+                      setForensicResult(cleanedItem);
+                      setOcrText(cleanedItem.ocrText);
+                      setVisibleSections([
+                        'overview',
+                        'summary',
+                        'metadata',
+                        'integrity',
+                        'ocr',
+                        'custody',
+                        'contradiction',
+                        'risk',
+                        'admissibility',
+                        'legal_observation',
+                        'recommendation',
+                        'readiness',
+                        'verdict'
+                      ]);
+                      setHistoryVisible(false);
+                      toast.success(`Loaded Case Evidence: ${item.title}`);
+                    }}
+                    className="flex-1 text-left min-w-0"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] text-slate-550 font-bold uppercase">{item.timestamp}</span>
+                    </div>
+                    <h4 className="text-xs font-black mt-1.5 truncate text-slate-855">{item.title}</h4>
+                    <p className="text-[10px] text-slate-550 font-bold mt-1 uppercase tracking-wider">{item.evidenceType}</p>
+                    
+                    <div className="flex flex-wrap items-center gap-2 mt-3.5 pt-2.5 border-t border-slate-800/10">
+                      <span className={`px-2 py-0.5 text-[8.5px] font-black uppercase rounded border ${status.color}`}>
+                        {status.label === 'Analysis Complete' ? 'Verified' : status.label}
+                      </span>
+                      <span className="px-2 py-0.5 text-[8.5px] font-black rounded border bg-indigo-50 border-indigo-200 text-indigo-700">
+                        Court Readiness: {item.comparativeAudit?.updatedCourtReadiness?.updatedScore || item.stats?.verificationScore || 75}/100
+                      </span>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={() => deleteHistoryItem(item.id)}
+                    className="p-1.5 hover:bg-rose-500/10 hover:border-rose-500/30 rounded-lg text-rose-500 transition-colors shrink-0 ml-2"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              );
+            })}
+
+            {filteredHistory.length === 0 && (
+              <div className="text-center py-10">
+                <Folder size={32} className="mx-auto text-slate-800" />
+                <p className="text-xs font-semibold text-slate-550 mt-2">No archived records found.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLoadingCard = () => {
+    return (
+      <div className={`border rounded-3xl p-6 shadow-xl flex flex-col gap-5 min-h-[400px] transition-all duration-550 ${isDark ? 'bg-[#0f162a] border-slate-800' : 'bg-white border-slate-202'}`}>
+        <div className="flex items-center gap-3">
+          <div className="relative flex items-center justify-center w-10 h-10">
+            <div className="absolute inset-0 rounded-full bg-indigo-500/20 animate-ping" />
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? 'bg-indigo-950/60 border border-indigo-500/30' : 'bg-indigo-50 border border-indigo-202'}`}>
+              <Cpu className="text-indigo-400 animate-pulse" size={18} />
+            </div>
+          </div>
+          <div className="text-left">
+            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">AISA Forensic Engine Active</p>
+            <p className={`text-xs font-bold mt-0.5 ${isDark ? 'text-slate-350' : 'text-slate-700'}`}>
+              {LOADING_STEPS[Math.min(loadingStep, LOADING_STEPS.length - 1)]}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2.5">
+          {LOADING_STEPS.map((step, i) => (
+            <div
+              key={i}
+              className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-550 ${
+                i < loadingStep
+                  ? (isDark ? 'bg-emerald-955/20 border-emerald-500/20' : 'bg-emerald-50 border-emerald-250')
+                  : i === loadingStep
+                  ? (isDark ? 'bg-indigo-950/30 border-indigo-500/30' : 'bg-indigo-50 border-indigo-202')
+                  : (isDark ? 'bg-slate-900/40 border-slate-800/40' : 'bg-slate-50 border-slate-202/60')
+              }`}
+              style={{ opacity: i <= loadingStep ? 1 : 0.35, transition: 'all 0.5s ease' }}
+            >
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                i < loadingStep ? 'bg-emerald-500' : i === loadingStep ? 'bg-indigo-500 animate-pulse' : (isDark ? 'bg-slate-800' : 'bg-slate-200')
+              }`}>
+                {i < loadingStep ? (
+                  <CheckCircle2 size={12} className="text-white" />
+                ) : i === loadingStep ? (
+                  <RefreshCw size={10} className="text-white animate-spin" />
+                ) : (
+                  <span className="text-[8px] font-black text-slate-550">{i + 1}</span>
+                )}
+              </div>
+              <span className={`text-xs font-black ${
+                i < loadingStep ? (isDark ? 'text-emerald-400' : 'text-emerald-700')
+                : i === loadingStep ? (isDark ? 'text-indigo-300' : 'text-indigo-700')
+                : 'text-slate-505'
+              }`}>{step}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className={`rounded-full h-1.5 overflow-hidden ${isDark ? 'bg-slate-850' : 'bg-slate-200'}`}>
+          <div
+            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-700"
+            style={{ width: `${Math.round((loadingStep / (LOADING_STEPS.length - 1)) * 100)}%` }}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  if (isMobile) {
+    return (
+      <div className={`flex-1 flex flex-col w-full h-auto min-h-0 ${isDark ? 'bg-[#070b16] text-slate-100' : 'bg-slate-50 text-slate-800'} overflow-x-hidden overflow-y-auto`}>
+        {renderHeader()}
+        
+        <div className="flex-1 px-3 py-4 flex flex-col gap-5 w-full">
+          {prefillBanner && (
+            <div className={`p-4 rounded-2xl flex gap-3 border ${isDark ? 'bg-emerald-955/20 border-emerald-500/30' : 'bg-emerald-50 border-emerald-202'}`}>
+              <CheckCircle2 className="text-emerald-500 shrink-0 mt-0.5" size={16} />
+              <div className="flex-1 min-w-0 text-left">
+                <p className={`text-xs font-black ${isDark ? 'text-emerald-405' : 'text-emerald-800'}`}>Prefill Context Staged: {prefillBanner.caseTitle}</p>
+                <p className="text-[10px] text-slate-500 mt-1 font-medium">{prefillBanner.docCount} records available inside linked workspace.</p>
+              </div>
+              <button onClick={() => setPrefillBanner(null)} className="text-slate-500 hover:text-slate-355 min-h-[32px] min-w-[32px] flex items-center justify-center">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {isAuditing ? (
+            <div className="w-full">
+              {renderLoadingCard()}
+            </div>
+          ) : (
+            <div className="w-full space-y-4">
+              {renderStagingArea()}
+              {renderMobileResults()}
+            </div>
+          )}
+        </div>
+        
+        {/* Render Library Drawer/Modal */}
+        {renderLibraryDrawerModal()}
+      </div>
+    );
+  }
+
   return (
     <div className={`flex-1 flex flex-col w-full h-full min-h-0 ${isDark ? 'bg-[#070b16] text-slate-100' : 'bg-slate-50 text-slate-800'} overflow-x-hidden overflow-y-auto lg:overflow-hidden`}>
+
       
       {/* ── Redesigned Header ── */}
       <div className={`flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 py-3 md:py-4 border-b bg-white border-slate-200 text-slate-900 shadow-sm shrink-0 gap-3 md:gap-4`}>

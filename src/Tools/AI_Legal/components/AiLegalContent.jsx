@@ -4,7 +4,8 @@ import {
   ChevronRight, Shield, Clock, CheckCircle, TrendingUp, FileSearch, 
   Bookmark, Share2, Download, Plus, History, Filter, Sparkles,
   Gavel, Landmark, ScrollText, FileScan, Swords, Target, FileCheck, Waypoints,
-  Folder, Library, Fingerprint, Radar, Network, MessageCircle
+  Folder, Library, Fingerprint, Radar, Network, MessageCircle,
+  FolderKanban, BookOpen, ScanText, BarChart3, ShieldCheck, Workflow, NotebookPen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Transition, Dialog } from '@headlessui/react';
@@ -18,16 +19,7 @@ import LegalDashboard from './LegalDashboard';
 import HearingManagement from './HearingManagement';
 import ComplianceCenter from './ComplianceCenter';
 import CaseContextModal from './CaseContextModal';
-import iconMyCase from '../assets/icon_my_case.png';
-import iconDraftMaker from '../assets/icon_draft_maker.png';
-import iconArgumentBuilder from '../assets/icon_argument_builder.png';
-import iconLegalPrecedent from '../assets/icon_legal_precedent.png';
-import iconEvidenceAnalysis from '../assets/icon_evidence_analysis.png';
-import iconContractReview from '../assets/icon_contract_review.png';
-import iconCasePredictor from '../assets/icon_case_predictor.png';
-import iconStrategyEngine from '../assets/icon_strategy_engine.png';
-import headerLogo3d from '../assets/header_logo_3d.png';
-import heroGeneralChat3d from '../assets/hero_general_chat_3d.png';
+
 
 const ArrowLeft = ({ size = 20, className = '' }) => (
   <ChevronRight size={size} className={`transform rotate-180 ${className}`} />
@@ -169,8 +161,7 @@ const AiLegalContent = ({
   const legalSubTools = useMemo(() => [
     {
       id: 'legal_my_case',
-      iconImg: iconMyCase,
-      icon: <Briefcase size={28} strokeWidth={2} />,
+      icon: <FolderKanban size={26} strokeWidth={1.8} />,
       iconBg: '#EEF2FF',
       iconColor: '#5B5FEF',
       title: 'My Case',
@@ -187,10 +178,9 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_research_assistant',
-      iconImg: iconLegalPrecedent,
-      icon: <Landmark size={28} strokeWidth={2} />,
-      iconBg: '#E0F2FE',
-      iconColor: '#0284C7',
+      icon: <Landmark size={26} strokeWidth={1.8} />,
+      iconBg: '#EEF2FF',
+      iconColor: '#5B5FEF',
       title: 'Legal Precedent',
       desc: 'Searchable Case Laws & Citation Generator',
       prompt: 'Find legal precedents for: ',
@@ -205,10 +195,9 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_draft_maker',
-      iconImg: iconDraftMaker,
-      icon: <ScrollText size={28} strokeWidth={2} />,
-      iconBg: '#F3E8FF',
-      iconColor: '#7C3AED',
+      icon: <NotebookPen size={26} strokeWidth={1.8} />,
+      iconBg: '#EEF2FF',
+      iconColor: '#5B5FEF',
       title: 'Draft Maker',
       desc: 'FIR, Affidavit & Agreement Architect',
       prompt: 'I need to draft a legal document for: ',
@@ -223,10 +212,9 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_evidence_checker',
-      iconImg: iconEvidenceAnalysis,
-      icon: <FileSearch size={28} strokeWidth={2} />,
-      iconBg: '#ECFDF5',
-      iconColor: '#059669',
+      icon: <ScanText size={26} strokeWidth={1.8} />,
+      iconBg: '#EEF2FF',
+      iconColor: '#5B5FEF',
       title: 'Evidence Analysis',
       desc: 'OCR Scanning & Authenticity Scoring',
       prompt: 'Analyze this evidence for admissibility and risk: ',
@@ -241,10 +229,9 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_argument_builder',
-      iconImg: iconArgumentBuilder,
-      icon: <Gavel size={28} strokeWidth={2} />,
-      iconBg: '#FCE7F3',
-      iconColor: '#DB2777',
+      icon: <Gavel size={26} strokeWidth={1.8} />,
+      iconBg: '#EEF2FF',
+      iconColor: '#5B5FEF',
       title: 'Argument Builder',
       desc: 'Courtroom-Ready Arguments & Counterpoints',
       prompt: 'Help me build a courtroom argument for: ',
@@ -259,10 +246,9 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_case_predictor',
-      iconImg: iconCasePredictor,
-      icon: <Target size={28} strokeWidth={2} />,
-      iconBg: '#ECFEFF',
-      iconColor: '#0891B2',
+      icon: <Target size={26} strokeWidth={1.8} />,
+      iconBg: '#EEF2FF',
+      iconColor: '#5B5FEF',
       title: 'Case Predictor',
       desc: 'Success Probability & AI Risk Analysis',
       prompt: 'Predict the outcome for this legal case: ',
@@ -277,10 +263,9 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_contract_analyzer',
-      iconImg: iconContractReview,
-      icon: <FileCheck size={28} strokeWidth={2} />,
-      iconBg: '#FEF3C7',
-      iconColor: '#D97706',
+      icon: <FileCheck size={26} strokeWidth={1.8} />,
+      iconBg: '#EEF2FF',
+      iconColor: '#5B5FEF',
       title: 'Contract Review',
       desc: 'Clause Detection & Risky Term Alerts',
       prompt: 'Please analyze this contract for: ',
@@ -295,10 +280,9 @@ const AiLegalContent = ({
     },
     {
       id: 'legal_strategy_engine',
-      iconImg: iconStrategyEngine,
-      icon: <Network size={28} strokeWidth={2} />,
+      icon: <Waypoints size={26} strokeWidth={1.8} />,
       iconBg: '#EEF2FF',
-      iconColor: '#4F46E5',
+      iconColor: '#5B5FEF',
       title: 'Strategy Engine',
       desc: 'Litigation Roadmap & Tactical Suggestions',
       prompt: 'Develop a legal strategy for: ',
@@ -312,6 +296,7 @@ const AiLegalContent = ({
       sampleOutput: 'Roadmap: Step 1 - Filing Interlocutory Application. Step 2 - Notice to Respondent.'
     }
   ], []);
+
 
   const loadSavedTools = useCallback(async () => {
     try {
@@ -754,7 +739,15 @@ const AiLegalContent = ({
           >
             <ArrowLeft className="text-slate-600 dark:text-slate-400" />
           </button>
-          <img src={headerLogo3d} alt="AI Legal Logo" className="w-10 h-10 sm:w-11 sm:h-11 rounded-[14px] object-contain shrink-0" />
+          <div
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-[14px] flex items-center justify-center shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)',
+              boxShadow: '0 4px 14px rgba(99,102,241,0.30)'
+            }}
+          >
+            <Scale size={20} strokeWidth={1.8} className="text-white" />
+          </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">AI Legal™</h1>
             <p className="text-[10px] sm:text-[11px] text-[#8B95A7] font-semibold uppercase tracking-[0.2em] mt-1 flex items-center gap-1.5">
@@ -792,8 +785,15 @@ const AiLegalContent = ({
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[200%] transition-transform duration-[2.5s] ease-in-out" />
             <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
               <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 w-full sm:w-auto">
-                <div className="w-11 h-11 sm:w-[52px] sm:h-[52px] rounded-xl sm:rounded-[14px] flex items-center justify-center shrink-0 transition-all duration-250 ease-out group-hover:-translate-y-1 group-hover:brightness-105 overflow-hidden mt-0.5 sm:mt-0">
-                  <img src={heroGeneralChat3d} alt="General Legal Chat" className="w-full h-full object-cover rounded-xl sm:rounded-[14px]" />
+                <div
+                  className="w-[52px] h-[52px] sm:w-[56px] sm:h-[56px] rounded-[16px] sm:rounded-[18px] flex items-center justify-center shrink-0 transition-all duration-300 ease-out group-hover:-translate-y-1 mt-0.5 sm:mt-0"
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.18)',
+                    border: '1px solid rgba(255,255,255,0.30)',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.12)'
+                  }}
+                >
+                  <MessageCircle size={26} strokeWidth={1.8} className="text-white" />
                 </div>
                 <div className="space-y-1 flex-1 min-w-0">
                   <div className="hidden sm:flex flex-wrap items-center gap-2">
@@ -863,20 +863,17 @@ const AiLegalContent = ({
 
                     {/* Desktop Layout Wrapper */}
                     <div className="hidden sm:block">
-                      {/* Icon */}
-                      <div 
-                        className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-4 transition-all duration-250 ease-out group-hover:-translate-y-1 group-hover:brightness-105 shrink-0 overflow-hidden"
+                      {/* Premium Icon Container */}
+                      <div
+                        className="w-[56px] h-[56px] rounded-[18px] flex items-center justify-center mb-4 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:shadow-[0_8px_24px_rgba(99,102,241,0.22)] shrink-0"
                         style={{
-                          backgroundColor: tool.iconBg || '#EEF2FF',
-                          color: tool.iconColor || '#5B5FEF',
-                          boxShadow: '0 6px 18px rgba(110,75,255,.12)'
+                          backgroundColor: '#F5F4FF',
+                          color: '#5B5FEF',
+                          border: '1px solid rgba(99,102,241,0.12)',
+                          boxShadow: '0 4px 14px rgba(99,102,241,0.10)'
                         }}
                       >
-                        {tool.iconImg ? (
-                          <img src={tool.iconImg} alt={tool.title} className="w-full h-full object-cover rounded-[14px]" />
-                        ) : (
-                          tool.icon
-                        )}
+                        {tool.icon}
                       </div>
 
                       {/* Info */}
@@ -900,18 +897,16 @@ const AiLegalContent = ({
                     <div className="block sm:hidden flex items-start justify-between gap-3 w-full pr-4">
                       {/* Left Column */}
                       <div className="flex-1 min-w-0 flex items-start gap-3">
-                        <div 
-                          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
+                        <div
+                          className="w-11 h-11 rounded-[14px] flex items-center justify-center shrink-0 transition-all duration-300"
                           style={{
-                            backgroundColor: tool.iconBg || '#EEF2FF',
-                            color: tool.iconColor || '#5B5FEF',
+                            backgroundColor: '#F5F4FF',
+                            color: '#5B5FEF',
+                            border: '1px solid rgba(99,102,241,0.12)',
+                            boxShadow: '0 2px 8px rgba(99,102,241,0.10)'
                           }}
                         >
-                          {tool.iconImg ? (
-                            <img src={tool.iconImg} alt={tool.title} className="w-full h-full object-cover rounded-xl" />
-                          ) : (
-                            tool.icon
-                          )}
+                          {tool.icon}
                         </div>
                         <div className="flex-1 min-w-0 space-y-1">
                           <h4 className="font-bold text-base text-slate-900 dark:text-white leading-tight truncate">
