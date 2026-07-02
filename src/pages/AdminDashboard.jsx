@@ -227,7 +227,7 @@ const UsersTab = () => {
             toast.error('Please select a plan');
             return;
         }
-        
+
         setIsUpgrading(userId);
         try {
             const response = await fetch(`${API}/admin/manual-upgrade`, {
@@ -304,11 +304,10 @@ const UsersTab = () => {
                                 {user.isBlocked && (
                                     <span className="px-2 py-0.5 rounded-md bg-red-500/10 text-red-500 text-[10px] font-bold uppercase">{t('block')}</span>
                                 )}
-                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
-                                    user.planName?.toLowerCase().includes('pro') ? 'bg-amber-500/10 text-amber-500' : 
-                                    user.planName?.toLowerCase().includes('founder') ? 'bg-purple-500/10 text-purple-500' : 
-                                    'bg-primary/10 text-primary'
-                                }`}>
+                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${user.planName?.toLowerCase().includes('pro') ? 'bg-amber-500/10 text-amber-500' :
+                                        user.planName?.toLowerCase().includes('founder') ? 'bg-purple-500/10 text-purple-500' :
+                                            'bg-primary/10 text-primary'
+                                    }`}>
                                     {user.planName || user.role || 'Free Plan'}
                                 </span>
                             </div>
@@ -914,7 +913,7 @@ const ToolLimitTab = () => {
                                         </td>
                                         {editedPlans.map(plan => {
                                             const val = plan[item.field];
-                                            
+
                                             return (
                                                 <td key={plan._id} className="p-4 text-center">
                                                     {item.type === 'boolean' && (
@@ -1252,9 +1251,9 @@ const LegalPagesTab = () => {
                 const isSubtitle = !isBulletOrList && !isMetaInfoLine && ((line.length < 100 && (line.endsWith(':') || !line.endsWith('.'))) || /^###\s+/.test(line));
 
                 if (isSubtitle && !line.includes('http')) {
-                    currentSection.content.push({ 
-                        subtitle: line.replace(/^#+\s*/, '').replace(/:$/, '').trim(), 
-                        text: '' 
+                    currentSection.content.push({
+                        subtitle: line.replace(/^#+\s*/, '').replace(/:$/, '').trim(),
+                        text: ''
                     });
                 } else {
                     if (currentSection.content.length === 0) {
@@ -1415,7 +1414,7 @@ const LegalPagesTab = () => {
                                         >
                                             <Trash2 className="w-3.5 h-3.5" />
                                         </button>
-                                        
+
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
@@ -1481,10 +1480,10 @@ const KnowledgeBaseTab = () => {
 // CHAT SESSIONS TAB
 // ═══════════════════════════════
 const STATUS_META = {
-    active:    { label: 'Active',    color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
+    active: { label: 'Active', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
     completed: { label: 'Completed', color: 'bg-green-500/15 text-green-400 border-green-500/30' },
     abandoned: { label: 'Abandoned', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
-    failed:    { label: 'Failed',    color: 'bg-red-500/15 text-red-400 border-red-500/30' },
+    failed: { label: 'Failed', color: 'bg-red-500/15 text-red-400 border-red-500/30' },
 };
 
 const MODE_LABELS = {
@@ -1695,68 +1694,68 @@ const ChatSessionsTab = () => {
                     {/* Filters row - wraps on mobile */}
                     <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto items-end">
 
-                    {/* Status */}
-                    <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
-                        <label className="text-[10px] font-bold text-subtext uppercase tracking-wider">Status</label>
-                        <select
-                            value={filterStatus}
-                            onChange={e => setFilterStatus(e.target.value)}
-                            className="bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-maintext outline-none focus:border-primary/50 transition-all"
-                        >
-                            <option value="">All Statuses</option>
-                            <option value="active">Active</option>
-                            <option value="completed">Completed</option>
-                            <option value="abandoned">Abandoned</option>
-                            <option value="failed">Failed</option>
-                        </select>
-                    </div>
+                        {/* Status */}
+                        <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
+                            <label className="text-[10px] font-bold text-subtext uppercase tracking-wider">Status</label>
+                            <select
+                                value={filterStatus}
+                                onChange={e => setFilterStatus(e.target.value)}
+                                className="bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-maintext outline-none focus:border-primary/50 transition-all"
+                            >
+                                <option value="">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="completed">Completed</option>
+                                <option value="abandoned">Abandoned</option>
+                                <option value="failed">Failed</option>
+                            </select>
+                        </div>
 
-                    {/* Mode */}
-                    <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
-                        <label className="text-[10px] font-bold text-subtext uppercase tracking-wider">Mode</label>
-                        <select
-                            value={filterMode}
-                            onChange={e => setFilterMode(e.target.value)}
-                            className="bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-maintext outline-none focus:border-primary/50 transition-all"
-                        >
-                            <option value="">All Modes</option>
-                            <option value="NORMAL_CHAT">Normal Chat</option>
-                            <option value="web_search">Web Search</option>
-                            <option value="DEEP_SEARCH">Deep Search</option>
-                            <option value="CODE_WRITER">Code Writer</option>
-                            <option value="LEGAL_TOOLKIT">AI Legal</option>
-                            <option value="IMAGE_GENERATION">Generate Image</option>
-                            <option value="VIDEO_GENERATION">Generate Video</option>
-                            <option value="AUDIO_CONVERT">Convert to Audio</option>
-                            <option value="DOCUMENT_CONVERT">Convert Documents</option>
-                            <option value="IMAGE_EDIT">Edit Image</option>
-                            <option value="CASHFLOW">AI CashFlow</option>
-                        </select>
-                    </div>
+                        {/* Mode */}
+                        <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
+                            <label className="text-[10px] font-bold text-subtext uppercase tracking-wider">Mode</label>
+                            <select
+                                value={filterMode}
+                                onChange={e => setFilterMode(e.target.value)}
+                                className="bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-maintext outline-none focus:border-primary/50 transition-all"
+                            >
+                                <option value="">All Modes</option>
+                                <option value="NORMAL_CHAT">Normal Chat</option>
+                                <option value="web_search">Web Search</option>
+                                <option value="DEEP_SEARCH">Deep Search</option>
+                                <option value="CODE_WRITER">Code Writer</option>
+                                <option value="LEGAL_TOOLKIT">AI Legal</option>
+                                <option value="IMAGE_GENERATION">Generate Image</option>
+                                <option value="VIDEO_GENERATION">Generate Video</option>
+                                <option value="AUDIO_CONVERT">Convert to Audio</option>
+                                <option value="DOCUMENT_CONVERT">Convert Documents</option>
+                                <option value="IMAGE_EDIT">Edit Image</option>
+                                <option value="CASHFLOW">AI CashFlow</option>
+                            </select>
+                        </div>
 
-                    {/* Date From */}
-                    <div className="flex flex-col gap-1 flex-1 min-w-[110px]">
-                        <label className="text-[10px] font-bold text-subtext uppercase tracking-wider">From</label>
-                        <input
-                            type="date"
-                            value={dateFrom}
-                            onChange={e => setDateFrom(e.target.value)}
-                            className="bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-maintext outline-none focus:border-primary/50 transition-all"
-                        />
-                    </div>
+                        {/* Date From */}
+                        <div className="flex flex-col gap-1 flex-1 min-w-[110px]">
+                            <label className="text-[10px] font-bold text-subtext uppercase tracking-wider">From</label>
+                            <input
+                                type="date"
+                                value={dateFrom}
+                                onChange={e => setDateFrom(e.target.value)}
+                                className="bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-maintext outline-none focus:border-primary/50 transition-all"
+                            />
+                        </div>
 
-                    {/* Date To */}
-                    <div className="flex flex-col gap-1 flex-1 min-w-[110px]">
-                        <label className="text-[10px] font-bold text-subtext uppercase tracking-wider">To</label>
-                        <input
-                            type="date"
-                            value={dateTo}
-                            onChange={e => setDateTo(e.target.value)}
-                            className="bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-maintext outline-none focus:border-primary/50 transition-all"
-                        />
-                    </div>
+                        {/* Date To */}
+                        <div className="flex flex-col gap-1 flex-1 min-w-[110px]">
+                            <label className="text-[10px] font-bold text-subtext uppercase tracking-wider">To</label>
+                            <input
+                                type="date"
+                                value={dateTo}
+                                onChange={e => setDateTo(e.target.value)}
+                                className="bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10 rounded-xl px-3 py-2.5 text-sm text-maintext outline-none focus:border-primary/50 transition-all"
+                            />
+                        </div>
 
-                    {/* Clear */}
+                        {/* Clear */}
                     </div>
                     {(search || filterStatus || filterMode || dateFrom || dateTo) && (
                         <button
@@ -1947,17 +1946,19 @@ const ChatSessionsTab = () => {
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-5 border-b border-white/10">
                                         {[
                                             { label: 'User', value: selectedSession.userName || 'Guest' },
-                                            { label: 'Email', value: selectedSession.userEmail ? (
-                                                <div className="flex items-center justify-between gap-1">
-                                                    <span>{selectedSession.userEmail}</span>
-                                                    <button
-                                                        onClick={() => handleOpenMailModal(selectedSession.userEmail)}
-                                                        className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/20 hover:bg-primary/30 text-primary text-[9px] font-bold uppercase transition-all"
-                                                    >
-                                                        <Mail className="w-2.5 h-2.5" /> Send
-                                                    </button>
-                                                </div>
-                                            ) : '—' },
+                                            {
+                                                label: 'Email', value: selectedSession.userEmail ? (
+                                                    <div className="flex items-center justify-between gap-1">
+                                                        <span>{selectedSession.userEmail}</span>
+                                                        <button
+                                                            onClick={() => handleOpenMailModal(selectedSession.userEmail)}
+                                                            className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/20 hover:bg-primary/30 text-primary text-[9px] font-bold uppercase transition-all"
+                                                        >
+                                                            <Mail className="w-2.5 h-2.5" /> Send
+                                                        </button>
+                                                    </div>
+                                                ) : '—'
+                                            },
                                             { label: 'Status', value: <SessionStatusBadge status={selectedSession.sessionStatus} /> },
                                             { label: 'Mode', value: MODE_LABELS[selectedSession.detectedMode] || selectedSession.detectedMode || '—' },
                                             { label: 'Duration', value: selectedSession.duration || '—' },
@@ -1989,11 +1990,10 @@ const ChatSessionsTab = () => {
                                                             <Bot className="w-3 h-3 text-primary" />
                                                         </div>
                                                     )}
-                                                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs ${
-                                                        msg.role === 'user'
+                                                    <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs ${msg.role === 'user'
                                                             ? 'bg-primary/20 text-maintext rounded-br-sm'
                                                             : 'bg-white/20 dark:bg-white/5 text-maintext rounded-bl-sm'
-                                                    }`}>
+                                                        }`}>
                                                         <p className="leading-relaxed whitespace-pre-wrap break-words line-clamp-6">{msg.content}</p>
                                                         {msg.imageUrl && <p className="text-[10px] text-primary mt-1">📸 Image attached</p>}
                                                         {msg.videoUrl && <p className="text-[10px] text-primary mt-1">🎬 Video attached</p>}
@@ -2128,16 +2128,16 @@ const ChatSessionsTab = () => {
 // ANALYTICS TAB
 // ═══════════════════════════════
 const AnalyticsTab = () => {
-    const [data, setData]         = useState(null);
-    const [loading, setLoading]   = useState(true);
-    const [range, setRange]       = useState('7d');
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [range, setRange] = useState('7d');
     const [refreshing, setRefreshing] = useState(false);
 
     // Drill-down state
-    const [drillMode, setDrillMode]     = useState(null); // which mode was clicked
-    const [drillData, setDrillData]     = useState(null);
+    const [drillMode, setDrillMode] = useState(null); // which mode was clicked
+    const [drillData, setDrillData] = useState(null);
     const [drillLoading, setDrillLoading] = useState(false);
-    const [drawerOpen, setDrawerOpen]   = useState(false);
+    const [drawerOpen, setDrawerOpen] = useState(false);
 
     const fetchAnalytics = async (isManual = false) => {
         if (isManual) setRefreshing(true);
@@ -2216,15 +2216,14 @@ const AnalyticsTab = () => {
                 <div className="flex items-center gap-2">
                     {/* Range Selector */}
                     <div className="flex gap-1 bg-white/10 dark:bg-white/5 rounded-xl p-1 border border-white/20">
-                        {['24h','7d','30d','90d'].map(r => (
+                        {['24h', '7d', '30d', '90d'].map(r => (
                             <button
                                 key={r}
                                 onClick={() => setRange(r)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                    range === r
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${range === r
                                         ? 'bg-primary text-white shadow-md'
                                         : 'text-subtext hover:text-maintext hover:bg-white/10'
-                                }`}
+                                    }`}
                             >{r}</button>
                         ))}
                     </div>
@@ -2241,7 +2240,7 @@ const AnalyticsTab = () => {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:0}}
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}
                     className="bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl p-5 group hover:border-primary/30 transition-all">
                     <div className="flex items-center justify-between mb-3">
                         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -2252,23 +2251,22 @@ const AnalyticsTab = () => {
                     <p className="text-xs font-semibold text-subtext uppercase tracking-wider mt-1">Total Sessions</p>
                 </motion.div>
 
-                <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:0.05}}
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
                     className="bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl p-5 group hover:border-red-400/30 transition-all">
                     <div className="flex items-center justify-between mb-3">
                         <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
                             <AlertTriangle className="w-5 h-5 text-red-400" />
                         </div>
-                        <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
-                            data?.summary?.errorRate > 20 ? 'text-red-400 bg-red-400/10' :
-                            data?.summary?.errorRate > 10 ? 'text-amber-400 bg-amber-400/10' :
-                            'text-green-400 bg-green-400/10'
-                        }`}>{data?.summary?.errorRate ?? 0}%</span>
+                        <span className={`text-xs font-bold px-2 py-1 rounded-lg ${data?.summary?.errorRate > 20 ? 'text-red-400 bg-red-400/10' :
+                                data?.summary?.errorRate > 10 ? 'text-amber-400 bg-amber-400/10' :
+                                    'text-green-400 bg-green-400/10'
+                            }`}>{data?.summary?.errorRate ?? 0}%</span>
                     </div>
                     <p className="text-2xl font-black text-maintext">{data?.summary?.totalErrors ?? 0}</p>
                     <p className="text-xs font-semibold text-subtext uppercase tracking-wider mt-1">Error Sessions</p>
                 </motion.div>
 
-                <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:0.1}}
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                     className="bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl p-5 group hover:border-emerald-400/30 transition-all">
                     <div className="flex items-center justify-between mb-3">
                         <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
@@ -2279,7 +2277,7 @@ const AnalyticsTab = () => {
                     <p className="text-xs font-semibold text-subtext uppercase tracking-wider mt-1">New Users</p>
                 </motion.div>
 
-                <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{delay:0.15}}
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
                     className="bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/30 dark:border-white/10 rounded-2xl p-5 group hover:border-amber-400/30 transition-all">
                     <div className="flex items-center justify-between mb-3">
                         <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
@@ -2308,7 +2306,7 @@ const AnalyticsTab = () => {
                                 <div key={i} className="space-y-1">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{backgroundColor: MODE_COLORS[i % MODE_COLORS.length]}} />
+                                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: MODE_COLORS[i % MODE_COLORS.length] }} />
                                             <span className="text-sm font-semibold text-maintext">{getLabel(m._id)}</span>
                                         </div>
                                         <div className="flex items-center gap-3 text-xs text-subtext">
@@ -2318,11 +2316,11 @@ const AnalyticsTab = () => {
                                     </div>
                                     <div className="w-full bg-white/10 dark:bg-white/5 rounded-full h-1.5">
                                         <motion.div
-                                            initial={{width: 0}}
-                                            animate={{width: `${Math.round((m.count / maxModeCount) * 100)}%`}}
-                                            transition={{duration: 0.6, delay: i * 0.05}}
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${Math.round((m.count / maxModeCount) * 100)}%` }}
+                                            transition={{ duration: 0.6, delay: i * 0.05 }}
                                             className="h-1.5 rounded-full"
-                                            style={{backgroundColor: MODE_COLORS[i % MODE_COLORS.length]}}
+                                            style={{ backgroundColor: MODE_COLORS[i % MODE_COLORS.length] }}
                                         />
                                     </div>
                                 </div>
@@ -2364,9 +2362,9 @@ const AnalyticsTab = () => {
                                     </div>
                                     <div className="w-full bg-white/10 dark:bg-white/5 rounded-full h-1.5">
                                         <motion.div
-                                            initial={{width: 0}}
-                                            animate={{width: `${Math.round((m.errorCount / maxErrorCount) * 100)}%`}}
-                                            transition={{duration: 0.6, delay: i * 0.05}}
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${Math.round((m.errorCount / maxErrorCount) * 100)}%` }}
+                                            transition={{ duration: 0.6, delay: i * 0.05 }}
                                             className="h-1.5 rounded-full bg-gradient-to-r from-red-500 to-red-400"
                                         />
                                     </div>
@@ -2398,11 +2396,11 @@ const AnalyticsTab = () => {
                                         return (
                                             <div key={i} className="flex flex-col items-center flex-1 gap-1" title={`${d._id}: ${d.sessions} sessions`}>
                                                 <motion.div
-                                                    initial={{height:0}}
-                                                    animate={{height: `${heightPct}%`}}
-                                                    transition={{duration:0.5, delay: i*0.03}}
+                                                    initial={{ height: 0 }}
+                                                    animate={{ height: `${heightPct}%` }}
+                                                    transition={{ duration: 0.5, delay: i * 0.03 }}
                                                     className="w-full rounded-t-md bg-gradient-to-t from-primary to-primary/50 min-h-[4px]"
-                                                    style={{height: `${heightPct}%`}}
+                                                    style={{ height: `${heightPct}%` }}
                                                 />
                                             </div>
                                         );
@@ -2410,8 +2408,8 @@ const AnalyticsTab = () => {
                                 </div>
                                 <div className="flex justify-between text-[10px] text-subtext px-0.5">
                                     <span>{data?.dailyTrend?.[0]?._id?.slice(5)}</span>
-                                    <span>{data?.dailyTrend?.[Math.floor((data?.dailyTrend?.length||0)/2)]?._id?.slice(5)}</span>
-                                    <span>{data?.dailyTrend?.[data?.dailyTrend?.length-1]?._id?.slice(5)}</span>
+                                    <span>{data?.dailyTrend?.[Math.floor((data?.dailyTrend?.length || 0) / 2)]?._id?.slice(5)}</span>
+                                    <span>{data?.dailyTrend?.[data?.dailyTrend?.length - 1]?._id?.slice(5)}</span>
                                 </div>
                                 <div className="mt-2 grid grid-cols-2 gap-2">
                                     {(data?.dailyTrend || []).slice(-3).reverse().map((d, i) => (
@@ -2449,21 +2447,21 @@ const AnalyticsTab = () => {
                                 const maxC = data?.topErrors?.[0]?.count || 1;
                                 return (
                                     <div key={i} className="flex items-center gap-3 p-3 bg-white/10 dark:bg-white/5 rounded-xl border border-white/10 hover:border-white/20 transition-all">
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{backgroundColor: color+'20'}}>
-                                            <AlertTriangle className="w-4 h-4" style={{color}} />
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: color + '20' }}>
+                                            <AlertTriangle className="w-4 h-4" style={{ color }} />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-1">
                                                 <span className="text-sm font-semibold text-maintext">{e.category}</span>
-                                                <span className="text-xs font-bold" style={{color}}>{e.count}</span>
+                                                <span className="text-xs font-bold" style={{ color }}>{e.count}</span>
                                             </div>
                                             <div className="w-full bg-white/10 rounded-full h-1">
                                                 <motion.div
-                                                    initial={{width:0}}
-                                                    animate={{width: `${Math.round((e.count/maxC)*100)}%`}}
-                                                    transition={{duration:0.5, delay: i*0.05}}
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${Math.round((e.count / maxC) * 100)}%` }}
+                                                    transition={{ duration: 0.5, delay: i * 0.05 }}
                                                     className="h-1 rounded-full"
-                                                    style={{backgroundColor: color}}
+                                                    style={{ backgroundColor: color }}
                                                 />
                                             </div>
                                         </div>
@@ -2511,7 +2509,7 @@ const AnalyticsTab = () => {
                                             </span>
                                         </td>
                                         <td className="p-4 text-xs text-subtext">
-                                            {s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-IN', {day:'2-digit', month:'short'}) : '-'}
+                                            {s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '-'}
                                         </td>
                                     </tr>
                                 ))}
@@ -2525,7 +2523,7 @@ const AnalyticsTab = () => {
 
     // ── DRILL-DOWN DRAWER ────────────────────────────────────────────────────
     const maxPatternCount = drillData?.patterns?.[0]?.count || 1;
-    const maxDailyErr     = Math.max(...(drillData?.dailyErrors || []).map(d => d.errorCount), 1);
+    const maxDailyErr = Math.max(...(drillData?.dailyErrors || []).map(d => d.errorCount), 1);
 
     return (
         <div className="space-y-6 relative">
@@ -2605,21 +2603,21 @@ const AnalyticsTab = () => {
                                                     <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3">
                                                         <div className="flex items-center justify-between mb-2">
                                                             <div className="flex items-center gap-2">
-                                                                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{backgroundColor: p.color}} />
+                                                                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
                                                                 <span className="text-sm font-semibold text-maintext">{p.label}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2 text-xs">
-                                                                <span className="font-bold" style={{color: p.color}}>{p.count}×</span>
+                                                                <span className="font-bold" style={{ color: p.color }}>{p.count}×</span>
                                                                 <span className="text-subtext">{p.sessionCount} sessions</span>
                                                             </div>
                                                         </div>
                                                         <div className="w-full bg-white/10 rounded-full h-1.5 mb-2">
                                                             <motion.div
-                                                                initial={{width: 0}}
-                                                                animate={{width: `${Math.round((p.count / maxPatternCount) * 100)}%`}}
-                                                                transition={{duration: 0.5, delay: i * 0.04}}
+                                                                initial={{ width: 0 }}
+                                                                animate={{ width: `${Math.round((p.count / maxPatternCount) * 100)}%` }}
+                                                                transition={{ duration: 0.5, delay: i * 0.04 }}
                                                                 className="h-1.5 rounded-full"
-                                                                style={{backgroundColor: p.color}}
+                                                                style={{ backgroundColor: p.color }}
                                                             />
                                                         </div>
                                                         {/* Sample error messages */}
@@ -2668,11 +2666,11 @@ const AnalyticsTab = () => {
                                                             return (
                                                                 <div key={i} className="flex flex-col items-center flex-1 gap-1" title={`${d._id}: ${d.errorCount} errors`}>
                                                                     <motion.div
-                                                                        initial={{height: 0}}
-                                                                        animate={{height: `${heightPct}%`}}
-                                                                        transition={{duration: 0.4, delay: i * 0.03}}
+                                                                        initial={{ height: 0 }}
+                                                                        animate={{ height: `${heightPct}%` }}
+                                                                        transition={{ duration: 0.4, delay: i * 0.03 }}
                                                                         className="w-full rounded-t-sm bg-gradient-to-t from-red-500 to-red-300"
-                                                                        style={{height: `${heightPct}%`}}
+                                                                        style={{ height: `${heightPct}%` }}
                                                                     />
                                                                 </div>
                                                             );
@@ -2680,7 +2678,7 @@ const AnalyticsTab = () => {
                                                     </div>
                                                     <div className="flex justify-between text-[9px] text-subtext mt-1">
                                                         <span>{drillData.dailyErrors[0]?._id?.slice(5)}</span>
-                                                        <span>{drillData.dailyErrors[drillData.dailyErrors.length-1]?._id?.slice(5)}</span>
+                                                        <span>{drillData.dailyErrors[drillData.dailyErrors.length - 1]?._id?.slice(5)}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2701,7 +2699,7 @@ const AnalyticsTab = () => {
                                                                 </span>
                                                                 <div className="flex items-center gap-2 text-xs">
                                                                     <span className="text-red-400 font-bold bg-red-400/10 px-2 py-0.5 rounded-lg">{s.errorCount} errors</span>
-                                                                    <span className="text-subtext">{s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-IN', {day:'2-digit',month:'short'}) : '-'}</span>
+                                                                    <span className="text-subtext">{s.createdAt ? new Date(s.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '-'}</span>
                                                                 </div>
                                                             </div>
                                                             {s.topError && (
@@ -2730,7 +2728,7 @@ const AnalyticsTab = () => {
 
 const AdminDashboard = () => {
     const { t } = useLanguage();
-    const [activeTab, setActiveTab] = useState('overview'); 
+    const [activeTab, setActiveTab] = useState('overview');
     const navigate = useNavigate();
 
     // Verify admin access
